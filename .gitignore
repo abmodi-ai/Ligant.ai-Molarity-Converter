@@ -3,3 +3,4 @@ dist/
 *.log
 reference/reference-set.json
 reference/__pycache__/
+*.tsbuildinfo
