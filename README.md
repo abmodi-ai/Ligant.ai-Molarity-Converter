@@ -23,18 +23,23 @@ Two further findings came out of the same work:
   from the code. Also records a defect that was **not** inserted deliberately: the obvious
   stepwise implementation of the correct formula breaches the 1 ULP tolerance in 0.55% of
   cases. C1 folds the unit factors into a single effective divisor to meet the bound.
-- [`docs/rounding-ties.md`](docs/rounding-ties.md) — displayed precision has a tie-breaking
-  rule and the URS does not name one. Matters for acceptance test 3. **Question open.**
+- [`docs/rounding-ties.md`](docs/rounding-ties.md) — **resolved: C1-UN-06 names
+  half-to-even**, and §11 gains a row for it. The question exposed a conflict already in
+  v0.5 between C1-UN-07 (compare the unrounded value) and acceptance test 3 (compare to
+  displayed precision). Correctness must not depend on a formatting choice; the two checks
+  are now separate. The URS edit is A. Modi's, for v0.6.
 - [`docs/acceptance-03-reimplementation.md`](docs/acceptance-03-reimplementation.md) —
   acceptance test 3 passed: an independent Python implementation written from the URS agrees
-  with the shipped TypeScript on 20,028 cases, at 0 ULP. It found one real defect, in a case
-  that crosses a decade boundary while rounding.
+  with the shipped TypeScript on 40,058 unrounded values, all bit-identical. It found one
+  real defect, in a case that crosses a decade boundary while rounding.
 
 ## Status
 
-**Held pending open item 1:** C1-OUT-04 (structured object in the ADC's format) and
-acceptance test 4. No serialiser is written and no local extension of the ADC's CSV has been
-invented to stand in for one. Everything else is independent of that decision and proceeds.
+**Held pending open item 1:** C1-OUT-04's **serialiser**, and acceptance test 4. The result
+object as an in-memory structure is fully specified by the URS and is built
+(`ConversionResult`); only its serialised shape is unknown. The working rule is that nothing
+may be written that assumes a serialised shape. No serialiser exists and no local extension
+of the ADC's CSV has been invented to stand in for one.
 
 **Outstanding:** acceptance test 14. The instrument is built and passes locally
 (`scripts/check-network.mjs` — a real browser, monitoring armed before navigation), but the
@@ -78,6 +83,10 @@ classes and §11 constants register, rendered from the same constants the flag r
   directly.
 - **C1-FX-09.** The negative control. A clean case that must raise no flags, in both
   conversion directions, placed well inside every bound rather than just inside one.
+- **C1-FX-10.** An exact rounding tie — 1 g/L at 51.2 kDa, exactly 19.53125 µM. The suite
+  requires the fixture set to **contain** one and acceptance test 3 fails if the reference
+  set has none, because a comparison that never exercises the rounding mode does not verify
+  it. Excluding ties instead would be the fixture-distribution failure §10 exists to prevent.
 
 ## Still open, owned elsewhere, not blocking
 

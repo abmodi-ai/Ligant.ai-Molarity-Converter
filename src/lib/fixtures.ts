@@ -166,6 +166,21 @@ export const FIXTURES: readonly Fixture[] = [
     expect: { displayedMolar: '8.32328', flags: [] },
   },
   {
+    id: 'C1-FX-10',
+    name: 'Exact rounding tie',
+    assumption:
+      '1 g/L at 51.2 kDa, which is exactly 19.53125 µM — a value whose exact decimal expansion terminates at the seventh significant digit, and that digit is a 5. It therefore sits exactly halfway at six significant figures and its displayed value is decided by the rounding mode alone: 19.5312 under half-to-even, 19.5313 under half-up. Both the reagent and the concentration are ordinary; nothing about this case is contrived. Verified to give exactly 19.53125 through all three plausible unit-normalisation paths — folded from kDa, folded from g/mol, and stepwise — so it tests the rounding mode and not an artefact of one implementation. Ties are unit-dependent and cannot be excluded from the input space: the same result expressed in M is 1.9531250000000000406e-5, which is not a tie and rounds up under either rule. This fixture exists because suppressing ties would make the suite pass by excluding the input class that exposes the ambiguity.',
+    standard: 'C1-UN-06 — six significant figures, rounded half-to-even',
+    request: {
+      direction: 'mass-to-molar',
+      enteredValue: 1,
+      mwValue: 51.2,
+      ...CLEAN,
+      units: { mass: 'g/L', molar: 'uM', mw: 'kDa' },
+    },
+    expect: { displayedMolar: '19.5312', flags: [] },
+  },
+  {
     id: 'C1-FX-09',
     name: 'Negative control',
     assumption:

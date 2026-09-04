@@ -199,15 +199,19 @@ describe('Acceptance 15 / C1-ST-04 — determinism', () => {
 
 describe('Acceptance 17 and 18 — disclosure', () => {
   it('every threshold is listed with its value and basis, and inspection-chosen ones say so', () => {
-    expect(CONSTANTS_REGISTER.length).toBe(6)
+    expect(CONSTANTS_REGISTER.length).toBe(7)
     for (const t of CONSTANTS_REGISTER) {
       expect(t.value).toBeTruthy()
       expect(t.status).toBeTruthy()
       if (t.basis === 'inspection') expect(t.status.length).toBeGreaterThan(10)
     }
-    // The distinction the register exists to draw: one constant is measured,
-    // the rest are chosen.
-    expect(CONSTANTS_REGISTER.filter((t) => t.basis === 'derived').length).toBe(1)
+    // The distinction the register exists to draw: what was measured or follows
+    // from a standard, against what was chosen by looking at it. Two rows are
+    // now derived — the round-trip tolerance, and the rounding mode, which is
+    // not a threshold but is behaviour-determining, and the register exists so
+    // that no behaviour-determining choice is silent.
+    expect(CONSTANTS_REGISTER.filter((t) => t.basis === 'derived').length).toBe(2)
+    expect(CONSTANTS_REGISTER.some((t) => t.id === 'rounding-mode')).toBe(true)
     expect(CONSTANTS_REGISTER.filter((t) => t.status.includes('Uncharacterised')).length).toBe(4)
   })
 

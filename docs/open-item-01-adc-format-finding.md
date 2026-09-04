@@ -104,6 +104,10 @@ C1 is the first tool to need it rather than the only one.
   reveals it" — and it carries each as an ad-hoc field on its own options type, reachable
   only through the CSV as a literal row. It has the same problem C1 has; it has not had
   to name it, because it is one tool and its CSV is read by people.
+- **It is not a one-off.** Gate provenance in the heterogeneity tool has the same
+  structure — an enumerated declaration, invisible in the number, that has to travel with
+  the value it qualifies. That is the second instance before the first has been resolved,
+  which is the argument for treating this as a format question rather than a C1 question.
 - **The downstream tool needs it structurally.** §12 records that the titration tool is
   next in the build order and its users work in PE and APC routinely. C1-ST-01 says a
   value handed forward carries its mass basis and every flag raised on it. That handoff
@@ -120,9 +124,13 @@ C1 is the first tool to need it rather than the only one.
 No extension, shim, adapter, or "C1-flavoured" variant of the ADC format was written.
 Per C1-OUT-04 and the build instruction, this stops here.
 
-`C1-OUT-04` is the only requirement held by this finding. The conversion engine,
-validation, flags, fixtures and invariance tests are independent of the serialisation
-format and proceed.
+`C1-OUT-04` is the only requirement held by this finding, and only its **serialiser**.
+The result object as an in-memory structure is fully specified by this URS — inputs, units,
+declarations, flags, derivation — and is built (`ConversionResult` in `src/lib/compute.ts`).
+Only its serialised shape is unknown. The working rule for the rest of the build is that
+**nothing may be written that assumes a serialised shape**; on that basis the conversion
+engine, validation, flags, fixtures, invariance tests, the interface and the independent
+reimplementation all proceed. C1-OUT-04's serialiser and acceptance test 4 wait.
 
 ## What a decision needs to cover
 

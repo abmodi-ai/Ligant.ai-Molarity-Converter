@@ -64,6 +64,14 @@ export const CONSTANTS_REGISTER: readonly Threshold[] = [
   { id: 'mass-upper', label: 'Upper mass concentration bound', value: '250 mg/mL', basis: 'inspection', status: 'Uncharacterised — open item 3' },
   { id: 'molar-lower', label: 'Lower molar concentration bound', value: '1 pM', basis: 'inspection', status: 'Uncharacterised — open item 3' },
   { id: 'displayed-precision', label: 'Displayed precision', value: '6 significant figures', basis: 'inspection', status: 'Confirmed at build — open item 7 closed; see docs/open-item-07-displayed-precision.md' },
+  {
+    id: 'rounding-mode',
+    label: 'Rounding mode at displayed precision',
+    value: 'half-to-even',
+    basis: 'derived',
+    status:
+      'IEEE 754 default, and the default in Python, R and Julia, so an independent reimplementation agrees without being told. Unbiased under repeated rounding, where half-up drifts upward. Not a threshold, but behaviour-determining: 1 g/L at 51.2 kDa is exactly 19.53125 µM and its displayed value is decided by this row alone.',
+  },
 ] as const
 
 /** The threshold values themselves, in base units, written once. */

@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { ALL_FIXTURES, BOUNDARY_FIXTURES, CONCENTRATION_BOUNDARY_FIXTURES, FIXTURES } from './fixtures'
 import { computeConversion } from './compute'
 import { roundTripUlps, withinTolerance } from './invariance'
-import { agreesToDisplayedPrecision } from './format'
+import { agreesToDisplayedPrecision, isExactTie } from './format'
 
 function run(f: (typeof ALL_FIXTURES)[number]) {
   const outcome = computeConversion(f.request)
@@ -41,29 +41,33 @@ describe('§10 — the fixture set', () => {
     }
   })
 
-  it('no fixture sits on a decimal rounding tie', () => {
-    // The defect that produced this test. An earlier C1-FX-06a used 25.6 kDa at
-    // 0.5 mg/mL: exact in binary, giving exactly 19.53125 µM, whose seventh
-    // significant digit is a 5 with nothing after it. Its displayed value then
-    // depends on whether the renderer breaks ties upward or to even — 19.5313
-    // or 19.5312 — rather than on the conversion, and hand-calculating the
-    // expected value with a different rule than the implementation uses gives a
-    // failure that looks like an arithmetic bug and is not one.
+  it('the set CONTAINS an exact rounding tie', () => {
+    // Deliberately the opposite of the guard this replaces.
     //
-    // A fixture that cannot distinguish a correct implementation from a
-    // differently-rounding one is the shared-property defect §10 is written
-    // against, in a form the round-numbers check does not catch.
-    for (const f of ALL_FIXTURES) {
+    // An earlier version of this suite asserted that no fixture lands on a tie.
+    // That is the fixture-distribution failure §10 is written against, in the
+    // form it is hardest to see: the suite passes by excluding the input class
+    // that exposes the ambiguity, and two implementations disagreeing on real
+    // user data leave it green. Ties are unit-dependent — 1 g/L at 51.2 kDa is a
+    // tie in µM and is not one in M — so they cannot be designed out of the
+    // input space, only out of the fixtures, which is worse than useless.
+    const ties = ALL_FIXTURES.filter((f) => {
       const r = run(f)
-      for (const v of [r.massValue, r.molarValue]) {
-        if (v === 0 || !Number.isFinite(v)) continue
-        const seven = v.toPrecision(7)
-        // A tie is a value whose 7-significant-figure form ends in 5 and is
-        // exactly equal to the value itself.
-        const isTie = Number(seven) === v && /5$/.test(seven.replace(/e[+-]?\d+$/i, '').replace(/\.$/, ''))
-        expect(isTie, `${f.id} lands on a rounding tie at ${v}; choose values that do not`).toBe(false)
-      }
-    }
+      return isExactTie(r.massValue) || isExactTie(r.molarValue)
+    })
+    expect(ties.length, 'the fixture set contains no exact tie; C1-UN-06\'s rounding mode is untested').toBeGreaterThan(0)
+    expect(ties.some((f) => f.id === 'C1-FX-10')).toBe(true)
+  })
+
+  it('the tie is rounded half-to-even, not half-up', () => {
+    const f = ALL_FIXTURES.find((x) => x.id === 'C1-FX-10')!
+    const r = run(f)
+    expect(r.molarValue).toBe(19.53125)
+    expect(isExactTie(r.molarValue)).toBe(true)
+    expect(r.displayed.molar).toBe('19.5312')
+    // The platform default would give the other answer, which is why the
+    // rounding mode is implemented rather than inherited.
+    expect(r.molarValue.toPrecision(6)).toBe('19.5313')
   })
 
   it('the set does not share the property that something is always wrong', () => {

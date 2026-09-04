@@ -5,7 +5,7 @@
 
 ## Answer
 
-**Six significant figures is confirmed. C1-UN-06 stands as written; drop the `⚠ proposed` mark.**
+**Six significant figures is confirmed. C1-UN-06 stands as written, with a rounding mode added; drop the `⚠ proposed` mark.**
 
 Not "it seems fine" — four things were measured, and the choice has roughly eight
 significant figures of headroom before the constraint that bounds it starts to bite.
@@ -90,16 +90,24 @@ three within the first few thousand draws.
 C1-IV-01 is a tolerance on the unrounded value (C1-UN-07) and is unaffected by display.
 Confirmed separately: see the finding below and `docs/invariance-confirmation.md`.
 
-## Recommendation on the wording, not the number
+## The rounding mode, now named
 
-The number is right. One phrase in C1-UN-06 is worth tightening before it reaches
-acceptance: **"6 significant figures" should say what happens to a value that has fewer.**
-`6.66667 µM` and `1.50000 µM` both display six; a value of exactly `2 µM` should display
-`2.00000 µM`, not `2 µM`, or acceptance test 2's "to displayed precision" has two readings.
-The implementation renders trailing zeros to the full six figures, and states the
-precision on the output per C1-OUT-07. Flagging as a wording point, not a change of value —
-say if you would rather it suppressed trailing zeros and I will change it before the
-fixtures harden.
+The first version of this determination flagged that C1-UN-06 said "6 significant figures"
+without naming a tie-breaking rule. That is now decided: **half-to-even**, added to §11 as a
+behaviour-determining row. See `rounding-ties.md` for the decision, the fixture that
+exercises it (C1-FX-10, 1 g/L at 51.2 kDa, exactly 19.53125 µM), and the conflict between
+C1-UN-07 and acceptance test 3 that the question exposed.
+
+Two consequences for this determination:
+
+- The measurements above are unaffected. Ties occur in a vanishing fraction of cases and
+  none of the disagreement rates in the table move by a single case under either rule.
+- The C1-FX-07 value below is not a tie under either rule, so that fixture stands as
+  measured.
+
+Trailing zeros are kept, so a value of exactly 2 µM displays `2.00000` rather than `2`.
+Suppressing them would make "agrees to displayed precision" mean two different things
+depending on the value.
 
 ## Adjacent finding — the tolerance constrains the implementation, not just the test
 

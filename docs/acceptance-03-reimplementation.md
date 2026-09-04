@@ -6,14 +6,43 @@
 
 **Result: passed.** Reproduce with `npm run check:reimplementation`.
 
+The criterion as quoted above is URS v0.5's wording, and it is being corrected in v0.6 —
+see **What the test compares** below. This build implements the corrected reading.
+
 | | |
 |---|---|
 | Second implementation | `reference/molarity.py` — Python 3, no dependencies |
-| Cases compared | **20,028** |
-| Disagreements at displayed precision | **0** |
+| Cases compared | **20,029** (40,058 unrounded values) |
+| **Correctness gate** — unrounded values (C1-UN-07) | **40,058 / 40,058 bit-identical**, worst 0 ULP |
+| **Display check** — 6 s.f. half-to-even (C1-UN-06) | **0** disagreeing renderings |
+| Exact ties exercised | **1** (C1-FX-10) |
 | Flag-set disagreements | **0** |
 | Rejection disagreements | **0** |
-| Worst ULP distance on the unrounded values | **0** |
+
+## What the test compares
+
+URS v0.5 contains a conflict between two requirements, identified by A. Modi:
+
+- **C1-UN-07** makes the **unrounded** value the one an independent reimplementation is
+  compared against.
+- **Acceptance test 3** says agreement is **to displayed precision**.
+
+Those are different tests, and under the second a display convention does load-bearing work
+inside a correctness gate: two implementations agreeing on every digit of the arithmetic
+could fail for rounding a tie differently, and two disagreeing in the seventh significant
+figure could pass. Correctness must not depend on a formatting choice.
+
+So the comparison is split. The **correctness gate** is the unrounded structured values.
+The **display check** is separate, under C1-UN-06 — it still has to pass, and it is how the
+half-to-even rounding mode is verified across two implementations, but it is not the
+correctness result. The v0.6 edit is A. Modi's; this is the corrected reading implemented
+ahead of it.
+
+The gate is set at bit-identical because that is what two implementations of the same two
+IEEE 754 operations produce, and it is what is observed across 40,058 values. A future
+reimplementation in a language with wider intermediates could legitimately differ by a ULP;
+that would be a tolerance for the URS to state, not for the comparison script to decide
+quietly.
 
 ## How independence was kept
 
@@ -36,10 +65,11 @@ recorded at the top of `molarity.py`:
    significant figures while both implementations failed C1-IV-01. **Displayed-precision
    agreement does not imply round-trip correctness**, which is why acceptance tests 3 and 5
    are separate.
-2. **Tie-breaking.** Matched to ECMAScript's round-half-up deliberately, so that the
-   comparison tests the arithmetic rather than a formatting convention. Python's own default
-   is half-to-even and would disagree on exact ties. See `rounding-ties.md` — this is the
-   open question, and this test is where it would have bitten.
+2. **Tie-breaking.** Half-to-even, per C1-UN-06 as amended — and this is the point of the
+   decision. Half-to-even is Python's own default, so the independent author writes it
+   **without being told**, and being told is what would compromise the independence this
+   test depends on. The shipped TypeScript implements it explicitly, because ECMAScript's
+   `toPrecision` is half-up. See `rounding-ties.md`.
 
 ## The reference set
 
@@ -72,7 +102,17 @@ what the acceptance criterion says in terms. And the fixture that caught it is a
 case constructed by stepping one double below a threshold — a fixture written to test a
 comparison operator in §8, which caught a formatting bug in §4 instead.
 
-The comparison also reports how many values in the set land on a rounding tie. Currently
-**zero**, so the open question in `rounding-ties.md` does not presently affect this test's
-result. That is a fact about today's reference set, not a reason to leave the rule unnamed:
-a fixture added later could reintroduce one, and `fixtures.test.ts` guards against it.
+## The reference set must contain a tie, and the comparison fails if it does not
+
+`C1-FX-10` — 1 g/L at 51.2 kDa, exactly 19.53125 µM — is the case on which the two rounding
+rules disagree (19.5312 half-to-even, 19.5313 half-up). Without it the display check would
+pass while never exercising the rounding mode at all, so `compare.py` **fails when the
+reference set contains no exact tie**, and `fixtures.test.ts` requires the set to contain
+one.
+
+An earlier version of this build asserted the opposite — that no fixture may land on a tie.
+That is the fixture-distribution failure §10 and C1-FX-09 exist to prevent: the suite passes
+by excluding the input class that exposes the ambiguity, and two implementations disagreeing
+on real user data leave it green. Ties are unit-dependent — the same result expressed in M
+is `1.9531250000000000406e-5` and is not a tie — so they cannot be excluded from the input
+space, only from the fixtures.

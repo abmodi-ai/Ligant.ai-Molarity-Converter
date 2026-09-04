@@ -21,15 +21,16 @@ independent author has to choose something the URS does not state:
      obvious reading and breaches the tolerance; see
      docs/invariance-confirmation.md.
 
-  2. TIE-BREAKING AT SIX SIGNIFICANT FIGURES. The URS does not name a rule.
-     ECMAScript's Number.prototype.toPrecision resolves a tie to the larger
-     candidate - round-half-up - so this matches it deliberately, to keep the
-     comparison a test of the arithmetic rather than of a formatting convention.
-     Python's own default is round-half-even and would disagree on exact ties.
-     Flagged as an open question in docs/rounding-ties.md.
+  2. TIE-BREAKING AT SIX SIGNIFICANT FIGURES. Half-to-even, per C1-UN-06 as
+     amended. This is the IEEE 754 default and Python's own default, so it is
+     what an independent author writes WITHOUT being told - which is the point:
+     being told is what would compromise the independence this test depends on.
+     It is also unbiased under repeated rounding, where half-up drifts upward.
+     ECMAScript's toPrecision is half-up, so the shipped TypeScript implements
+     half-to-even explicitly rather than taking the platform default.
 """
 
-from decimal import Decimal, ROUND_HALF_UP
+from decimal import Decimal, ROUND_HALF_EVEN
 
 # Section 4. Multipliers to the base units, written from the unit tables in the
 # URS rather than copied from the shipped source.
@@ -79,8 +80,10 @@ def format_sig_figs(v, figs=DISPLAY_SIG_FIGS):
     Section 4, C1-UN-06. Six significant figures, trailing zeros kept.
 
     Rendered from the exact decimal expansion of the double, so the value being
-    rounded is the value the machine holds and not a shortest-repr of it.
-    Ties resolve upward, matching ECMAScript toPrecision - see the module note.
+    rounded is the value the machine holds and not a shortest-repr of it. That
+    distinction decides ties: the double nearest 1.953125e-5 round-trips through
+    seven significant digits, but its exact expansion continues ...0004065... and
+    is therefore not a tie at all. Decimal(v) is exact; Decimal(str(v)) is not.
     """
     if v != v or v in (float("inf"), float("-inf")):
         return "n/a"
@@ -88,7 +91,7 @@ def format_sig_figs(v, figs=DISPLAY_SIG_FIGS):
         return "0." + "0" * (figs - 1)
     d = Decimal(v)                      # exact, not Decimal(str(v))
     quantum = Decimal(1).scaleb(d.adjusted() - (figs - 1))
-    r = d.quantize(quantum, rounding=ROUND_HALF_UP)
+    r = d.quantize(quantum, rounding=ROUND_HALF_EVEN)
     # Rounding can carry across a decade boundary - 0.9999999999999999 to six
     # figures is 1.00000, not 1.000000 - which leaves the result one digit wider
     # than asked for. Re-quantize against the exponent the rounded value
@@ -97,7 +100,7 @@ def format_sig_figs(v, figs=DISPLAY_SIG_FIGS):
     # a decade while rounding.
     if r.adjusted() != d.adjusted():
         quantum = Decimal(1).scaleb(r.adjusted() - (figs - 1))
-        r = r.quantize(quantum, rounding=ROUND_HALF_UP)
+        r = r.quantize(quantum, rounding=ROUND_HALF_EVEN)
     # Match toPrecision's choice of fixed vs exponential form.
     exponent = r.adjusted()
     if exponent < -6 or exponent >= figs:
