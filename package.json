@@ -1,0 +1,21 @@
+{
+  "name": "ligant-molarity-converter",
+  "private": true,
+  "version": "0.1.0",
+  "license": "Apache-2.0",
+  "type": "module",
+  "description": "Molarity Converter for Biologics (C1) - deterministic, client-side mass/molar concentration conversion with compelled molecular-weight declarations",
+  "scripts": {
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "typecheck": "tsc -b",
+    "study:precision": "vite-node scripts/precision-study.ts",
+    "verify": "npm run typecheck && npm test",
+    "record:invariance": "vite-node scripts/record-invariance.ts"
+  },
+  "devDependencies": {
+    "@types/node": "^26.4.1",
+    "typescript": "^5.6.3",
+    "vitest": "^2.1.8"
+  }
+}
