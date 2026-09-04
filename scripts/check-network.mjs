@@ -29,44 +29,57 @@
  */
 
 import { chromium } from 'playwright'
-import { createServer } from 'node:http'
-import { readFile } from 'node:fs/promises'
 import { readFileSync, existsSync } from 'node:fs'
-import { extname, join, normalize } from 'node:path'
+import { serveDist } from './serve-dist.mjs'
 
 const PORT = 8972
 const target = process.argv[2] ?? null
 const CHROME = process.env.CHROME_PATH || '/opt/pw-browsers/chromium'
 
-const SITE_URL = (readFileSync('src/lib/site.ts', 'utf8').match(/SITE_URL\s*=\s*['"]([^'"]+)['"]/) ?? [])[1]
+const SITE_TS = readFileSync('src/lib/site.ts', 'utf8')
+const SITE_URL = (SITE_TS.match(/SITE_URL\s*=\s*['"]([^'"]+)['"]/) ?? [])[1]
 
-const TYPES = {
-  '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css',
-  '.svg': 'image/svg+xml', '.png': 'image/png', '.ico': 'image/x-icon',
-}
+/*
+ * The footer's network claim, and the gate on it.
+ *
+ * The page asserts "no network request of any kind" only when this is true, and
+ * it may only be set true after acceptance test 14 has passed against the
+ * DEPLOYED address. This check enforces the other half of that pairing: if the
+ * claim is live and this run is a local server over dist/, the check fails.
+ * Otherwise the strong claim could ship on the strength of a run that cannot
+ * see the CDN path — which is exactly how the claim failed twice before.
+ */
+const NETWORK_CLAIM_VERIFIED = /NETWORK_CLAIM_VERIFIED\s*=\s*true/.test(SITE_TS)
+
+/*
+ * C1-NF-03's standard, and the one number in this file chosen by inspection.
+ *
+ * It was 1440x820 until 4 September 2026. That figure predates the shared
+ * masthead: C1 carried its own 84px header, and the suite's — lockup, wordmark,
+ * 25px H1, description, rule — costs 180px above the converter. Every tool in
+ * the suite pays that, so it is not C1's to shave, and the converter itself is
+ * at its floor: the mass-basis fieldset alone is 188px because §3.3 requires
+ * every option label in full.
+ *
+ * Raised to 900 by A. Modi rather than met by cutting chrome. The alternative
+ * on the table landed at 817px with three pixels of headroom and a masthead
+ * that no longer matched the reference — the layout that fits only because it
+ * got smaller, and fails again on the next flag.
+ *
+ * Measured at the decision: 874px worst case, 868px clean.
+ *
+ * NOT a constants-register row. §11 lists thresholds at which the TOOL changes
+ * behaviour; this is a standard the verification is held to and it governs
+ * nothing the engine computes. Same reasoning as NETWORK_CLAIM_VERIFIED in
+ * src/lib/site.ts. Carried to URS v0.6 as C1-NF-03's stated standard.
+ */
+const VIEWPORT = { width: 1440, height: 900 }
 
 let server = null
 let origin = target
 
 if (!target) {
-  if (!existsSync('dist')) {
-    console.error('dist/ not found — run `npm run build` first.')
-    process.exit(1)
-  }
-  server = createServer(async (req, res) => {
-    let path = req.url.split('?')[0]
-    if (path.endsWith('/')) path += 'index.html'
-    const file = join('dist', normalize(path).replace(/^(\.\.[/\\])+/, ''))
-    try {
-      const body = await readFile(file)
-      res.writeHead(200, { 'Content-Type': TYPES[extname(file)] ?? 'application/octet-stream' })
-      res.end(body)
-    } catch {
-      res.writeHead(404).end('not found')
-    }
-  })
-  await new Promise((r) => server.listen(PORT, r))
-  origin = `http://localhost:${PORT}/`
+  ;({ server, origin } = await serveDist(PORT))
 }
 
 /*
@@ -126,7 +139,9 @@ await page.goto(origin, { waitUntil: 'networkidle' })
 // Exercise the tool, because a request can be triggered by use rather than by
 // load — an autocomplete lookup, a telemetry ping on submit.
 await page.fill('#entered', '1')
+await page.selectOption('#enteredunit', 'mg/mL')
 await page.fill('#mw', '150')
+await page.selectOption('#mwunit', 'kDa')
 await page.selectOption('#prov', 'certificate-of-analysis')
 await page.check('input[name="massBasis"][value="assembled"]')
 await page.waitForTimeout(400)
@@ -138,13 +153,13 @@ if (!result.startsWith('6.66667')) {
 
 // C1-NF-03: inputs and result fit one screen without scrolling on a standard
 // laptop display.
-await page.setViewportSize({ width: 1440, height: 820 })
+await page.setViewportSize(VIEWPORT)
 await page.waitForTimeout(150)
 const converterFits = await page.evaluate(() => {
   const el = document.querySelector('main.converter')
   return el ? el.getBoundingClientRect().bottom <= window.innerHeight : false
 })
-if (!converterFits) failures.push('C1-NF-03: the converter does not fit one screen at 1440x820')
+if (!converterFits) failures.push(`C1-NF-03: the converter does not fit one screen at ${VIEWPORT.width}x${VIEWPORT.height}`)
 
 const overflows = await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth)
 if (overflows) failures.push('the page scrolls horizontally at 1440px')
@@ -160,7 +175,9 @@ if (overflows) failures.push('the page scrolls horizontally at 1440px')
  * which is the same shape of gap C1-FX-09 exists to close in the fixture set.
  */
 await page.fill('#entered', '0.0000000001')
+await page.selectOption('#enteredunit', 'mg/mL')
 await page.fill('#mw', '0.5')
+await page.selectOption('#mwunit', 'kDa')
 await page.selectOption('#prov', 'not-recorded')
 await page.check('input[name="massBasis"][value="not-recorded"]')
 await page.waitForTimeout(250)
@@ -170,10 +187,12 @@ const worstBottom = await page.evaluate(() => {
   const el = document.querySelector('main.converter')
   return el ? Math.round(el.getBoundingClientRect().bottom) : Infinity
 })
-if (worstBottom > 820) {
-  failures.push(`C1-NF-03: with ${flagCount} flags the converter reaches ${worstBottom}px, past a 820px viewport`)
+if (worstBottom > VIEWPORT.height) {
+  failures.push(
+    `C1-NF-03: with ${flagCount} flags the converter reaches ${worstBottom}px, past a ${VIEWPORT.height}px viewport`,
+  )
 }
-console.log(`  worst case: ${flagCount} flags, converter bottom ${worstBottom}px of 820`)
+console.log(`  worst case: ${flagCount} flags, converter bottom ${worstBottom}px of ${VIEWPORT.height}`)
 
 // C1-ST-02: nothing persists across a reload unless its persistence is visible.
 const stored = await page.evaluate(() => ({
@@ -200,6 +219,18 @@ for (const required of [
 await browser.close()
 if (server) server.close()
 
+/*
+ * The claim-versus-evidence gate. Not about this run's requests at all: it is
+ * about whether the page is allowed to say what it says.
+ */
+if (NETWORK_CLAIM_VERIFIED && !target) {
+  failures.push(
+    'NETWORK_CLAIM_VERIFIED is true in src/lib/site.ts, so the footer asserts no network request ' +
+      'of any kind — but this run was a LOCAL SERVER over dist/, which cannot establish it. ' +
+      'Set the flag only after this script passes against the deployed address.',
+  )
+}
+
 const external = requests.filter((r) => !isOwn(r.url))
 console.log(`\ncheck-network — ${origin}`)
 console.log(`  requests observed: ${requests.length} (monitoring armed before navigation)`)
@@ -219,6 +250,13 @@ if (target) {
   console.log('\nACCEPTANCE TEST 14: PASSED')
   console.log(`  Verified in a real browser against ${origin}, monitoring initialised before page load.`)
   console.log('  Re-run after any deployment or CDN configuration change.')
+  if (!NETWORK_CLAIM_VERIFIED) {
+    console.log('\n  The footer currently states the WEAKER claim, because')
+    console.log('  NETWORK_CLAIM_VERIFIED is false in src/lib/site.ts.')
+    console.log('  This run is the evidence that permits the stronger one:')
+    console.log('  set the flag to true, rebuild, redeploy, and re-run this against')
+    console.log('  the deployed address so the claim and the evidence ship together.')
+  }
 } else {
   // A local run is NOT a pass and must not be logged as one.
   //

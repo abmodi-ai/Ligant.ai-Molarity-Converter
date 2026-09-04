@@ -1,5 +1,12 @@
 import { describe, expect, it } from 'vitest'
-import { ALL_FIXTURES, BOUNDARY_FIXTURES, CONCENTRATION_BOUNDARY_FIXTURES, FIXTURES } from './fixtures'
+import {
+  ALL_FIXTURES,
+  BOUNDARY_FIXTURES,
+  CONCENTRATION_BOUNDARY_FIXTURES,
+  FIXTURES,
+  type BoundarySide,
+  type ThresholdId,
+} from './fixtures'
 import { computeConversion } from './compute'
 import { roundTripUlps, withinTolerance } from './invariance'
 import { agreesToDisplayedPrecision, isExactTie } from './format'
@@ -155,20 +162,68 @@ describe('C1-FX-03 — round trip', () => {
 })
 
 describe('C1-FX-04 — boundaries in both conversion directions', () => {
-  it('covers every §8 threshold, either side and exactly on it', () => {
-    const covered = [...BOUNDARY_FIXTURES, ...CONCENTRATION_BOUNDARY_FIXTURES]
-    // Four thresholds; each needs an on-the-bound case and at least one case on
-    // each side of it.
-    expect(covered.length).toBeGreaterThanOrEqual(12)
-    expect(covered.some((f) => f.request.direction === 'mass-to-molar')).toBe(true)
-    expect(covered.some((f) => f.request.direction === 'molar-to-mass')).toBe(true)
+  const covered = [...BOUNDARY_FIXTURES, ...CONCENTRATION_BOUNDARY_FIXTURES]
+  const THRESHOLDS: ThresholdId[] = ['mw-lower', 'mw-upper', 'mass-upper', 'molar-lower']
+  const SIDES: BoundarySide[] = ['below', 'on', 'above']
+  const DIRECTIONS = ['mass-to-molar', 'molar-to-mass'] as const
+
+  it('every boundary fixture declares which threshold it is about and where it sits', () => {
+    // Without this, the coverage assertion below could be satisfied by a
+    // fixture that forgot its metadata and was therefore counted nowhere.
+    for (const f of covered) {
+      expect(f.boundary, `${f.id} declares no threshold`).toBeDefined()
+    }
+  })
+
+  it('covers every §8 threshold, on every side, in BOTH conversion directions', () => {
+    // The guard this replaces asserted `covered.length >= 12`, plus "at least
+    // one fixture of each direction" across the whole set. Both are set-level
+    // properties standing in for a per-threshold one, and both passed while the
+    // two molecular-weight bounds were exercised in `mass-to-molar` only — the
+    // §I failure mode from docs/correspondence.md, occurring inside the guard
+    // written to prevent it.
+    //
+    // Every combination is required, and the failure message names the ones
+    // missing rather than reporting a count that is one too small.
+    const missing: string[] = []
+    for (const threshold of THRESHOLDS) {
+      for (const direction of DIRECTIONS) {
+        for (const side of SIDES) {
+          const hits = covered.filter(
+            (f) =>
+              f.boundary?.threshold === threshold &&
+              f.boundary.side === side &&
+              f.request.direction === direction,
+          )
+          if (hits.length === 0) missing.push(`${threshold} / ${side} / ${direction}`)
+        }
+      }
+    }
+    expect(missing, `C1-FX-04 does not cover: ${missing.join(', ')}`).toEqual([])
   })
 
   it('a value exactly on a threshold never flags — the operators are strict', () => {
-    const onBound = ['C1-FX-04b', 'C1-FX-04e', 'C1-FX-04g', 'C1-FX-04i', 'C1-FX-04k', 'C1-FX-04m']
-    for (const id of onBound) {
-      const f = [...BOUNDARY_FIXTURES, ...CONCENTRATION_BOUNDARY_FIXTURES].find((x) => x.id === id)!
-      expect(run(f).flags, `${id} flagged while sitting exactly on its threshold`).toEqual([])
+    // Selected by metadata rather than by a hand-maintained list of ids: a list
+    // is a second place to forget a fixture, and forgetting one there makes the
+    // suite quieter rather than redder.
+    const onBound = covered.filter((f) => f.boundary?.side === 'on')
+    expect(onBound.length, 'four thresholds in two directions is eight on-the-bound cases').toBe(8)
+    for (const f of onBound) {
+      expect(run(f).flags, `${f.id} flagged while sitting exactly on its threshold`).toEqual([])
+    }
+  })
+
+  it('the molecular-weight bounds flag identically from either direction', () => {
+    // C1-FL-01 reads the declared weight and no direction enters the
+    // comparison, so this cannot fail without something quite serious having
+    // changed. That is exactly why it is asserted rather than assumed: it is
+    // the claim under which the single-direction fixtures were acceptable, and
+    // it was never written down.
+    for (const f of BOUNDARY_FIXTURES.filter((x) => x.request.direction === 'mass-to-molar')) {
+      const reverse = BOUNDARY_FIXTURES.find((x) => x.id === `${f.id}-rev`)!
+      expect(run(reverse).flags.map((x) => x.code), `${f.id} and its reverse disagree`).toEqual(
+        run(f).flags.map((x) => x.code),
+      )
     }
   })
 })

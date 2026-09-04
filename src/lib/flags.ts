@@ -90,7 +90,22 @@ export const CONSTANTS_REGISTER: readonly Threshold[] = [
   { id: 'mw-upper', label: 'Upper MW plausibility bound', value: '1000 kDa', basis: 'inspection', status: 'Uncharacterised — open item 2' },
   { id: 'mass-upper', label: 'Upper mass concentration bound', value: '250 mg/mL', basis: 'inspection', status: 'Uncharacterised — open item 3' },
   { id: 'molar-lower', label: 'Lower molar concentration bound', value: '1 pM', basis: 'inspection', status: 'Uncharacterised — open item 3' },
-  { id: 'displayed-precision', label: 'Displayed precision', value: '6 significant figures', basis: 'inspection', status: 'Confirmed at build — open item 7 closed; see docs/open-item-07-displayed-precision.md' },
+  {
+    id: 'displayed-precision',
+    label: 'Displayed precision',
+    value: '6 significant figures',
+    basis: 'inspection',
+    // Open item 7 is NOT closed here, and the register must not say it is.
+    //
+    // The measurement exists — docs/open-item-07-displayed-precision.md, seven
+    // orders of headroom before C1-IV-03 first fails — but it has not reached
+    // NADIRA, and a register line is not a review. The row said "open item 7
+    // closed" until 4 September 2026, which is the register claiming an
+    // owner's decision on her behalf: precisely the kind of silent
+    // behaviour-determining choice §11 exists to prevent.
+    status:
+      'Proposed — open item 7 remains OPEN. Measured as evaluable at build with seven orders of headroom before C1-IV-03 fails (docs/open-item-07-displayed-precision.md). The measurement is with the developer; the decision is NADIRA\'s and has not been made.',
+  },
   {
     id: 'reimplementation-tolerance',
     label: 'Independent reimplementation agreement',

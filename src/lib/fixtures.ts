@@ -19,6 +19,15 @@ import type { ConversionRequest } from './compute'
 import { effectiveMw } from './convert'
 import type { FlagCode } from './flags'
 
+/**
+ * The four §8 thresholds, named so C1-FX-04 coverage can be asserted per
+ * threshold rather than counted across the set.
+ */
+export type ThresholdId = 'mw-lower' | 'mw-upper' | 'mass-upper' | 'molar-lower'
+
+/** Which side of its threshold a boundary case sits on. Geometric, not "flags or not". */
+export type BoundarySide = 'below' | 'on' | 'above'
+
 export interface Fixture {
   /** The §10 fixture this case belongs to. */
   id: string
@@ -28,6 +37,17 @@ export interface Fixture {
   /** The standard §10 evaluates it against. */
   standard: string
   request: ConversionRequest
+  /**
+   * C1-FX-04 only. Which threshold the case is about and where it sits.
+   *
+   * Declared rather than inferred from the values, so `fixtures.test.ts` can
+   * assert coverage of every threshold, on every side, in both conversion
+   * directions. The guard this replaces asserted a count over the whole set and
+   * "at least one fixture of each direction", which is a set-level check
+   * standing in for a per-threshold property — and it passed while the two
+   * molecular-weight bounds were tested in one direction only.
+   */
+  boundary?: { threshold: ThresholdId; side: BoundarySide }
   expect: {
     /** Displayed to six significant figures. Computed independently — see fixtures.test.ts. */
     displayedMolar?: string
@@ -212,52 +232,89 @@ export const FIXTURES: readonly Fixture[] = [
  */
 const MASS_FOR_EXACTLY_1PM = effectiveMw(150000, { mass: 'g/L', molar: 'pM', mw: 'g/mol' })
 
-export const BOUNDARY_FIXTURES: readonly Fixture[] = [
+const MW_BOUNDS: {
+  suffix: string
+  name: string
+  mwValue: number
+  threshold: ThresholdId
+  side: BoundarySide
+  flags: FlagCode[]
+  why: string
+}[] = [
   // --- C1-FL-01, lower MW bound: flag when MW < 1 kDa ---
-  boundary('C1-FX-04a', 'MW just below 1 kDa', 999, 'g/mol', ['C1-FL-01'],
-    'Entered directly, so the comparison is against the value the user typed and no arithmetic sits between them.'),
-  boundary('C1-FX-04b', 'MW exactly 1 kDa', 1000, 'g/mol', [],
-    'The operator is `<`, so a weight exactly on the bound does not flag. This fixture is the one that fails if `<` is written `<=`.'),
-  boundary('C1-FX-04c', 'MW just above 1 kDa', 1001, 'g/mol', [],
-    'The quiet side of the lower bound, so the set covers both sides rather than only the flagging one.'),
-
+  {
+    suffix: 'a', name: 'MW just below 1 kDa', mwValue: 999, threshold: 'mw-lower', side: 'below', flags: ['C1-FL-01'],
+    why: 'One g/mol inside the lower bound, so the comparison is against a weight that differs from the threshold by the smallest step a reader can check by eye.',
+  },
+  {
+    suffix: 'b', name: 'MW exactly 1 kDa', mwValue: 1000, threshold: 'mw-lower', side: 'on', flags: [],
+    why: 'The operator is `<`, so a weight exactly on the bound does not flag. This fixture is the one that fails if `<` is written `<=`.',
+  },
+  {
+    suffix: 'c', name: 'MW just above 1 kDa', mwValue: 1001, threshold: 'mw-lower', side: 'above', flags: [],
+    why: 'The quiet side of the lower bound, so the set covers both sides rather than only the flagging one.',
+  },
   // --- C1-FL-01, upper MW bound: flag when MW > 1000 kDa ---
-  boundary('C1-FX-04d', 'MW just below 1000 kDa', 999999, 'g/mol', [],
-    'One g/mol inside the upper bound. Paired with 04f so a `>=` written for `>` is caught.'),
-  boundary('C1-FX-04e', 'MW exactly 1000 kDa', 1000000, 'g/mol', [],
-    'The operator is `>`, so exactly 1000 kDa does not flag.'),
-  boundary('C1-FX-04f', 'MW just above 1000 kDa', 1000001, 'g/mol', ['C1-FL-01'],
-    'One g/mol outside. A real protein this large exists; the flag says confirm, not reject.'),
+  {
+    suffix: 'd', name: 'MW just below 1000 kDa', mwValue: 999999, threshold: 'mw-upper', side: 'below', flags: [],
+    why: 'One g/mol inside the upper bound. Paired with 04f so a `>=` written for `>` is caught.',
+  },
+  {
+    suffix: 'e', name: 'MW exactly 1000 kDa', mwValue: 1000000, threshold: 'mw-upper', side: 'on', flags: [],
+    why: 'The operator is `>`, so exactly 1000 kDa does not flag.',
+  },
+  {
+    suffix: 'f', name: 'MW just above 1000 kDa', mwValue: 1000001, threshold: 'mw-upper', side: 'above', flags: ['C1-FL-01'],
+    why: 'One g/mol outside. A real protein this large exists; the flag says confirm, not reject.',
+  },
 ]
 
 /**
- * A molecular-weight boundary case, run in both conversion directions.
+ * Every molecular-weight boundary case, in BOTH conversion directions.
  *
- * The entered concentration is chosen to sit far inside the mass and molar
- * bounds for every weight used here, so the only flag a case can raise is the
- * one under test.
+ * §10 requires either side of, and exactly on, every §8 threshold, in both
+ * directions. The molecular-weight cases ran in `mass-to-molar` only until
+ * v0.1.1, while the helper that built them claimed both in its own docstring.
+ * No wrong answer was possible — C1-FL-01 reads the declared weight and no
+ * direction enters the comparison — but the requirement is written about
+ * coverage, and the guard that was supposed to enforce it counted fixtures
+ * instead of checking thresholds.
+ */
+export const BOUNDARY_FIXTURES: readonly Fixture[] = MW_BOUNDS.flatMap((b) => [
+  boundary(`C1-FX-04${b.suffix}`, b, 'mass-to-molar'),
+  boundary(`C1-FX-04${b.suffix}-rev`, b, 'molar-to-mass'),
+])
+
+/**
+ * A molecular-weight boundary case in one direction.
+ *
+ * The entered concentration is 1 in either direction, and that single choice
+ * keeps every case far inside the two concentration bounds across the whole
+ * weight range used here — 1 mg/mL entered gives 0.999 to 1001 µM computed, and
+ * 1 µM entered gives 0.000999 to 1.000001 mg/mL computed. So the only flag
+ * available to any case in this group is the one under test, in both
+ * directions, without the entered value having to be tuned per weight.
  */
 function boundary(
   id: string,
-  name: string,
-  mwValue: number,
-  mwUnit: 'g/mol' | 'kDa',
-  flags: FlagCode[],
-  why: string,
+  b: (typeof MW_BOUNDS)[number],
+  direction: 'mass-to-molar' | 'molar-to-mass',
 ): Fixture {
+  const entered = direction === 'mass-to-molar' ? '1 mg/mL' : '1 µM'
   return {
     id,
-    name,
-    assumption: `${why} Concentration is 1 mg/mL, far inside the mass and molar bounds at every weight in this group, so the only flag available to the case is the one under test.`,
-    standard: 'The operators as written in §8',
+    name: `${b.name}, ${direction}`,
+    assumption: `${b.why} Entered as ${entered}, which sits far inside the mass and molar bounds at every weight in this group, so the only flag available to the case is the one under test. Run in both conversion directions because §10 requires it: C1-FL-01 reads the declared weight and cannot depend on the direction, and this pair is what establishes that rather than assuming it.`,
+    standard: 'The operators as written in §8, in both conversion directions',
+    boundary: { threshold: b.threshold, side: b.side },
     request: {
-      direction: 'mass-to-molar',
+      direction,
       enteredValue: 1,
-      mwValue,
+      mwValue: b.mwValue,
       ...CLEAN,
-      units: { mass: 'mg/mL', molar: 'uM', mw: mwUnit },
+      units: { mass: 'mg/mL', molar: 'uM', mw: 'g/mol' },
     },
-    expect: { flags },
+    expect: { flags: b.flags },
   }
 }
 
@@ -268,8 +325,25 @@ function boundary(
  */
 export const CONCENTRATION_BOUNDARY_FIXTURES: readonly Fixture[] = [
   {
+    id: 'C1-FX-04o',
+    name: 'Mass concentration just below 250 mg/mL, entered',
+    assumption:
+      'The quiet side of the upper mass bound in the entered direction. Added with the per-threshold coverage guard: the set had an on-the-bound case and an above-it case for this threshold and no below-it case, so a `>` silently rewritten as `>=` would have been caught while a bound moved downwards would not.',
+    standard: 'The operators as written in §8',
+    boundary: { threshold: 'mass-upper', side: 'below' },
+    request: {
+      direction: 'mass-to-molar',
+      enteredValue: 249.9999,
+      mwValue: 150000,
+      ...CLEAN,
+      units: { mass: 'mg/mL', molar: 'mM', mw: 'g/mol' },
+    },
+    expect: { flags: [] },
+  },
+  {
     id: 'C1-FX-04g',
     name: 'Mass concentration exactly 250 mg/mL, entered',
+    boundary: { threshold: 'mass-upper', side: 'on' },
     assumption:
       'Entered directly in the mass-to-molar direction, so the threshold is compared against the typed value. MW 150,000 g/mol keeps the resulting molar concentration far above 1 pM.',
     standard: 'The operators as written in §8 — `>`, so exactly on does not flag',
@@ -285,6 +359,7 @@ export const CONCENTRATION_BOUNDARY_FIXTURES: readonly Fixture[] = [
   {
     id: 'C1-FX-04h',
     name: 'Mass concentration just above 250 mg/mL, entered',
+    boundary: { threshold: 'mass-upper', side: 'above' },
     assumption: 'The same case as 04g one ten-thousandth above the bound, which is the smallest step that is still legible to a reader auditing the fixture.',
     standard: 'The operators as written in §8',
     request: {
@@ -297,8 +372,25 @@ export const CONCENTRATION_BOUNDARY_FIXTURES: readonly Fixture[] = [
     expect: { flags: ['C1-FL-02'] },
   },
   {
+    id: 'C1-FX-04p',
+    name: 'Mass concentration just below 250 mg/mL, computed',
+    assumption:
+      'As 04i with the entered molar concentration lowered by one unit in its last decimal place, giving a computed 249.99936 g/L. The below-the-bound case in the computed direction, added with the per-threshold coverage guard.',
+    standard: 'The operators as written in §8, in the computed direction',
+    boundary: { threshold: 'mass-upper', side: 'below' },
+    request: {
+      direction: 'molar-to-mass',
+      enteredValue: 0.00390624,
+      mwValue: 64000,
+      ...CLEAN,
+      units: { mass: 'g/L', molar: 'M', mw: 'g/mol' },
+    },
+    expect: { displayedMass: '249.999', flags: [] },
+  },
+  {
     id: 'C1-FX-04i',
     name: 'Mass concentration exactly 250 mg/mL, computed',
+    boundary: { threshold: 'mass-upper', side: 'on' },
     assumption:
       'The other direction, where the mass concentration is the computed quantity — which is the case §8 is written to catch and a fixture set could easily miss. Constructed from exactly-representable binary values so the product is exactly 250 and not a ULP either side: 2⁻⁸ M against 64,000 g/mol. A decimal pair such as 1 mM × 250,000 g/mol lands near 250 but not on it, and would test the wrong side of the operator.',
     standard: 'The operators as written in §8, in the computed direction',
@@ -314,6 +406,7 @@ export const CONCENTRATION_BOUNDARY_FIXTURES: readonly Fixture[] = [
   {
     id: 'C1-FX-04j',
     name: 'Mass concentration just above 250 mg/mL, computed',
+    boundary: { threshold: 'mass-upper', side: 'above' },
     assumption: 'As 04i, with the entered molar concentration raised by one unit in its last decimal place, giving a computed 250.00064 g/L.',
     standard: 'The operators as written in §8, in the computed direction',
     request: {
@@ -328,6 +421,7 @@ export const CONCENTRATION_BOUNDARY_FIXTURES: readonly Fixture[] = [
   {
     id: 'C1-FX-04k',
     name: 'Molar concentration exactly 1 pM, entered',
+    boundary: { threshold: 'molar-lower', side: 'on' },
     assumption:
       'Entered directly in the molar-to-mass direction. 1 × 1e-12 is the same double as the threshold constant, so the comparison is genuinely against equality rather than against a value that merely rounds to it.',
     standard: 'The operators as written in §8 — `<`, so exactly on does not flag',
@@ -343,6 +437,7 @@ export const CONCENTRATION_BOUNDARY_FIXTURES: readonly Fixture[] = [
   {
     id: 'C1-FX-04l',
     name: 'Molar concentration just below 1 pM, entered',
+    boundary: { threshold: 'molar-lower', side: 'below' },
     assumption: 'As 04k at 0.999 pM, one part in a thousand below the bound — a step large enough to read at a glance and far larger than any rounding effect, so a failure here means the operator is wrong and not that the arithmetic drifted.',
     standard: 'The operators as written in §8',
     request: {
@@ -357,6 +452,7 @@ export const CONCENTRATION_BOUNDARY_FIXTURES: readonly Fixture[] = [
   {
     id: 'C1-FX-04m',
     name: 'Molar concentration exactly 1 pM, computed',
+    boundary: { threshold: 'molar-lower', side: 'on' },
     assumption:
       'The mass-to-molar direction, where the molar concentration is computed. The entered mass concentration is set to the effective molecular weight itself, because x/x is exactly 1 for every finite non-zero double, so the computed value is exactly 1 pM rather than within a ULP of it. A hand-chosen decimal cannot do this reliably, and a boundary fixture that sits a ULP off the boundary tests the wrong side of the operator while looking correct.',
     standard: 'The operators as written in §8, in the computed direction',
@@ -372,6 +468,7 @@ export const CONCENTRATION_BOUNDARY_FIXTURES: readonly Fixture[] = [
   {
     id: 'C1-FX-04n',
     name: 'Molar concentration just below 1 pM, computed',
+    boundary: { threshold: 'molar-lower', side: 'below' },
     assumption:
       'As 04m with the entered mass concentration stepped down by one double, giving a computed molar concentration one ULP below 1 pM — the smallest possible violation, and the one a tolerance-based comparison would miss. It also displays as 1.00000 pM, exactly as 04m does, because the difference is far below the sixth significant figure. That pair is the point: 04m raises nothing and 04n raises C1-FL-03, and the two are indistinguishable on screen. Both fixtures therefore assert the rendering as well as the flag, so the collision is recorded as correct behaviour rather than looking like a defect to whoever reads this suite next.',
     standard: 'The operators as written in §8, in the computed direction; rendering per C1-UN-06',
@@ -384,7 +481,45 @@ export const CONCENTRATION_BOUNDARY_FIXTURES: readonly Fixture[] = [
     },
     expect: { displayedMolar: '1.00000', flags: ['C1-FL-03'] },
   },
+  {
+    id: 'C1-FX-04q',
+    name: 'Molar concentration just above 1 pM, entered',
+    boundary: { threshold: 'molar-lower', side: 'above' },
+    assumption:
+      'As 04k at 1.001 pM, one part in a thousand above the bound. The quiet side of the lower molar bound in the entered direction, added with the per-threshold coverage guard: the set had on-the-bound and below-the-bound cases for this threshold and no above-it case.',
+    standard: 'The operators as written in §8',
+    request: {
+      direction: 'molar-to-mass',
+      enteredValue: 1.001,
+      mwValue: 150000,
+      ...CLEAN,
+      units: { mass: 'ug/mL', molar: 'pM', mw: 'g/mol' },
+    },
+    expect: { flags: [] },
+  },
+  {
+    id: 'C1-FX-04r',
+    name: 'Molar concentration just above 1 pM, computed',
+    boundary: { threshold: 'molar-lower', side: 'above' },
+    assumption:
+      'As 04m with the entered mass concentration stepped UP by one double, giving a computed molar concentration one ULP above 1 pM. The mirror of 04n: the smallest possible step onto the quiet side, and it displays as 1.00000 pM like both of the others. Three fixtures now render identically at this threshold — one below flagging, one on and one above not — which is the strongest form of the point 04m/04n exist to record.',
+    standard: 'The operators as written in §8, in the computed direction; rendering per C1-UN-06',
+    request: {
+      direction: 'mass-to-molar',
+      enteredValue: nextUp(MASS_FOR_EXACTLY_1PM),
+      mwValue: 150000,
+      ...CLEAN,
+      units: { mass: 'g/L', molar: 'pM', mw: 'g/mol' },
+    },
+    expect: { displayedMolar: '1.00000', flags: [] },
+  },
 ]
+
+function nextUp(x: number): number {
+  const buf = new DataView(new ArrayBuffer(8))
+  buf.setFloat64(0, x)
+  return (buf.setBigUint64(0, buf.getBigUint64(0) + 1n), buf.getFloat64(0))
+}
 
 function nextDown(x: number): number {
   const buf = new DataView(new ArrayBuffer(8))

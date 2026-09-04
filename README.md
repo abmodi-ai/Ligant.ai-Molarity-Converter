@@ -15,7 +15,7 @@ Both open items the build note put before UI work are answered, with evidence.
 | Open item | Answer | Where |
 |---|---|---|
 | **1** — can the shipped ADC result format carry provenance and mass basis? | **No — and not because the enumerations do not fit. There is no result object to fit them into.** Escalated; nothing extended locally. | [`docs/open-item-01-adc-format-finding.md`](docs/open-item-01-adc-format-finding.md) |
-| **7** — displayed precision | **Six significant figures confirmed.** C1-IV-03 first fails at thirteen figures, so six has seven orders of headroom. Acceptance test 2 is unblocked. | [`docs/open-item-07-displayed-precision.md`](docs/open-item-07-displayed-precision.md) |
+| **7** — displayed precision | **Measured, not closed.** C1-IV-03 first fails at thirteen figures, so six has seven orders of headroom, and acceptance test 2 is unblocked. The decision is NADIRA's and the document has not reached her, so **open item 7 stays open** and the constants register says so. | [`docs/open-item-07-displayed-precision.md`](docs/open-item-07-displayed-precision.md) |
 
 Two further findings came out of the same work:
 
@@ -41,7 +41,12 @@ Two further findings came out of the same work:
 
 ## Status
 
-**Held pending open item 1:** C1-OUT-04's **serialiser**, and acceptance test 4. The result
+**Held pending open item 1:** C1-OUT-04's **conformance to the bench-tools format**, and
+acceptance test 4. **C1-OUT-03 is no longer held with it** — its text does not reference the
+ADC, and a finding about another tool was stopping this one emitting anything
+machine-readable. C1 now emits a structured object under **its own schema**
+(`src/lib/serialise.ts`, `schema.version` separate from the engine version), to be reconciled
+when open item 1 lands. No ADC shape has been invented to stand in for one. The result
 object as an in-memory structure is fully specified by the URS and is built
 (`ConversionResult`); only its serialised shape is unknown. The working rule is that nothing
 may be written that assumes a serialised shape. No serialiser exists and no local extension
@@ -64,7 +69,9 @@ node scripts/check-network.mjs https://<deployed-address>/
 **Built and passing:** the conversion engine, validation, flags, the fixture set, the
 invariance confirmation, and the interface including the tool's own page (§9 failure
 classes and §11 constants register, rendered from the same constants the flag rules read).
-88 unit tests, plus a static privacy check and a real-browser runtime check.
+139 unit tests, plus a static privacy check and two real-browser checks — one for the form's
+own requirements and the suite's chrome (`check:ui`) and one for the network claim
+(`check:network`).
 
 | Requirement | Where |
 |---|---|
@@ -77,7 +84,11 @@ classes and §11 constants register, rendered from the same constants the flag r
 | §8, §9, §11 — flag, failure classes, constants register | `src/lib/flags.ts` |
 | §10 — fixtures | `src/lib/fixtures.ts` |
 | §13 — output | `src/lib/compute.ts`, `src/App.tsx` |
-| C1-NF-01 — client-side, verified | `scripts/check-privacy.mjs`, `scripts/check-network.mjs` |
+| C1-OUT-03 — structured result, units on every quantity | `src/lib/serialise.ts`, `src/lib/serialise.test.ts` |
+| C1-ST-03 — retention marked per field | `src/lib/retention.ts`, `scripts/check-ui.mjs` |
+| C1-UN-01, C1-MW-03 — both input units compelled | `src/App.tsx`, `scripts/check-ui.mjs` |
+| Suite identity — tokens, masthead, footer, mark | `src/tokens.css`, `src/Brand.tsx`, `src/branding.test.ts` |
+| C1-NF-01 — client-side, verified as far as it can be | `scripts/check-privacy.mjs`, `scripts/check-network.mjs` |
 | C1-NF-03 — one screen | `src/App.tsx`, checked at 1440×820 on the worst case |
 | C1-FC-01, C1-CN-01 — disclosure at the tool's own address | `src/App.tsx` |
 | Acceptance 3 — independent reimplementation | `reference/molarity.py`, `reference/compare.py` |
@@ -119,14 +130,47 @@ so the disclosure required by C1-CN-01 reads from the same place the behaviour d
 ```
 npm install
 npm run dev                  # the tool
-npm run verify               # typecheck, 88 tests, build, privacy, real browser,
-                             # and acceptance test 3 (20,028-case cross-language comparison)
+npm run verify               # typecheck, 139 tests, build, privacy, two real browsers,
+                             # and acceptance test 3 (20,039-case cross-language comparison)
+
+npm run check:ui             # the form's own requirements in a real browser:
+                             # C1-ST-03 retention, the two compelled input units,
+                             # C1-CV-03's relation, and what the footer is allowed to claim
 
 npm run study:precision      # regenerates the open item 7 measurements
 npm run record:invariance    # regenerates docs/invariance-confirmation.md from the code
 
 node scripts/check-network.mjs https://<deployed-address>/   # acceptance test 14
 ```
+
+## Suite identity
+
+C1 shared **no design token** with the shipped Antigen Density Calculator until 4 September
+2026 — a second palette of cool blue-greys against the suite's warm ones, navy where the
+accent should have been, its own radii and type scale, and a lettered favicon that was not
+the Ligant mark. Not drift: the two were built from different starting points.
+
+`src/tokens.css` is the suite's `:root` block, read from the deployed reference tool and
+copied whole. `src/Brand.tsx` is the mark, the masthead and the footer. **Both belong in a
+package both tools depend on**; they sit here only because that package does not exist yet,
+and the rule until it does is that they are edited in the reference tool and copied here.
+
+C1's semantic layer in `styles.css` — `--flag`, `--reject`, `--retained` — is defined
+entirely in terms of brand tokens. `src/branding.test.ts` fails if a hex literal appears in
+C1's stylesheet at all, because the divergence happened one plausible hex value at a time
+and a rendered-page check cannot see a value that bypasses the tokens.
+
+**The footer's transmission claim is a required parameter of the shared component**, with no
+default. The reference tool's footer states "no data is transmitted" unconditionally; that
+is an environment claim only acceptance test 14 can establish, and a shared component that
+hard-codes it is a mechanism for reintroducing the beacon failure. C1 does not opt out of
+the shared footer — the shared footer stopped being able to make an unearned claim.
+
+**C1-NF-03's standard moved from 1440×820 to 1440×900.** The suite masthead costs 180px
+above the converter against C1's previous 84px; that cost is every tool's and is not C1's to
+shave. Measured at the decision: 874px worst case, 868px clean. Raised by A. Modi rather
+than met by cutting chrome — the alternative landed at 817px with three pixels of headroom
+and a masthead that no longer matched the reference.
 
 ## C1-NF-01, and why there are two checks
 
@@ -143,3 +187,13 @@ background services are disabled so that browser telemetry cannot be mistaken fo
 the tool did.
 
 Neither is acceptance test 14 until the second is run against the deployed address.
+
+**And until it is, the footer does not make the claim.** `NETWORK_CLAIM_VERIFIED` in
+`src/lib/site.ts` is `false`, so the page states what has actually been established — a
+static check and a real browser against the build — and says in terms that the deployed
+address is unverified. The flag is a deployment step, not a build step: deploy, run
+`check-network.mjs` against the deployed address, and only then set it. `check-network.mjs`
+enforces the pairing in the other direction and **fails** if the flag is set on a local run,
+so the strong claim cannot ship on evidence that cannot support it. An accurate weaker claim
+is worth more than an unverified stronger one; that is the whole finding of the beacon
+incident recorded in `docs/correspondence.md`.

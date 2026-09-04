@@ -15,7 +15,16 @@
  * C1-OUT-04 and acceptance test 4 are held pending that escalation.
  */
 
-import { ENGINE_VERSION, convert, effectiveMw, relationApplied, type ConversionUnits, type Direction } from './convert'
+import {
+  ENGINE_VERSION,
+  convert,
+  effectiveMw,
+  effectiveMwUnit,
+  relationApplied,
+  unitHandling,
+  type ConversionUnits,
+  type Direction,
+} from './convert'
 import { DISPLAY_SIG_FIGS, PRECISION_STATEMENT, formatSigFigs } from './format'
 import {
   MOLECULES_NOT_SITES_STATEMENT,
@@ -66,9 +75,13 @@ export interface ConversionResult {
   flags: Flag[]
   units: ConversionUnits
   declarations: { mwValue: number; provenance: MwProvenance; massBasis: MassBasis }
-  /** C1-CV-03, C1-OUT-01. */
+  /** C1-CV-03, C1-OUT-01. The physical relation, in named quantities only. */
   relation: string
+  /** The unit handling, stated separately from the relation. */
+  unitHandling: string
   effectiveMw: number
+  /** The divisor's unit, as a ratio of two standard units. */
+  effectiveMwUnit: string
   assumptions: readonly string[]
   statements: {
     precision: string
@@ -139,8 +152,10 @@ export function computeConversion(request: ConversionRequest): ConversionOutcome
     flags,
     units,
     declarations: { mwValue, provenance: request.provenance, massBasis: request.massBasis },
-    relation: relationApplied(direction, units),
+    relation: relationApplied(direction),
+    unitHandling: unitHandling(direction, units),
     effectiveMw: effectiveMw(mwValue, units),
+    effectiveMwUnit: effectiveMwUnit(units),
     assumptions: assumptionsFor(request),
     statements: {
       precision: PRECISION_STATEMENT,
