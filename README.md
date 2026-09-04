@@ -25,6 +25,10 @@ Two further findings came out of the same work:
   cases. C1 folds the unit factors into a single effective divisor to meet the bound.
 - [`docs/rounding-ties.md`](docs/rounding-ties.md) — displayed precision has a tie-breaking
   rule and the URS does not name one. Matters for acceptance test 3. **Question open.**
+- [`docs/acceptance-03-reimplementation.md`](docs/acceptance-03-reimplementation.md) —
+  acceptance test 3 passed: an independent Python implementation written from the URS agrees
+  with the shipped TypeScript on 20,028 cases, at 0 ULP. It found one real defect, in a case
+  that crosses a decade boundary while rounding.
 
 ## Status
 
@@ -37,8 +41,6 @@ invented to stand in for one. Everything else is independent of that decision an
 test requires the **deployed address**, and the URL slug is open item 5. Checking the build
 artefact does not satisfy it; run
 `node scripts/check-network.mjs https://<deployed-address>/` once there is one.
-
-Also outstanding: acceptance test 3, the independent reimplementation in a second language.
 
 **Built and passing:** the conversion engine, validation, flags, the fixture set, the
 invariance confirmation, and the interface including the tool's own page (§9 failure
@@ -59,6 +61,7 @@ classes and §11 constants register, rendered from the same constants the flag r
 | C1-NF-01 — client-side, verified | `scripts/check-privacy.mjs`, `scripts/check-network.mjs` |
 | C1-NF-03 — one screen | `src/App.tsx`, checked at 1440×820 on the worst case |
 | C1-FC-01, C1-CN-01 — disclosure at the tool's own address | `src/App.tsx` |
+| Acceptance 3 — independent reimplementation | `reference/molarity.py`, `reference/compare.py` |
 
 ## Three requirements that are deliberate
 
@@ -88,7 +91,8 @@ so the disclosure required by C1-CN-01 reads from the same place the behaviour d
 ```
 npm install
 npm run dev                  # the tool
-npm run verify               # typecheck, 88 tests, build, privacy, real browser
+npm run verify               # typecheck, 88 tests, build, privacy, real browser,
+                             # and acceptance test 3 (20,028-case cross-language comparison)
 
 npm run study:precision      # regenerates the open item 7 measurements
 npm run record:invariance    # regenerates docs/invariance-confirmation.md from the code

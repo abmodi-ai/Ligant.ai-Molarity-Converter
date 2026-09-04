@@ -1,3 +1,5 @@
 node_modules/
 dist/
 *.log
+reference/reference-set.json
+reference/__pycache__/
