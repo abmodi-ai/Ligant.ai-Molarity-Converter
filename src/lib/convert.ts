@@ -10,6 +10,7 @@ import {
   MASS_TO_G_PER_L,
   MOLAR_TO_MOL_PER_L,
   MW_TO_G_PER_MOL,
+  UNIT_LABEL,
   type MassUnit,
   type MolarUnit,
   type MwUnit,
@@ -110,7 +111,13 @@ export function convert(
 
 /** C1-CV-03. The relation applied, displayed with the result. */
 export function relationApplied(direction: Direction, units: ConversionUnits): string {
+  // UNIT_LABEL rather than the identifiers: the reader sees µM, not uM. The
+  // identifiers are ASCII so they are safe to type and to match on; the labels
+  // are what a person reads.
+  const mass = UNIT_LABEL[units.mass]
+  const molar = UNIT_LABEL[units.molar]
+  const mw = UNIT_LABEL[units.mw]
   return direction === 'mass-to-molar'
-    ? `molar concentration = mass concentration ÷ molecular weight  (${units.mass} ÷ effective ${units.mw} → ${units.molar})`
-    : `mass concentration = molar concentration × molecular weight  (${units.molar} × effective ${units.mw} → ${units.mass})`
+    ? `molar concentration = mass concentration ÷ molecular weight  (${mass} ÷ effective ${mw} → ${molar})`
+    : `mass concentration = molar concentration × molecular weight  (${molar} × effective ${mw} → ${mass})`
 }

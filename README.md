@@ -32,13 +32,18 @@ Two further findings came out of the same work:
 acceptance test 4. No serialiser is written and no local extension of the ADC's CSV has been
 invented to stand in for one. Everything else is independent of that decision and proceeds.
 
-**Not yet built:** the interface, the tool's own page (§9 failure classes, §11 constants
-register, C1-FC-01, C1-CN-01), and acceptance test 14 — which needs a real browser against
-the deployed address with network monitoring started before page load, and which checking
-the build artefact does not satisfy.
+**Outstanding:** acceptance test 14. The instrument is built and passes locally
+(`scripts/check-network.mjs` — a real browser, monitoring armed before navigation), but the
+test requires the **deployed address**, and the URL slug is open item 5. Checking the build
+artefact does not satisfy it; run
+`node scripts/check-network.mjs https://<deployed-address>/` once there is one.
 
-**Built and passing:** the conversion engine, validation, flags, the fixture set, and the
-invariance confirmation. 88 tests.
+Also outstanding: acceptance test 3, the independent reimplementation in a second language.
+
+**Built and passing:** the conversion engine, validation, flags, the fixture set, the
+invariance confirmation, and the interface including the tool's own page (§9 failure
+classes and §11 constants register, rendered from the same constants the flag rules read).
+88 unit tests, plus a static privacy check and a real-browser runtime check.
 
 | Requirement | Where |
 |---|---|
@@ -50,6 +55,10 @@ invariance confirmation. 88 tests.
 | §7 — reject | `src/lib/validate.ts` |
 | §8, §9, §11 — flag, failure classes, constants register | `src/lib/flags.ts` |
 | §10 — fixtures | `src/lib/fixtures.ts` |
+| §13 — output | `src/lib/compute.ts`, `src/App.tsx` |
+| C1-NF-01 — client-side, verified | `scripts/check-privacy.mjs`, `scripts/check-network.mjs` |
+| C1-NF-03 — one screen | `src/App.tsx`, checked at 1440×820 on the worst case |
+| C1-FC-01, C1-CN-01 — disclosure at the tool's own address | `src/App.tsx` |
 
 ## Three requirements that are deliberate
 
@@ -78,8 +87,27 @@ so the disclosure required by C1-CN-01 reads from the same place the behaviour d
 
 ```
 npm install
-npm test                     # 88 tests
-npm run typecheck
+npm run dev                  # the tool
+npm run verify               # typecheck, 88 tests, build, privacy, real browser
+
 npm run study:precision      # regenerates the open item 7 measurements
 npm run record:invariance    # regenerates docs/invariance-confirmation.md from the code
+
+node scripts/check-network.mjs https://<deployed-address>/   # acceptance test 14
 ```
+
+## C1-NF-01, and why there are two checks
+
+`check-privacy.mjs` is static: no external resource in `index.html`, no network primitive
+in the source, no third-party URL in the bundle. It is necessary and **not sufficient** —
+it caught one embedded URL (React's minified-error decoder) which had to be read and
+judged inert, and a judgement about a string is not a proof about a request.
+
+`check-network.mjs` is the real browser. Monitoring is armed on a blank page and the
+navigation happens afterwards, so a request issued by the document itself is recorded;
+attaching listeners after `goto` misses exactly the requests that matter. Requests are
+recorded rather than blocked, so what it proves is that the page never asks. Chromium's own
+background services are disabled so that browser telemetry cannot be mistaken for something
+the tool did.
+
+Neither is acceptance test 14 until the second is run against the deployed address.
