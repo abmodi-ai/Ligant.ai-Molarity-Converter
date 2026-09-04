@@ -215,10 +215,26 @@ if (failures.length) {
   process.exit(1)
 }
 
-console.log('\ncheck-network passed — no request to any other origin, and the page states what it must.')
-if (!target) {
-  console.log('\n  NOTE: this run was against a LOCAL SERVER over dist/.')
-  console.log('  It does NOT satisfy acceptance test 14, which requires the DEPLOYED address:')
-  console.log('      node scripts/check-network.mjs https://<deployed-address>/')
-  console.log('  A CDN or static host can inject requests that are not in the artefact.')
+if (target) {
+  console.log('\nACCEPTANCE TEST 14: PASSED')
+  console.log(`  Verified in a real browser against ${origin}, monitoring initialised before page load.`)
+  console.log('  Re-run after any deployment or CDN configuration change.')
+} else {
+  // A local run is NOT a pass and must not be logged as one.
+  //
+  // The failure mode this test exists to catch is a host or CDN injecting a
+  // request into the response - conditionally on request characteristics, so
+  // not necessarily on every request, and invisible anywhere but the deployed
+  // address. Two previous failures of this claim were exactly that. A local
+  // server over dist/ cannot see any of it, so what a local run establishes is
+  // that the INSTRUMENT works and that the build is clean. That is a
+  // precondition for the test, not the test.
+  console.log('\nInstrument verified against the local build. No request left the origin.')
+  console.log('\n  ACCEPTANCE TEST 14: UNRUN.')
+  console.log('  This was a LOCAL SERVER over dist/, and the URS is explicit that')
+  console.log('  verification against the build artefact does not satisfy the test.')
+  console.log('  A CDN can inject conditionally on request characteristics; that is')
+  console.log('  invisible anywhere but the deployed address.')
+  console.log('\n      node scripts/check-network.mjs https://<deployed-address>/')
+  console.log('\n  Blocked on open item 5 — the public URL slug.')
 }

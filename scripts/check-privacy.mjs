@@ -104,4 +104,5 @@ if (failures.length) {
   process.exit(1)
 }
 console.log('check-privacy passed — no external resource, no network primitive, no embedded third-party URL.')
-console.log('  This is the STATIC half only. Acceptance test 14 requires scripts/check-network.mjs against the deployed address.')
+console.log('  STATIC half only. Acceptance test 14 requires scripts/check-network.mjs run against the')
+console.log('  DEPLOYED address; neither this check nor a local browser run satisfies it.')

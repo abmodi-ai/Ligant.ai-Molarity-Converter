@@ -95,10 +95,10 @@ advance of that edit, and `reference/compare.py` now reports the two separately:
 
 | Check | Standard | Result |
 |---|---|---|
-| Correctness gate | unrounded values, C1-UN-07 | 40,058 values, **all bit-identical**, 0 ULP |
+| Correctness gate | unrounded values, ≤ 1 ULP, C1-UN-07 | **0** exceeding; worst observed **0 ULP** over 40,058 values |
 | Display check | six significant figures half-to-even, C1-UN-06 | **0** disagreeing renderings, 1 tie exercised |
 
-The gate is set at bit-identical because that is what two implementations of the same two
-IEEE 754 operations produce, and it is what is observed. If a future reimplementation in a
-language with wider intermediates disagrees by a ULP, that is a tolerance the URS has to
-state rather than something the comparison script should decide quietly.
+The gate is **≤ 1 ULP**, with bit-identical recorded beside it rather than required — see
+`acceptance-03-reimplementation.md` and `correspondence.md`. Setting the requirement at what
+one pair happened to measure is the third instance in this project of a comparison tightened
+past what correct code can satisfy.

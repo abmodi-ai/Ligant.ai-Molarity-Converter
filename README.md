@@ -29,9 +29,15 @@ Two further findings came out of the same work:
   displayed precision). Correctness must not depend on a formatting choice; the two checks
   are now separate. The URS edit is A. Modi's, for v0.6.
 - [`docs/acceptance-03-reimplementation.md`](docs/acceptance-03-reimplementation.md) —
-  acceptance test 3 passed: an independent Python implementation written from the URS agrees
-  with the shipped TypeScript on 40,058 unrounded values, all bit-identical. It found one
-  real defect, in a case that crosses a decade boundary while rounding.
+  acceptance test 3 passed. An independent Python implementation written from the URS agrees
+  with the shipped TypeScript within the ≤ 1 ULP requirement; observed 0 ULP over 40,058
+  values. It found a **specification gap, not a code defect**: C1-UN-06 does not say that
+  significant-figure placement is fixed by the rounded value rather than the input's
+  exponent, and an author following it exactly could write either.
+- [`docs/correspondence.md`](docs/correspondence.md) — instances from this build where a
+  check stood in for the property it was meant to establish, or a comparison was tightened
+  past what correct code satisfies. Three of each so far. Includes the fixture-distribution
+  pattern that is transferable to C3.
 
 ## Status
 
@@ -41,11 +47,19 @@ object as an in-memory structure is fully specified by the URS and is built
 may be written that assumes a serialised shape. No serialiser exists and no local extension
 of the ADC's CSV has been invented to stand in for one.
 
-**Outstanding:** acceptance test 14. The instrument is built and passes locally
-(`scripts/check-network.mjs` — a real browser, monitoring armed before navigation), but the
-test requires the **deployed address**, and the URL slug is open item 5. Checking the build
-artefact does not satisfy it; run
-`node scripts/check-network.mjs https://<deployed-address>/` once there is one.
+**Outstanding: acceptance test 14 is UNRUN.** Not "passing locally" — unrun. The instrument
+is built and verified (`scripts/check-network.mjs` — a real browser, monitoring armed before
+navigation), and a local run reports `ACCEPTANCE TEST 14: UNRUN` rather than a pass. The
+failure mode the test exists to catch is a host or CDN injecting a request conditionally on
+request characteristics, which is invisible anywhere but the deployed address; a previous
+tool in this set was caught by exactly that. The instrument being ready is the achievement.
+
+**This puts open item 5 — the public URL slug — on the critical path.** It is no longer a
+before-ship item; it is blocking a built instrument. Once decided:
+
+```
+node scripts/check-network.mjs https://<deployed-address>/
+```
 
 **Built and passing:** the conversion engine, validation, flags, the fixture set, the
 invariance confirmation, and the interface including the tool's own page (§9 failure
@@ -87,6 +101,11 @@ classes and §11 constants register, rendered from the same constants the flag r
   requires the fixture set to **contain** one and acceptance test 3 fails if the reference
   set has none, because a comparison that never exercises the rounding mode does not verify
   it. Excluding ties instead would be the fixture-distribution failure §10 exists to prevent.
+- **C1-FX-04m / C1-FX-04n.** A flagged and an unflagged result that **display identically**:
+  a molar concentration one ULP below 1 pM raises C1-FL-03 and renders `1.00000 pM`; one
+  exactly at 1 pM raises nothing and renders `1.00000 pM`. Both fixtures assert the flag
+  state *and* the rendering, so the pair is recorded as correct rather than read as a defect,
+  and the output says so wherever a threshold flag appears.
 
 ## Still open, owned elsewhere, not blocking
 
