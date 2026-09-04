@@ -32,7 +32,34 @@ export interface Flag {
   message: string
   /** Which declaration or quantity the condition was evaluated on. */
   evaluatedOn: 'molecular weight' | 'mass concentration' | 'molar concentration' | 'provenance declaration' | 'mass-basis declaration'
+  /**
+   * Whether the condition compares a quantity against a numeric threshold, or
+   * reads a declaration.
+   *
+   * The distinction is not cosmetic. A threshold flag is evaluated on the
+   * UNROUNDED value, which can differ from the displayed value in the last
+   * significant figure — so a flagged result and an unflagged one can render
+   * identically. See THRESHOLD_EVALUATION_STATEMENT. A declaration flag has no
+   * such property: the declaration is what the user selected.
+   */
+  kind: 'threshold' | 'declaration'
 }
+
+/**
+ * C1-OUT. Said once on the output, wherever a threshold flag is shown.
+ *
+ * The case that requires it: a molar concentration one ULP below 1 pM raises
+ * C1-FL-03 and displays as 1.00000 pM. A molar concentration of exactly 1 pM
+ * raises nothing and displays as 1.00000 pM. Two results, identical on screen,
+ * one flagged and one not.
+ *
+ * Neither is wrong — §8 evaluates against the computed system and C1-UN-06
+ * governs the rendering — but a user who cannot reconcile the flag with the
+ * number in front of them loses confidence in both, and in a tool whose whole
+ * claim is that it records what a spreadsheet hides, that is expensive.
+ */
+export const THRESHOLD_EVALUATION_STATEMENT =
+  'Threshold flags are evaluated on the unrounded value, which may differ from the displayed value in its last significant figure. A flagged result and an unflagged one can therefore display identically.'
 
 /**
  * §11 constants register. Every threshold at which the tool changes behaviour,
@@ -64,6 +91,14 @@ export const CONSTANTS_REGISTER: readonly Threshold[] = [
   { id: 'mass-upper', label: 'Upper mass concentration bound', value: '250 mg/mL', basis: 'inspection', status: 'Uncharacterised — open item 3' },
   { id: 'molar-lower', label: 'Lower molar concentration bound', value: '1 pM', basis: 'inspection', status: 'Uncharacterised — open item 3' },
   { id: 'displayed-precision', label: 'Displayed precision', value: '6 significant figures', basis: 'inspection', status: 'Confirmed at build — open item 7 closed; see docs/open-item-07-displayed-precision.md' },
+  {
+    id: 'reimplementation-tolerance',
+    label: 'Independent reimplementation agreement',
+    value: '≤ 1 ULP, compared with ≤',
+    basis: 'derived',
+    status:
+      'Requirement, not an observation. Bit-identical is what was measured, but making it the requirement would generalise one measured pair into a claim about all future reimplementations: a language with wider intermediates or FMA contraction can differ in the last bit on the same two operations, and bit-identical would then fail on correct code. Observed: 0 ULP over 40,058 values, so any drift from exact agreement is visible rather than absorbed. Consequence, stated rather than left implicit: a defect uniformly smaller than 1 ULP is invisible to acceptance tests 3 and 5 alike.',
+  },
   {
     id: 'rounding-mode',
     label: 'Rounding mode at displayed precision',
@@ -113,6 +148,7 @@ export function raiseFlags(input: FlagInput): Flag[] {
   if (mwGPerMol < MW_LOWER_G_PER_MOL || mwGPerMol > MW_UPPER_G_PER_MOL) {
     flags.push({
       code: 'C1-FL-01',
+      kind: 'threshold',
       evaluatedOn: 'molecular weight',
       message:
         'Outside the usual range for a biologic; confirm the units and the value.',
@@ -123,6 +159,7 @@ export function raiseFlags(input: FlagInput): Flag[] {
   if (massGPerL > MASS_UPPER_G_PER_L) {
     flags.push({
       code: 'C1-FL-02',
+      kind: 'threshold',
       evaluatedOn: 'mass concentration',
       message:
         'Above the range of typical high-concentration biologic formulations; confirm the units.',
@@ -137,6 +174,7 @@ export function raiseFlags(input: FlagInput): Flag[] {
   if (molarMolPerL < MOLAR_LOWER_MOL_PER_L) {
     flags.push({
       code: 'C1-FL-03',
+      kind: 'threshold',
       evaluatedOn: 'molar concentration',
       message: 'Below the range typical of biologic working solutions.',
     })
@@ -146,6 +184,7 @@ export function raiseFlags(input: FlagInput): Flag[] {
   if (input.provenance === 'calculated-from-sequence') {
     flags.push({
       code: 'C1-FL-04',
+      kind: 'declaration',
       evaluatedOn: 'provenance declaration',
       message:
         'Sequence-derived mass excludes glycosylation and other post-translational modification.',
@@ -156,6 +195,7 @@ export function raiseFlags(input: FlagInput): Flag[] {
   if (input.provenance === 'not-recorded') {
     flags.push({
       code: 'C1-FL-05',
+      kind: 'declaration',
       evaluatedOn: 'provenance declaration',
       message:
         'Molecular weight provenance not recorded; the result cannot be traced to a source and should not be carried into a method record without one.',
@@ -173,6 +213,7 @@ export function raiseFlags(input: FlagInput): Flag[] {
   if (input.massBasis === 'monomer') {
     flags.push({
       code: 'C1-FL-06',
+      kind: 'declaration',
       evaluatedOn: 'mass-basis declaration',
       message: 'Molar concentration computed is of monomer, not of assembled molecule.',
     })
@@ -182,6 +223,7 @@ export function raiseFlags(input: FlagInput): Flag[] {
   if (input.massBasis === 'not-recorded') {
     flags.push({
       code: 'C1-FL-07',
+      kind: 'declaration',
       evaluatedOn: 'mass-basis declaration',
       message:
         'Mass basis not recorded; whether this concentration refers to the assembled molecule, a monomer, or a conjugate cannot be determined from the record.',
@@ -192,6 +234,7 @@ export function raiseFlags(input: FlagInput): Flag[] {
   if (input.massBasis === 'conjugate') {
     flags.push({
       code: 'C1-FL-08',
+      kind: 'declaration',
       evaluatedOn: 'mass-basis declaration',
       message:
         'Molecular weight includes label or payload; the molar concentration computed is of the conjugate, not of the underlying protein. The tool does not correct for drug-to-antibody ratio or degree of labelling.',

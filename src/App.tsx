@@ -356,6 +356,14 @@ export function App() {
                 )}
 
                 <div className="statements">
+                  {/*
+                    Said where the confusion happens rather than in a footnote: a
+                    result one ULP below a threshold is flagged and displays
+                    identically to one exactly on it.
+                  */}
+                  {result.flags.some((f) => f.kind === 'threshold') && (
+                    <p>{result.statements.thresholdEvaluation}</p>
+                  )}
                   <p>{result.statements.precision}</p>
                   <p>{result.statements.moleculesNotSites}</p>
                   <p><strong>{result.statements.scope}</strong></p>

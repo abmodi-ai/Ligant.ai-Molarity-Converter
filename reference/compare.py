@@ -7,7 +7,8 @@ and reports disagreement. Nothing here imports from src/.
 
 TWO CHECKS, DELIBERATELY SEPARATE.
 
-  1. THE CORRECTNESS GATE compares the UNROUNDED values. C1-UN-07 makes the
+  1. THE CORRECTNESS GATE compares the UNROUNDED values, to within 1 ULP.
+     C1-UN-07 makes the
      unrounded value "the value against which an independent reimplementation is
      compared", and correctness must not depend on a formatting choice. As URS
      v0.5 was written this was ambiguous: C1-UN-07 says unrounded, acceptance
@@ -34,6 +35,25 @@ from decimal import Decimal
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from molarity import compute, DISPLAY_SIG_FIGS  # noqa: E402
+
+# The REQUIREMENT, not the observation.
+#
+# Bit-identical is what this pair measures, and making that the requirement
+# would generalise one measured instance into a claim about every future
+# reimplementation. A language with wider intermediates, or one that contracts a
+# multiply-add, can differ in the last bit on the same two operations, and a
+# bit-exact gate would then fail on correct code - the same shape as the
+# bit-exact round trip (URS section 6) and the strict '<' on the ULP tolerance.
+# Third instance of that pattern in this project.
+#
+# The observed figure is reported beside it, so drift from exact agreement is
+# visible rather than absorbed by the tolerance.
+#
+# One consequence, stated rather than left implicit: a defect uniformly smaller
+# than 1 ULP is invisible to this test AND to the round-trip test, because the
+# round trip cancels a uniform scaling and this comparison admits it. The
+# observed 0 ULP makes that weak here; it is not nothing.
+TOLERANCE_ULP = 1
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 
@@ -95,17 +115,17 @@ for case in cases:
             reject_failures.append((src, want["rejections"], got["rejections"]))
         continue
 
-    # --- 1. the correctness gate: unrounded values ---
+    # --- 1. the correctness gate: unrounded values, to within 1 ULP ---
     for key in ("massValue", "molarValue"):
         compared_values += 1
         a, b = want[key], got[key]
+        u = ulps_between(a, b)
         if a == b:
             identical += 1
-        else:
-            u = ulps_between(a, b)
+        if u > TOLERANCE_ULP:
             value_failures.append((src, key, a, b, u))
-            if u > worst_ulps:
-                worst_ulps, worst_case = u, (src, key, a, b)
+        if u > worst_ulps:
+            worst_ulps, worst_case = u, (src, key, a, b)
         if is_exact_tie(a):
             ties.append((src, key, a))
 
@@ -121,10 +141,10 @@ print("Acceptance test 3 — independent reimplementation (Python) vs shipped (T
 print(f"  engine under test : {data['engineVersion']}")
 print(f"  cases compared    : {len(cases)}  ({compared_values} unrounded values)")
 print()
-print("  CORRECTNESS GATE — unrounded values (C1-UN-07)")
-print(f"    bit-identical                      : {identical}/{compared_values}")
-print(f"    disagreeing                        : {len(value_failures)}")
-print(f"    worst ULP distance                 : {worst_ulps:g}")
+print(f"  CORRECTNESS GATE — unrounded values, <= {TOLERANCE_ULP} ULP (C1-UN-07)")
+print(f"    exceeding {TOLERANCE_ULP} ULP                        : {len(value_failures)}")
+print(f"    worst ULP distance observed          : {worst_ulps:g}")
+print(f"    bit-identical (recorded, not required): {identical}/{compared_values}")
 if worst_case:
     src, key, a, b = worst_case
     print(f"        at {src} {key}: {a!r} vs {b!r}")
@@ -142,7 +162,7 @@ print(f"  flag-set disagreements               : {len(flag_failures)}")
 print(f"  rejection disagreements              : {len(reject_failures)}")
 
 for src, key, a, b, u in value_failures[:20]:
-    print(f"  VALUE   {src} {key}: shipped {a!r}, reimplementation {b!r} ({u:g} ULP)")
+    print(f"  VALUE   {src} {key}: shipped {a!r}, reimplementation {b!r} ({u:g} ULP, over {TOLERANCE_ULP})")
 for src, quantity, want_s, got_s in display_failures[:20]:
     print(f"  DISPLAY {src} {quantity}: shipped {want_s!r}, reimplementation {got_s!r}")
 for src, want_f, got_f in flag_failures[:20]:

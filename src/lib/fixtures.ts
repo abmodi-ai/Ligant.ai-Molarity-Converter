@@ -372,8 +372,9 @@ export const CONCENTRATION_BOUNDARY_FIXTURES: readonly Fixture[] = [
   {
     id: 'C1-FX-04n',
     name: 'Molar concentration just below 1 pM, computed',
-    assumption: 'As 04m with the entered mass concentration stepped down by one double, giving a computed molar concentration one ULP below 1 pM — the smallest possible violation, and the one a tolerance-based comparison would miss.',
-    standard: 'The operators as written in §8, in the computed direction',
+    assumption:
+      'As 04m with the entered mass concentration stepped down by one double, giving a computed molar concentration one ULP below 1 pM — the smallest possible violation, and the one a tolerance-based comparison would miss. It also displays as 1.00000 pM, exactly as 04m does, because the difference is far below the sixth significant figure. That pair is the point: 04m raises nothing and 04n raises C1-FL-03, and the two are indistinguishable on screen. Both fixtures therefore assert the rendering as well as the flag, so the collision is recorded as correct behaviour rather than looking like a defect to whoever reads this suite next.',
+    standard: 'The operators as written in §8, in the computed direction; rendering per C1-UN-06',
     request: {
       direction: 'mass-to-molar',
       enteredValue: nextDown(MASS_FOR_EXACTLY_1PM),
@@ -381,7 +382,7 @@ export const CONCENTRATION_BOUNDARY_FIXTURES: readonly Fixture[] = [
       ...CLEAN,
       units: { mass: 'g/L', molar: 'pM', mw: 'g/mol' },
     },
-    expect: { flags: ['C1-FL-03'] },
+    expect: { displayedMolar: '1.00000', flags: ['C1-FL-03'] },
   },
 ]
 

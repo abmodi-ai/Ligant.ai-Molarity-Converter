@@ -17,7 +17,13 @@
 
 import { ENGINE_VERSION, convert, effectiveMw, relationApplied, type ConversionUnits, type Direction } from './convert'
 import { DISPLAY_SIG_FIGS, PRECISION_STATEMENT, formatSigFigs } from './format'
-import { MOLECULES_NOT_SITES_STATEMENT, SCOPE_STATEMENT, raiseFlags, type Flag } from './flags'
+import {
+  MOLECULES_NOT_SITES_STATEMENT,
+  SCOPE_STATEMENT,
+  THRESHOLD_EVALUATION_STATEMENT,
+  raiseFlags,
+  type Flag,
+} from './flags'
 import { checkConcentration, checkMolecularWeight, type Rejection } from './validate'
 import {
   MASS_BASIS_LABEL,
@@ -64,7 +70,13 @@ export interface ConversionResult {
   relation: string
   effectiveMw: number
   assumptions: readonly string[]
-  statements: { precision: string; scope: string; moleculesNotSites: string }
+  statements: {
+    precision: string
+    scope: string
+    moleculesNotSites: string
+    /** Shown wherever a threshold flag is. See THRESHOLD_EVALUATION_STATEMENT. */
+    thresholdEvaluation: string
+  }
 }
 
 export interface ConversionRejected {
@@ -134,6 +146,7 @@ export function computeConversion(request: ConversionRequest): ConversionOutcome
       precision: PRECISION_STATEMENT,
       scope: SCOPE_STATEMENT,
       moleculesNotSites: MOLECULES_NOT_SITES_STATEMENT,
+      thresholdEvaluation: THRESHOLD_EVALUATION_STATEMENT,
     },
   }
 }

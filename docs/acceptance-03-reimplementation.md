@@ -13,7 +13,7 @@ see **What the test compares** below. This build implements the corrected readin
 |---|---|
 | Second implementation | `reference/molarity.py` — Python 3, no dependencies |
 | Cases compared | **20,029** (40,058 unrounded values) |
-| **Correctness gate** — unrounded values (C1-UN-07) | **40,058 / 40,058 bit-identical**, worst 0 ULP |
+| **Correctness gate** — unrounded values, ≤ 1 ULP (C1-UN-07) | **0** exceeding; worst observed **0 ULP**; 40,058 / 40,058 bit-identical |
 | **Display check** — 6 s.f. half-to-even (C1-UN-06) | **0** disagreeing renderings |
 | Exact ties exercised | **1** (C1-FX-10) |
 | Flag-set disagreements | **0** |
@@ -38,11 +38,20 @@ half-to-even rounding mode is verified across two implementations, but it is not
 correctness result. The v0.6 edit is A. Modi's; this is the corrected reading implemented
 ahead of it.
 
-The gate is set at bit-identical because that is what two implementations of the same two
-IEEE 754 operations produce, and it is what is observed across 40,058 values. A future
-reimplementation in a language with wider intermediates could legitimately differ by a ULP;
-that would be a tolerance for the URS to state, not for the comparison script to decide
-quietly.
+**The gate is ≤ 1 ULP; bit-identical is recorded, not required.** Bit-identical is what this
+pair measures, and making the observation the requirement would generalise one measured
+instance into a claim about every future reimplementation: a language with wider intermediates
+or FMA contraction can differ in the last bit on the same two operations, and a bit-exact gate
+would then fail on correct code — the same shape as the bit-exact round trip (§6) and the
+strict `<` on the ULP tolerance. Third instance of that pattern; see `correspondence.md`.
+
+The observed figure is reported beside the requirement, and carried in §11, so drift from
+exact agreement is visible rather than absorbed by the tolerance.
+
+**One consequence, stated rather than left implicit:** a defect uniformly smaller than 1 ULP
+is invisible to this test *and* to acceptance test 5, because the round trip cancels a uniform
+scaling and this comparison admits it. The observed 0 ULP makes that weak here. It is not
+nothing.
 
 ## How independence was kept
 
@@ -87,20 +96,38 @@ recorded at the top of `molarity.py`:
 Twenty-one fixtures alone would not have established agreement. The disagreement this test
 actually found was in that last group.
 
-## What it found
-
-One genuine defect, in the reimplementation rather than in the shipped tool:
+## What it found — a specification gap, not a Python bug
 
 **`C1-FX-04n`** sits one ULP below 1 pM, so its molar value is `0.9999999999999999`. Rounding
 that to six significant figures carries across a decade boundary — the result is `1.00000`,
-not `1.000000` — and the first version of the Python formatter quantized against the
-exponent of the *input* rather than of the rounded value, producing seven digits. It was the
-only case in 20,028 that crosses a decade while rounding.
+not `1.000000` — and the first version of the Python formatter quantized against the exponent
+of the *input* rather than of the *rounded value*, producing seven digits. It was the only
+case in 40,058 that crosses a decade while rounding.
 
-Worth recording for two reasons. It is the kind of defect code review does not find, which is
-what the acceptance criterion says in terms. And the fixture that caught it is a boundary
-case constructed by stepping one double below a threshold — a fixture written to test a
-comparison operator in §8, which caught a formatting bug in §4 instead.
+**The framing matters, and the framing is not "the Python was wrong".** The shipped
+implementation was right. The second implementation was written from the URS, and the URS
+does not say that significant-figure placement is determined by the rounded value rather than
+the input's exponent. An author following the specification exactly could write either, and
+one of the two is wrong.
+
+So this is evidence that **C1-UN-06 is ambiguous**, which is a different and more useful claim
+than a defect in the code. A defect in a reimplementation written from the specification is a
+measurement of the specification.
+
+That makes it the **second** convention "6 significant figures" turned out not to fix, after
+half-to-even:
+
+| Convention | Stated in v0.5? | Consequence if unstated |
+|---|---|---|
+| Tie-breaking rule | No — now half-to-even | Two implementations disagree on exact ties |
+| Significant-figure placement after a carry | No | Seven digits where six were asked for |
+
+C1-UN-06 needs both clauses. That edit is A. Modi's, for v0.6.
+
+This is also the kind of defect code review does not find, which is what the acceptance
+criterion says in terms. And the fixture that caught it is a boundary case constructed by
+stepping one double below a threshold — **a fixture written to test a comparison operator in
+§8 caught a formatting ambiguity in §4.**
 
 ## The reference set must contain a tie, and the comparison fails if it does not
 

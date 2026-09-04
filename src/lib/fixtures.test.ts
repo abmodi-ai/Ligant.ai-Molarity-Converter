@@ -172,3 +172,43 @@ describe('C1-FX-04 — boundaries in both conversion directions', () => {
     }
   })
 })
+
+describe('C1-FX-04m / C1-FX-04n — a flagged and an unflagged result that display identically', () => {
+  // Recorded as correct, deliberately, because it reads as a bug.
+  //
+  // §8 evaluates its conditions on the computed system, which is the unrounded
+  // value. C1-UN-06 renders six significant figures. A molar concentration one
+  // ULP below 1 pM satisfies "< 1 pM" and rounds to 1.00000; one exactly at
+  // 1 pM does not satisfy it and also rounds to 1.00000. Neither requirement is
+  // wrong and the pair is not a contradiction — but nothing in the suite said
+  // so, and the next person to read it would reasonably file a defect.
+  const on = CONCENTRATION_BOUNDARY_FIXTURES.find((f) => f.id === 'C1-FX-04m')!
+  const below = CONCENTRATION_BOUNDARY_FIXTURES.find((f) => f.id === 'C1-FX-04n')!
+
+  it('render identically', () => {
+    expect(run(on).displayed.molar).toBe('1.00000')
+    expect(run(below).displayed.molar).toBe('1.00000')
+  })
+
+  it('but differ in the unrounded value and therefore in the flag', () => {
+    expect(run(on).molarValue).toBe(1)
+    expect(run(below).molarValue).toBeLessThan(1)
+    expect(run(on).flags.map((f) => f.code)).toEqual([])
+    expect(run(below).flags.map((f) => f.code)).toEqual(['C1-FL-03'])
+  })
+
+  it('and the output says so wherever a threshold flag appears', () => {
+    const r = run(below)
+    expect(r.flags.some((f) => f.kind === 'threshold')).toBe(true)
+    expect(r.statements.thresholdEvaluation).toMatch(/unrounded value/i)
+    expect(r.statements.thresholdEvaluation).toMatch(/display identically/i)
+  })
+
+  it('declaration flags carry no such caveat, and are marked as a different kind', () => {
+    // C1-FL-05 through C1-FL-08 read a declaration the user selected; there is
+    // no rounding between the input and the condition, so the statement above
+    // would be noise on them.
+    const declarationOnly = run(FIXTURES.find((f) => f.id === 'C1-FX-05')!)
+    expect(declarationOnly.flags.every((f) => f.kind === 'declaration')).toBe(true)
+  })
+})

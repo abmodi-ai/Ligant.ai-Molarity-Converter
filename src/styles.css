@@ -176,17 +176,17 @@ input.bad { border-color: var(--reject); background: var(--reject-ground); }
   word-break: break-all;
 }
 .result-value .unit { font-size: 17px; color: var(--ink-soft); margin-left: 4px; }
-.result-from { font-size: 13px; color: var(--ink-soft); margin: 2px 0 10px; font-family: var(--mono); }
+.result-from { font-size: 13px; color: var(--ink-soft); margin: 2px 0 8px; font-family: var(--mono); }
 
 dl.derivation { margin: 0; font-size: 13px; }
-dl.derivation div { display: grid; grid-template-columns: 108px 1fr; gap: 8px; padding: 2px 0; border-top: 1px solid #efece5; line-height: 1.4; }
+dl.derivation div { display: grid; grid-template-columns: 108px 1fr; gap: 8px; padding: 1px 0; border-top: 1px solid #efece5; line-height: 1.38; }
 dl.derivation dt { color: var(--ink-soft); }
 dl.derivation dd { margin: 0; }
 
 .flag, .rejection {
   border-radius: 4px;
   padding: 6px 9px;
-  margin-top: 6px;
+  margin-top: 5px;
   font-size: 12.5px;
   line-height: 1.4;
 }
@@ -209,11 +209,11 @@ dl.derivation dd { margin: 0; }
   border-radius: 4px;
 }
 
-.statements { font-size: 11.5px; color: var(--ink-soft); margin-top: 9px; line-height: 1.4; }
-.statements p { margin: 4px 0; }
+.statements { font-size: 11.5px; color: var(--ink-soft); margin-top: 8px; line-height: 1.35; }
+.statements p { margin: 3px 0; }
 
 button.copy {
-  margin-top: 9px;
+  margin-top: 8px;
   padding: 7px 12px;
   border: 1px solid #b9b2a5;
   border-radius: 4px;
