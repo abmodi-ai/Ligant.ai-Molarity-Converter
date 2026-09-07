@@ -34,10 +34,14 @@ Two further findings came out of the same work:
   values. It found a **specification gap, not a code defect**: C1-UN-06 does not say that
   significant-figure placement is fixed by the rounded value rather than the input's
   exponent, and an author following it exactly could write either.
-- [`docs/correspondence.md`](docs/correspondence.md) — instances from this build where a
-  check stood in for the property it was meant to establish, or a comparison was tightened
-  past what correct code satisfies. Three of each so far. Includes the fixture-distribution
-  pattern that is transferable to C3.
+- [`docs/correspondence.md`](docs/correspondence.md) — instances where a check stood in for
+  the property it was meant to establish, or a comparison was tightened past what correct
+  code satisfies. **Seven in the first family, three in the second.** Instances 1–4 were
+  found by accident; 5–7 by a clause-by-clause audit against the URS, and are marked as such
+  because a schedulable method is weaker evidence than a stumble. Includes three patterns
+  transferable to C3: make the fixture-distribution rule executable, assert coverage per
+  instance rather than per set, and give interface-only requirements a check that drives the
+  interface.
 
 ## Status
 

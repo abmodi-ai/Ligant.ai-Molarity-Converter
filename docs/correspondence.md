@@ -2,8 +2,13 @@
 
 Cases where a check stood in for the property it was supposed to establish, or where a
 comparison was tightened past what correct code can satisfy. Kept because the manuscript's
-argument is about exactly this, and because each instance was found by accident rather than
-by looking — which is itself the point.
+argument is about exactly this, and because instances 1 to 4 were found by accident rather
+than by looking — which is itself the point.
+
+Instances 5 to 7 are the exception and are marked as such: they were found by a clause-by-clause
+audit against the URS, which is a schedulable method and a weaker kind of evidence. Both
+provenances belong in the file. If every instance had to be stumbled over, the argument would
+be that nothing can be done.
 
 Two families. The first is the manuscript's thesis directly. The second is its mirror.
 
@@ -74,6 +79,73 @@ Ties are unit-dependent (§III), so they cannot be excluded from the input space
 from the fixtures, which is strictly worse than not checking.
 
 **The guard is now inverted**, and that inversion is the transferable part: see §IV.
+
+### 5. A count over the set as a proxy for coverage of each threshold
+
+**Tool: C1, this build.** §10's C1-FX-04 requires cases either side of, and exactly on, **every**
+§8 threshold, **in both conversion directions**. The guard written to enforce it asserted that
+the boundary set had at least twelve fixtures, and that at least one fixture ran in each
+direction — **across the whole set**.
+
+Both are properties of the set. Neither is the property required, which is per threshold. The
+guard passed while both molecular-weight bounds ran in `mass-to-molar` only, and the helper
+that built them claimed both directions in its own docstring.
+
+Rewritten to assert every threshold × side × direction by name, the guard immediately found two
+more gaps it had been hiding: no below-the-bound case for the mass threshold and no
+above-the-bound case for the molar one, in either direction. Twelve boundary fixtures became
+twenty-four.
+
+**No wrong answer was ever possible** — C1-FL-01 reads the declared weight and no direction
+enters the comparison — which is what makes this the cleanest instance in the file. Nothing was
+broken. The check was simply not about the thing, and a count is the easiest proxy in the world
+to write, because it is true.
+
+### 6. A control that exists as a proxy for a choice that was made
+
+**Tool: C1, this build.** C1-MW-03 and C1-UN-01 require every unit to be "explicitly selected".
+The build put a `<select>` beside each numeric field, pre-filled with the common answer. The
+requirement's text was met by the control being present; what it was written to compel — the
+user having *decided* — was not.
+
+The provenance and mass-basis fields in the same form were compelled properly, with a disabled
+`— select —` and no computation until answered. So the build knew how to compel a choice and
+did not, on the two fields where the wording was slightly weaker.
+
+What it costs is not hypothetical:
+
+```
+125 entered as mg/mL (meant µg/mL), MW 150 kDa  →  833.333 µM   flags: []
+125 µg/mL as intended,              MW 150 kDa  →  0.833333 µM  flags: []
+```
+
+1000× wrong, both quantities inside every §8 bound, nothing raised. It is §9's failure class 4
+arising from a tool default rather than from the user. **A default that is usually right is
+worse than one that is usually wrong, because it stops being read.**
+
+Worth separating from the molecular-weight unit, which is mostly self-catching: a g/mol figure
+left on kDa is enormous and C1-FL-01 fires. The two look like one finding and are not.
+
+### 7. Displayed as a proxy for checkable
+
+**Tool: C1, this build.** C1-CV-03 requires the relation applied to be displayed with the
+result. It exists so that a reader can check the arithmetic. The build displayed
+
+```
+molar concentration = mass concentration ÷ molecular weight  (mg/mL ÷ effective kDa → µM)
+```
+
+"Effective kDa" is not a unit. It was a name for the folded divisor, and a reader cannot
+evaluate it — so the requirement was satisfied in form and defeated in exactly the respect it
+was written for. The relation is now named quantities only, with the unit handling as its own
+statement and the divisor given in `mg/mL per µM`, which is a ratio of two standard units and
+can be checked against.
+
+**A note on provenance for 5, 6 and 7.** Instances 1 to 4 were found by accident, which the
+preamble records as the point. These three were found by **looking** — a clause-by-clause
+audit of the built tool against the URS. That is a weaker kind of discovery and it should be
+labelled as such: an audit finds what its author thinks to check, and instance 5 is a guard
+that an audit had already passed. It is also the only kind that can be scheduled.
 
 ---
 
@@ -172,3 +244,36 @@ distribution" into a claim a machine re-establishes on every run.
 
 The general form: for each property the fixture set is supposed to have, ask what a set that
 *lacked* it would look like, and write the test that fails on that set.
+
+**Assert the property per instance, not per set.**
+
+§I.5 is the same failure one level up: the guard on the fixtures was itself a set-level count.
+`covered.length >= 12` and "at least one fixture of each direction" are both true of a set that
+covers one threshold twelve times and another not at all.
+
+The rewrite carries the coverage claim in the data — each boundary fixture declares which
+threshold it is about and which side it sits on — so the guard can enumerate
+threshold × side × direction and name the combinations that are missing. It found two gaps on
+the first run. **A guard that reports a count can only ever say "fewer than expected"; a guard
+that enumerates says which one.**
+
+Transferable test: if a guard's failure message could not tell you *which* case to go and write,
+it is measuring the wrong thing.
+
+**A requirement that lives only in the interface needs a check that drives the interface.**
+
+C1-ST-03 shipped defective through a conformance audit with 96 passing tests, because not one of
+them rendered the component and the only browser check never changed conversion direction. The
+requirement had no execution behind it at all — not a weak check, no check.
+
+This is worth separating from the rest of the file. Instances 1 to 7 are checks that were not
+about the thing. This is a requirement with nothing pointed at it, which is harder to see
+precisely because there is no bad check to inspect: coverage tools report on lines executed, not
+on requirements established. C1's answer is C1-VE-01 in URS v0.6, and a second browser check
+whose only job is the form's own requirements.
+
+The pair matters more than either half. `retention.test.ts` tests the rules with no DOM — that
+is where the defect actually was, and it would have caught the original. `check-ui.mjs` tests
+that the component asks those rules the right question and renders the answer, which a pure test
+cannot. Both were confirmed capable of failing by reinstating the defect and watching each go
+red.
