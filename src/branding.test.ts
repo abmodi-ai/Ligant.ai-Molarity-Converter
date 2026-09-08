@@ -6,8 +6,8 @@ import { readFileSync } from 'node:fs'
  *
  * C1 passed a conformance audit at 46 of 53 requirements while sharing no
  * design token with the shipped tool. It got there one plausible hex value at a
- * time — a slightly different off-white, a slightly different rule colour, a
- * navy where the accent should have been — and none of them was a mistake on
+ * time: a slightly different off-white, a slightly different rule colour, a
+ * navy where the accent should have been, and none of them was a mistake on
  * its own.
  *
  * So the guard is on the source, not on the rendered page. `check-ui.mjs`
@@ -29,7 +29,7 @@ describe('the shared token set is the only source of colour', () => {
     const css = stripCssComments(STYLES)
     const hexes = css.match(/#[0-9a-fA-F]{3,8}\b/g) ?? []
     const functional = css.match(/\b(rgb|rgba|hsl|hsla|color|oklch|lab)\s*\(/g) ?? []
-    expect(hexes, `styles.css introduces ${hexes.join(', ')} — use a token from tokens.css`).toEqual([])
+    expect(hexes, `styles.css introduces ${hexes.join(', ')}: use a token from tokens.css`).toEqual([])
     expect(functional, 'styles.css builds a colour rather than consuming one').toEqual([])
   })
 
@@ -42,8 +42,8 @@ describe('the shared token set is the only source of colour', () => {
   })
 
   it('every token C1 defines resolves to a shared one', () => {
-    // C1's semantic layer may name things the suite has no word for —
-    // `--retained`, `--flag`, `--reject` — but each has to be defined in terms
+    // C1's semantic layer may name things the suite has no word for,
+    // `--retained`, `--flag`, `--reject`; but each has to be defined in terms
     // of a brand token rather than as a new value.
     const root = stripCssComments(STYLES).match(/:root\s*\{([\s\S]*?)\}/)
     expect(root, 'styles.css has no :root block').not.toBeNull()

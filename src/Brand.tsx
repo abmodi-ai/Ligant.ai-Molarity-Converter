@@ -1,5 +1,5 @@
 /**
- * Ligant Bench Tools — shared chrome: the mark, the masthead, the footer.
+ * Ligant Bench Tools: shared chrome: the mark, the masthead, the footer.
  *
  * SHARED, NOT C1's, on the same terms as `tokens.css`: this should be one
  * component in a package that both tools depend on, and it sits in C1's tree
@@ -18,7 +18,7 @@ import type { ReactNode } from 'react'
  *
  * Geometry is the reference's, to three decimal places. The fills are brand
  * tokens rather than literals so the mark cannot drift from the palette, and
- * `stroke-width` scales with the rendered size the way the reference's does —
+ * `stroke-width` scales with the rendered size the way the reference's does,
  * 1.7 in the masthead at 28px, 2 in the favicon at 32px.
  *
  * NOT LETTERED AND NOT RECOLOURED PER TOOL. A per-tool mark fragments the
@@ -62,7 +62,7 @@ export function LigantMark({ size = 28, strokeWidth = 1.7 }: { size?: number; st
 /**
  * The masthead: lockup and tool name at left, suite label at right.
  *
- * `meta` is C1's addition — the tool id and the URS version it was built
+ * `meta` is C1's addition: the tool id and the URS version it was built
  * against. The reference has no equivalent, so it is set as caption text under
  * the suite label rather than placed on the H1 line, which is the reference's
  * and is left alone.
@@ -94,7 +94,7 @@ export function SiteHeader({ tool, description, meta }: { tool: string; descript
  *
  * The reference footer states "no data is transmitted" unconditionally. That is
  * an environment claim about the SERVED page, and the only thing that can
- * establish it is a real browser against the deployed address — C1's acceptance
+ * establish it is a real browser against the deployed address, C1's acceptance
  * test 14. A shared footer that hard-codes the strong sentence is a mechanism
  * for reintroducing exactly the failure that test exists to catch: the beacon
  * incident was a host inserting a request into a response that every
@@ -107,7 +107,7 @@ export function SiteHeader({ tool, description, meta }: { tool: string; descript
  *
  * C1 does not opt out of the shared footer; the shared footer stopped being
  * able to make an unearned claim. The reference tool should adopt this
- * component and supply its own evidence state — its footer is currently
+ * component and supply its own evidence state, its footer is currently
  * ungated, which is the same finding pointing the other way.
  */
 export type TransmissionEvidence =
@@ -122,7 +122,7 @@ export function SiteFooter({
   children,
 }: {
   repoUrl: string
-  /** Required. There is deliberately no default — see TransmissionEvidence. */
+  /** Required. There is deliberately no default, see TransmissionEvidence. */
   transmission: TransmissionEvidence
   /** Tool-specific lines, after the shared three. */
   children?: ReactNode
@@ -137,7 +137,7 @@ export function SiteFooter({
           <>No data is transmitted, verified in a real browser at this address.</>
         ) : (
           <>
-            This build contains no network primitive and issues no request — verified statically and
+            This build contains no network primitive and issues no request, verified statically and
             in a real browser against the build. <strong>Not yet verified at this address:</strong>{' '}
             {transmission.outstanding}
           </>

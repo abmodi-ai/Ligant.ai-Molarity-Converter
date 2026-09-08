@@ -19,7 +19,7 @@ function ok(r: ConversionRequest) {
   return o
 }
 
-describe('Acceptance 1 — the reference case', () => {
+describe('Acceptance 1: the reference case', () => {
   it('IgG at 150 kDa, 1 mg/mL returns 6.66667 µM at six significant figures', () => {
     expect(ok(BASE).displayed.molar).toBe('6.66667')
   })
@@ -33,7 +33,7 @@ describe('Acceptance 1 — the reference case', () => {
   })
 })
 
-describe('Acceptance 6 / C1-IV-03 — g/mol and kDa agree to displayed precision', () => {
+describe('Acceptance 6 / C1-IV-03, g/mol and kDa agree to displayed precision', () => {
   it('over a sweep of realistic weights and concentrations', () => {
     let checked = 0
     for (let mw = 10_000; mw <= 500_000; mw += 617) {
@@ -49,7 +49,7 @@ describe('Acceptance 6 / C1-IV-03 — g/mol and kDa agree to displayed precision
   })
 })
 
-describe('Acceptance 8 / §7 — rejection names the quantity and the physical reason', () => {
+describe('Acceptance 8 / §7, rejection names the quantity and the physical reason', () => {
   const cases: { name: string; request: ConversionRequest; mustName: RegExp[] }[] = [
     {
       name: 'C1-HI-01, MW zero',
@@ -106,7 +106,7 @@ describe('Acceptance 8 / §7 — rejection names the quantity and the physical r
   })
 })
 
-describe('Acceptance 9 / §8 — flags compute a result and carry a reason code', () => {
+describe('Acceptance 9 / §8, flags compute a result and carry a reason code', () => {
   it('every flag raised has a machine-readable code and a message', () => {
     const flagged = ok({ ...BASE, provenance: 'not-recorded', massBasis: 'not-recorded', mwValue: 0.5 })
     expect(flagged.flags.length).toBeGreaterThan(0)
@@ -124,7 +124,7 @@ describe('Acceptance 9 / §8 — flags compute a result and carry a reason code'
   })
 })
 
-describe('Acceptance 13 — every mass-basis value behaves as specified', () => {
+describe('Acceptance 13: every mass-basis value behaves as specified', () => {
   const expected: Record<MassBasis, string[]> = {
     assembled: [],
     monomer: ['C1-FL-06'],
@@ -150,7 +150,7 @@ describe('Acceptance 13 — every mass-basis value behaves as specified', () => 
   })
 })
 
-describe('Acceptance 12 — "not recorded" provenance', () => {
+describe('Acceptance 12: "not recorded" provenance', () => {
   it('is accepted, appears on the output, and raises C1-FL-05', () => {
     const r = ok({ ...BASE, provenance: 'not-recorded' })
     expect(r.flags.map((f) => f.code)).toContain('C1-FL-05')
@@ -185,7 +185,7 @@ describe('Acceptance 12 — "not recorded" provenance', () => {
   })
 })
 
-describe('Acceptance 15 / C1-ST-04 — determinism', () => {
+describe('Acceptance 15 / C1-ST-04, determinism', () => {
   it('the same inputs always produce the same outputs', () => {
     const request: ConversionRequest = { ...BASE, enteredValue: 2.4, mwValue: 148327, units: { mass: 'mg/mL', molar: 'uM', mw: 'g/mol' } }
     const first = ok(request)
@@ -205,7 +205,7 @@ describe('Acceptance 15 / C1-ST-04 — determinism', () => {
   })
 })
 
-describe('Acceptance 17 and 18 — disclosure', () => {
+describe('Acceptance 17 and 18, disclosure', () => {
   it('every threshold is listed with its value and basis, and inspection-chosen ones say so', () => {
     // Named rather than only counted, so that adding a row is a deliberate act
     // and removing one is caught. §11 exists so that no behaviour-determining
@@ -228,7 +228,7 @@ describe('Acceptance 17 and 18 — disclosure', () => {
     }
     // The distinction the register exists to draw: what was measured or follows
     // from a standard, against what was chosen by looking at it. Three rows are
-    // derived — the round-trip tolerance, the reimplementation tolerance, and
+    // derived: the round-trip tolerance, the reimplementation tolerance, and
     // the rounding mode. The last two are not thresholds at which the tool
     // changes behaviour, but they are behaviour-determining, and the register
     // exists so that no behaviour-determining choice is silent.
@@ -251,7 +251,7 @@ describe('Acceptance 17 and 18 — disclosure', () => {
   })
 })
 
-describe('C1-OUT — the output carries what §13 requires', () => {
+describe('C1-OUT: the output carries what §13 requires', () => {
   it('the relation, the assumptions, the input echo, and the engine version', () => {
     const r = ok(BASE)
     expect(r.relation).toMatch(/molar concentration = mass concentration/)
@@ -262,7 +262,7 @@ describe('C1-OUT — the output carries what §13 requires', () => {
     expect(r.statements.moleculesNotSites).toMatch(/paratope/)
   })
 
-  it('C1-OUT-02 — the weight, its source and its mass basis are in the derivation', () => {
+  it('C1-OUT-02: the weight, its source and its mass basis are in the derivation', () => {
     const r = ok({ ...BASE, provenance: 'mass-spectrometry', massBasis: 'conjugate' })
     const derivation = r.assumptions.join(' ')
     expect(derivation).toMatch(/150 kDa/)
@@ -270,7 +270,7 @@ describe('C1-OUT — the output carries what §13 requires', () => {
     expect(derivation).toMatch(/conjugate/)
   })
 
-  it('C1-ST-01 — a notebook line cannot be produced stripped of its flags', () => {
+  it('C1-ST-01: a notebook line cannot be produced stripped of its flags', () => {
     const r = ok({ ...BASE, massBasis: 'conjugate', provenance: 'not-recorded' })
     const line = notebookLine(r)
     for (const f of r.flags) expect(line).toContain(f.code)

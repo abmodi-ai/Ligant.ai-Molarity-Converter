@@ -1,7 +1,7 @@
 /**
  * The form's own requirements, in a real browser.
  *
- * WHY THIS EXISTS. C1-ST-03 shipped defective — one retention flag for three
+ * WHY THIS EXISTS. C1-ST-03 shipped defective, one retention flag for three
  * fields, so confirming the molecular weight silently unmarked the source and
  * the mass basis while both were still carrying pre-switch values. Nothing
  * caught it, and the reason is exact: no test rendered `App.tsx`, and
@@ -9,8 +9,8 @@
  * that live only in the component had no execution behind them at all.
  *
  * `src/lib/retention.test.ts` tests the rules without a DOM, which is where the
- * defect actually was. This checks the WIRING — that the component asks the
- * rules the right question and renders the answer — which a pure test cannot.
+ * defect actually was. This checks the WIRING: that the component asks the
+ * rules the right question and renders the answer, which a pure test cannot.
  * Both are needed: the first would have caught the original, the second catches
  * the next one.
  *
@@ -54,12 +54,12 @@ await context.grantPermissions(['clipboard-read', 'clipboard-write'])
 const page = await context.newPage()
 await page.setViewportSize({ width: 1440, height: 900 })
 
-/** Which field labels currently carry a "retained — confirm" badge. */
+/** Which field labels currently carry a "retained, confirm" badge. */
 const badgedFields = () =>
   page.evaluate(() =>
     [...document.querySelectorAll('.retained')].map((el) => {
       const owner = el.closest('label, legend')
-      return owner ? owner.textContent.replace('Retained — not re-confirmed', '').trim() : '(orphan badge)'
+      return owner ? owner.textContent.replace('Retained: not re-confirmed', '').trim() : '(orphan badge)'
     }),
   )
 
@@ -76,7 +76,7 @@ async function fillEverything() {
 }
 
 // ---------------------------------------------------------------------------
-// C1-UN-01 and C1-MW-03 — the two input units are chosen, not supplied.
+// C1-UN-01 and C1-MW-03: the two input units are chosen, not supplied.
 // ---------------------------------------------------------------------------
 
 await page.goto(origin, { waitUntil: 'networkidle' })
@@ -100,7 +100,7 @@ await page.check('input[name="massBasis"][value="assembled"]')
 await page.waitForTimeout(200)
 check(
   (await page.locator('.result-value').count()) === 0,
-  'a conversion completed without the input units being chosen — C1-UN-01 is not compelled',
+  'a conversion completed without the input units being chosen, C1-UN-01 is not compelled',
 )
 
 await page.selectOption('#enteredunit', 'mg/mL')
@@ -112,7 +112,7 @@ check(
 )
 
 // ---------------------------------------------------------------------------
-// C1-ST-03 — the three-step sequence from the conformance audit.
+// C1-ST-03: the three-step sequence from the conformance audit.
 //
 // This is the defect, as a script. Under the single boolean, step 3 reported
 // zero badges while the source and the mass basis were still carrying their
@@ -124,7 +124,7 @@ await fillEverything()
 
 check((await badgedFields()).length === 0, 'a badge appeared before any direction change')
 
-// Step 2 — switch direction. All three declarations are carried, so all three
+// Step 2: switch direction. All three declarations are carried, so all three
 // are marked.
 await page.click('.directions button:has-text("molar → mass")')
 await page.waitForTimeout(200)
@@ -132,14 +132,14 @@ const afterSwitch = await badgedFields()
 check(afterSwitch.length === 3, `after the direction change ${afterSwitch.length} of 3 declarations were marked: ${afterSwitch.join(' | ')}`)
 check(
   (await page.inputValue('#entered')) === '' && (await page.evaluate(() => document.querySelector('#enteredunit').value)) === '',
-  'the entered concentration or its unit survived the direction change — its unit changes what it measures across the swap',
+  'the entered concentration or its unit survived the direction change, its unit changes what it measures across the swap',
 )
 check(
   (await page.inputValue('#mw')) === '150' && (await page.evaluate(() => document.querySelector('#mwunit').value)) === 'kDa',
   'the molecular weight was not carried across the direction change',
 )
 
-// Step 3 — confirm ONLY the molecular weight. The other two are still
+// Step 3: confirm ONLY the molecular weight. The other two are still
 // unconfirmed and must still be marked.
 await page.fill('#mw', '1500')
 await page.waitForTimeout(200)
@@ -150,11 +150,11 @@ check(
 )
 check(
   afterConfirmingWeight.some((f) => f.includes('Source of that weight')),
-  'confirming the molecular weight also cleared the badge on Source — C1-ST-03: a retained value is unmarked',
+  'confirming the molecular weight also cleared the badge on Source, C1-ST-03: a retained value is unmarked',
 )
 check(
   afterConfirmingWeight.some((f) => f.includes('mass of')),
-  'confirming the molecular weight also cleared the badge on Mass basis — C1-ST-03: a retained value is unmarked',
+  'confirming the molecular weight also cleared the badge on Mass basis, C1-ST-03: a retained value is unmarked',
 )
 
 // Confirming the remaining two clears the rest, one at a time.
@@ -166,7 +166,7 @@ await page.waitForTimeout(120)
 check((await badgedFields()).length === 0, 'confirming all three declarations left something marked')
 
 // ---------------------------------------------------------------------------
-// The second facet — a field holding nothing is never badged.
+// The second facet: a field holding nothing is never badged.
 // ---------------------------------------------------------------------------
 
 await page.goto(origin, { waitUntil: 'networkidle' })
@@ -181,7 +181,7 @@ check(
 )
 
 // ---------------------------------------------------------------------------
-// C1-CV-03 — the displayed relation carries no coined unit.
+// C1-CV-03: the displayed relation carries no coined unit.
 // ---------------------------------------------------------------------------
 
 await page.goto(origin, { waitUntil: 'networkidle' })
@@ -197,7 +197,7 @@ check(/molar concentration = mass concentration ÷ molecular weight/.test(relati
 check(/mg\/mL per µM/.test(relation), 'the folded divisor is not given in standard units')
 
 // ---------------------------------------------------------------------------
-// C1-FL-09 — a retained declaration reaches the RESULT, not only the form.
+// C1-FL-09: a retained declaration reaches the RESULT, not only the form.
 //
 // The badge was the whole of retention until v0.2.0. It satisfied C1-ST-03 as
 // written and left the record wrong in a way the screen was not: the derivation
@@ -279,7 +279,7 @@ if (obj) {
 }
 
 // ---------------------------------------------------------------------------
-// C1-FL-10 — zero is the absence of solute, not a low concentration.
+// C1-FL-10: zero is the absence of solute, not a low concentration.
 // ---------------------------------------------------------------------------
 
 await page.goto(origin, { waitUntil: 'networkidle' })
@@ -298,11 +298,11 @@ check(zeroFlags.length === 1, `zero raised ${zeroFlags.length} flags, expected e
 check(zeroFlags.some((t) => t.includes('C1-FL-10')), 'zero does not raise C1-FL-10')
 check(
   !zeroFlags.some((t) => t.includes('C1-FL-03')),
-  'zero still raises C1-FL-03 — "below the range typical of biologic working solutions" is true of zero and says nothing about it',
+  'zero still raises C1-FL-03, "below the range typical of biologic working solutions" is true of zero and says nothing about it',
 )
 
 // ---------------------------------------------------------------------------
-// Ratified as built, 4 September 2026 — NADIRA, against the running tool.
+// Ratified as built, 4 September 2026; NADIRA, against the running tool.
 //
 // These are fixed points, not new requirements. They were confirmed live rather
 // than from the suite, which means the suite was not what was holding them:
@@ -353,7 +353,7 @@ await page.waitForTimeout(200)
 check(await thresholdSentence(), 'the threshold caveat did not appear when a threshold flag fired')
 
 // ---------------------------------------------------------------------------
-// C1-OUT-03 — the structured object is reachable from the page.
+// C1-OUT-03: the structured object is reachable from the page.
 // ---------------------------------------------------------------------------
 
 check(
@@ -362,7 +362,7 @@ check(
 )
 
 // ---------------------------------------------------------------------------
-// C1-NF-01 — the footer claims only what has been established.
+// C1-NF-01: the footer claims only what has been established.
 // ---------------------------------------------------------------------------
 
 const footer = (await page.textContent('footer.site')) ?? ''
@@ -383,7 +383,7 @@ if (NETWORK_CLAIM_VERIFIED) {
 }
 
 // ---------------------------------------------------------------------------
-// Branding conformance — the suite's chrome, not C1's own.
+// Branding conformance: the suite's chrome, not C1's own.
 //
 // C1 reached a conformance audit at 46 of 53 requirements while sharing no
 // design token with the shipped tool, because no requirement asked. Asserted
@@ -425,7 +425,7 @@ check(brand.bodyFont === 'Inter', `body face is "${brand.bodyFont}", not Inter`)
 check(brand.bodySize === '14px', `body size is ${brand.bodySize}, not the suite's 14px`)
 check(brand.page === 'rgb(250, 247, 242)', `page ground is ${brand.page}, not --brand-offwhite`)
 check(brand.ink === 'rgb(27, 42, 74)', `primary text is ${brand.ink}, not --brand-navy`)
-check(brand.accent === 'rgb(13, 124, 102)', `the accent is ${brand.accent}, not --brand-teal — navy is the TEXT colour`)
+check(brand.accent === 'rgb(13, 124, 102)', `the accent is ${brand.accent}, not --brand-teal: navy is the TEXT colour`)
 check(brand.cardRadius === '10px', `card radius is ${brand.cardRadius}, not --radius`)
 check(brand.controlRadius === '6px', `control radius is ${brand.controlRadius}, not --radius-sm`)
 check(brand.h1 === '25px/700/-0.275px', `H1 treatment is ${brand.h1}, not the suite's 25px/700/-0.275px`)
@@ -437,7 +437,7 @@ check(
   `the suite label treatment differs from the reference: ${JSON.stringify(brand.suite)}`,
 )
 
-// The favicon is the tab identity. It must be the suite mark — not lettered,
+// The favicon is the tab identity. It must be the suite mark: not lettered,
 // not recoloured per tool.
 const favicon = await page.evaluate(async () => {
   const href = document.querySelector('link[rel~="icon"]')?.getAttribute('href')
@@ -450,26 +450,26 @@ if (favicon) {
   check(favicon.includes('#0D7C66'), 'the favicon is not on the brand teal ground')
   check(favicon.includes('#E0A416'), 'the favicon has no amber centre node')
   check((favicon.match(/<circle/g) ?? []).length === 7, 'the favicon is not the six-vertex node mark')
-  check(!/<text|font-family/i.test(favicon), 'the favicon is lettered — it must be the mark alone')
+  check(!/<text|font-family/i.test(favicon), 'the favicon is lettered; it must be the mark alone')
 }
 
 await context.close()
 await browser.close()
 server.close()
 
-console.log(`\ncheck-ui — ${origin}`)
+console.log(`\ncheck-ui: ${origin}`)
 if (failures.length) {
   console.error('\ncheck-ui FAILED')
   for (const f of failures) console.error('  - ' + f)
   process.exit(1)
 }
-console.log('  C1-UN-01 / C1-MW-03 — both input units compelled, result unit defaulted')
-console.log('  C1-ST-03 — retention marked per field, and never on an empty field')
-console.log('  C1-CV-03 — the relation names no coined unit')
-console.log('  C1-OUT-03 — the structured result is reachable')
-console.log('  C1-NF-01 — the footer claims only what has been established')
-console.log('  §0 ratified — half-to-even live, 9a visible, threshold caveat scoped')
-console.log('  C1-FL-09 — retention reaches the result, the derivation and the record')
-console.log('  C1-FL-10 — zero is flagged as empty, not as implausibly low')
-console.log('  Branding — suite tokens, masthead, suite label, mark, title tag')
+console.log('  C1-UN-01 / C1-MW-03, both input units compelled, result unit defaulted')
+console.log('  C1-ST-03: retention marked per field, and never on an empty field')
+console.log('  C1-CV-03: the relation names no coined unit')
+console.log('  C1-OUT-03: the structured result is reachable')
+console.log('  C1-NF-01: the footer claims only what has been established')
+console.log('  §0 ratified: half-to-even live, 9a visible, threshold caveat scoped')
+console.log('  C1-FL-09: retention reaches the result, the derivation and the record')
+console.log('  C1-FL-10: zero is flagged as empty, not as implausibly low')
+console.log('  Branding: suite tokens, masthead, suite label, mark, title tag')
 console.log('\ncheck-ui passed.')

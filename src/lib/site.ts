@@ -20,8 +20,8 @@ export const REPO_URL = 'https://github.com/abmodi-ai/Ligant.ai-Molarity-Convert
  * Whether acceptance test 14 has been run against the DEPLOYED address.
  *
  * The footer used to assert "no network request of any kind" unconditionally.
- * That is an environment claim about the served page, and acceptance test 14 —
- * the only thing that can establish it — is unrun. A local server over `dist/`
+ * That is an environment claim about the served page, and acceptance test 14;
+ * the only thing that can establish it, is unrun. A local server over `dist/`
  * cannot exercise the CDN path, which is what produced both previous failures
  * of this claim across the tool set.
  *
@@ -29,7 +29,7 @@ export const REPO_URL = 'https://github.com/abmodi-ai/Ligant.ai-Molarity-Convert
  * not a build step:
  *
  *   1. Deploy.
- *   2. `node scripts/check-network.mjs https://<deployed-address>/` — this must
+ *   2. `node scripts/check-network.mjs https://<deployed-address>/`: this must
  *      print ACCEPTANCE TEST 14: PASSED.
  *   3. Only then set this to `true`, and redeploy.
  *
@@ -37,8 +37,8 @@ export const REPO_URL = 'https://github.com/abmodi-ai/Ligant.ai-Molarity-Convert
  * this is `true` and the run is local, the check FAILS, so the claim cannot go
  * live on the strength of a local run.
  *
- * Until then the footer states what is actually established — a static check
- * and a real browser against the build — and says the deployed address is
+ * Until then the footer states what is actually established, a static check
+ * and a real browser against the build, and says the deployed address is
  * unverified. An accurate weaker claim is worth more than an unverified
  * stronger one; that is the whole finding of the beacon incident.
  *
@@ -46,8 +46,8 @@ export const REPO_URL = 'https://github.com/abmodi-ai/Ligant.ai-Molarity-Convert
  * because "nobody looked" is not an acceptable answer to it.
  *
  * The register exists so that no behaviour-determining choice is silent, and it
- * already carries two rows that are not thresholds — the rounding mode and the
- * reimplementation tolerance — so "it is a boolean, not a threshold" is not on
+ * already carries two rows that are not thresholds, the rounding mode and the
+ * reimplementation tolerance, so "it is a boolean, not a threshold" is not on
  * its own a reason to leave it out. The reason is that this choice is not
  * silent anywhere: it determines what the FOOTER says, and the footer says
  * which of the two claims it is making and that acceptance test 14 is unrun.

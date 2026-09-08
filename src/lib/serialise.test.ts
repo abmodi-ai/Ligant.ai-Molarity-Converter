@@ -26,7 +26,7 @@ function ok(r: ConversionRequest) {
   return o
 }
 
-describe('C1-OUT-03 — a structured object for every calculation', () => {
+describe('C1-OUT-03: a structured object for every calculation', () => {
   it('every fixture in §10 produces one that validates', () => {
     for (const f of ALL_FIXTURES) {
       const obj = toStructuredResult(ok(f.request))
@@ -46,7 +46,7 @@ describe('C1-OUT-03 — a structured object for every calculation', () => {
 
   it('the schema is C1\'s own and is versioned separately from the engine', () => {
     // Open item 1 is not closed. The object must not claim to be an ADC format,
-    // and reconciliation later has to be visible — which is what a schema
+    // and reconciliation later has to be visible, which is what a schema
     // version distinct from the engine version buys.
     const obj = toStructuredResult(ok(BASE))
     expect(obj.schema.name).toBe(SCHEMA_NAME)
@@ -56,12 +56,12 @@ describe('C1-OUT-03 — a structured object for every calculation', () => {
   })
 })
 
-describe('C1-OUT-03 — units attached to every quantity', () => {
+describe('C1-OUT-03: units attached to every quantity', () => {
   it('each quantity is a value and a unit, not a bare number', () => {
     const q = toStructuredResult(ok(BASE)).quantities
-    expect(q.massConcentration).toEqual({ value: 1, unit: 'mg/mL' })
+    expect(q.massConcentration).toEqual({ value: 1, unit: 'mg/mL', underflowed: false })
     expect(q.molarConcentration.unit).toBe('uM')
-    expect(q.molecularWeight).toEqual({ value: 150, unit: 'kDa' })
+    expect(q.molecularWeight).toEqual({ value: 150, unit: 'kDa', underflowed: false })
     expect(q.effectiveDivisor.unit).toBe('mg/mL per µM')
     for (const key of Object.keys(q) as (keyof typeof q)[]) {
       expect(typeof q[key].value, `${key} has no numeric value`).toBe('number')
@@ -71,8 +71,8 @@ describe('C1-OUT-03 — units attached to every quantity', () => {
 
   it('a quantity stripped of its unit fails validation', () => {
     // The guard on the guard. The requirement is easy to satisfy in appearance
-    // — four bare numbers beside one shared `units` object read as satisfying
-    // it — so the validator is checked against the shape that does not.
+    //: four bare numbers beside one shared `units` object read as satisfying
+    // it: so the validator is checked against the shape that does not.
     const obj = toStructuredResult(ok(BASE)) as any
     obj.quantities.molarConcentration = { value: 6.666 }
     const problems = validateStructuredResult(obj)
@@ -80,7 +80,7 @@ describe('C1-OUT-03 — units attached to every quantity', () => {
   })
 })
 
-describe('C1-UN-07 — the unrounded value is in the structured object', () => {
+describe('C1-UN-07: the unrounded value is in the structured object', () => {
   it('quantities carry the double, and the rendering is carried separately', () => {
     const r = ok({ ...BASE, enteredValue: 2.4, mwValue: 148327, units: { mass: 'mg/mL', molar: 'uM', mw: 'g/mol' } })
     const obj = toStructuredResult(r)
@@ -100,7 +100,7 @@ describe('C1-UN-07 — the unrounded value is in the structured object', () => {
   })
 })
 
-describe('C1-ST-03 — the record says which declarations were carried', () => {
+describe('C1-ST-03: the record says which declarations were carried', () => {
   it('the retention state is always present, all three fields', () => {
     // The flag says THAT something was retained; this says WHICH. One flag
     // cannot, and a consumer deciding whether to trust a molecular weight needs
@@ -134,7 +134,7 @@ describe('C1-ST-03 — the record says which declarations were carried', () => {
   })
 })
 
-describe('C1-DAT-03 — the object alone reproduces the reported result', () => {
+describe('C1-DAT-03: the object alone reproduces the reported result', () => {
   it('over the whole fixture set, through JSON', () => {
     for (const f of ALL_FIXTURES) {
       const original = ok(f.request)
@@ -173,7 +173,7 @@ describe('C1-DAT-03 — the object alone reproduces the reported result', () => 
   })
 })
 
-describe('§8 — flags survive serialisation with their reason codes', () => {
+describe('§8: flags survive serialisation with their reason codes', () => {
   it('every flag carries its code, message and kind', () => {
     const r = ok({ ...BASE, mwValue: 0.5, provenance: 'not-recorded', massBasis: 'not-recorded' })
     const obj = toStructuredResult(r)
@@ -186,7 +186,7 @@ describe('§8 — flags survive serialisation with their reason codes', () => {
     }
   })
 
-  it('C1-ST-01 — the no-flags case is an empty array, not an absent key', () => {
+  it('C1-ST-01: the no-flags case is an empty array, not an absent key', () => {
     // "A value shall not be transferable stripped of its flags." An absent key
     // and an empty array are the same thing to a careless consumer and
     // different things to a careful one; only one of them says "checked, none".
@@ -199,7 +199,7 @@ describe('§8 — flags survive serialisation with their reason codes', () => {
   })
 })
 
-describe('C1-OUT-05 — the structured and human-readable outputs cannot disagree', () => {
+describe('C1-OUT-05: the structured and human-readable outputs cannot disagree', () => {
   it('the object is a projection of the result, not a recomputation', () => {
     const r = ok({ ...BASE, enteredValue: 1234.5678, mwValue: 148327, units: { mass: 'ug/mL', molar: 'uM', mw: 'g/mol' } })
     const obj = toStructuredResult(r)
@@ -210,7 +210,7 @@ describe('C1-OUT-05 — the structured and human-readable outputs cannot disagre
     expect(obj.quantities.effectiveDivisor.value).toBe(r.effectiveMw)
   })
 
-  it('C1-OUT-01/02 — the weight, its source and its mass basis are in the derivation', () => {
+  it('C1-OUT-01/02: the weight, its source and its mass basis are in the derivation', () => {
     const obj = toStructuredResult(ok({ ...BASE, provenance: 'mass-spectrometry', massBasis: 'conjugate' }))
     const derivation = obj.derivation.assumptions.join(' ')
     expect(derivation).toMatch(/150 kDa/)

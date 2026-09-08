@@ -4,18 +4,18 @@
  * No web fonts, no external stylesheet, no CDN. C1-NF-01: nothing the page
  * loads may come from another origin, and a font request is a request. The
  * shared `--font` and `--mono` declare Inter and IBM Plex Mono first and fall
- * back to the system stack, which is what the reference tool does — the faces
+ * back to the system stack, which is what the reference tool does; the faces
  * are named, not fetched.
  *
  * THE RULE FOR THIS BLOCK: every value below is `var(--brand-*)` or
  * `var(--neutral-*)`. Not one hex literal. C1 had a complete second palette
- * before 4 September 2026 — cool blue-greys against the suite's warm ones, and
- * navy where the accent should have been — and it got there one plausible hex
+ * before 4 September 2026: cool blue-greys against the suite's warm ones, and
+ * navy where the accent should have been, and it got there one plausible hex
  * value at a time. A name here may be C1's; a colour may not.
  */
 
 :root {
-  /* Text and ground — straight aliases, kept so C1's rules read in its own terms. */
+  /* Text and ground: straight aliases, kept so C1's rules read in its own terms. */
   --ink: var(--text-primary);
   --ink-soft: var(--text-muted);
   --rule: var(--border);
@@ -28,17 +28,17 @@
    */
   --accent: var(--brand-teal);
 
-  /* §8 flags — attention about the result, not an error. Amber. */
+  /* §8 flags: attention about the result, not an error. Amber. */
   --flag: var(--brand-amber);
   --flag-ground: var(--attention-wash);
 
-  /* §7 rejections — a refusal to compute. */
+  /* §7 rejections: a refusal to compute. */
   --reject: var(--brand-error);
   --reject-ground: var(--error-wash);
 
   /*
    * C1-ST-03's retained marker. PROPOSED, and the one token with no counterpart
-   * in the reference — it was `#3d5a2e`, a green belonging to no scale.
+   * in the reference: it was `#3d5a2e`, a green belonging to no scale.
    *
    * It is not a finding about the number, so amber and red are both wrong: it
    * is a prompt to the user to confirm a value carried across a direction

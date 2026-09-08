@@ -1,5 +1,5 @@
 /**
- * §7 — reject.
+ * §7: reject.
  *
  * Conditions are stated against the computed system, not against entry fields,
  * so that the same physical impossibility is caught wherever it arises.

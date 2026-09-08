@@ -28,7 +28,7 @@ const TYPES = {
 /** Starts a server over dist/ and resolves to `{ server, origin }`. */
 export async function serveDist(port) {
   if (!existsSync('dist')) {
-    console.error('dist/ not found — run `npm run build` first.')
+    console.error('dist/ not found: run `npm run build` first.')
     process.exit(1)
   }
   const server = createServer(async (req, res) => {

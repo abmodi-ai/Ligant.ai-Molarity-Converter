@@ -67,7 +67,7 @@ export const UNIT_LABEL: Readonly<Record<MassUnit | MolarUnit | MwUnit, string>>
 /**
  * C1-MW-04. Where the molecular weight came from.
  *
- * "not recorded" is an accepted answer and is a value, not an absence — it must
+ * "not recorded" is an accepted answer and is a value, not an absence; it must
  * be distinguishable in the structured object from a field left blank
  * (C1-MW-05), which is why the type has no `undefined` member and the form
  * carries a separate unanswered state.
@@ -98,8 +98,8 @@ export const MW_PROVENANCE_LABEL: Readonly<Record<MwProvenance, string>> = {
 /**
  * C1-MW-07. What the stated molecular weight is the mass of.
  *
- * Single-select. The options are not strictly exclusive in the abstract — a
- * PE-conjugated scFv is both single-chain and conjugated — and the precedence
+ * Single-select. The options are not strictly exclusive in the abstract, a
+ * PE-conjugated scFv is both single-chain and conjugated, and the precedence
  * is carried in the option label rather than resolved by a fourth value or a
  * multi-select, which is how open item 10 was closed at v0.5.
  */
@@ -118,6 +118,6 @@ export const MASS_BASIS_LABEL: Readonly<Record<MassBasis, string>> = {
   assembled: 'the assembled molecule as it exists in solution',
   monomer: 'a monomer or single chain',
   conjugate:
-    'a conjugate, including its label or payload — select this whenever a label or payload is included in the stated mass, whatever the format of the underlying protein',
+    'a conjugate, including its label or payload; select this whenever a label or payload is included in the stated mass, whatever the format of the underlying protein',
   'not-recorded': 'not recorded',
 }

@@ -35,7 +35,7 @@ function worst(path: ConversionPath) {
   return { worstUlps, worstCase, breaches, saturated, total: CASES.length }
 }
 
-describe('C1-IV-01 — round-trip invariance', () => {
+describe('C1-IV-01: round-trip invariance', () => {
   it('returns the input to within 1 ULP over the whole corpus', () => {
     const { worstUlps, breaches, total } = worst(correctPath)
     expect(breaches, `${breaches} of ${total} cases exceeded ${ROUND_TRIP_TOLERANCE_ULP} ULP`).toBe(0)
@@ -68,7 +68,7 @@ describe('C1-IV-01 — round-trip invariance', () => {
  * tolerance was too tight rather than by the defect being real, and the
  * tolerance would have disabled the test without anyone noticing.
  */
-describe('C1-IV-02 — the invariance test is confirmed capable of failing', () => {
+describe('C1-IV-02: the invariance test is confirmed capable of failing', () => {
   const defects: { name: string; path: ConversionPath }[] = [
     { name: 'clamp', path: clampedPath(1e3) },
     { name: 'floor', path: flooredPath(1e-9) },
@@ -77,7 +77,7 @@ describe('C1-IV-02 — the invariance test is confirmed capable of failing', () 
 
   for (const { name, path } of defects) {
     describe(`inserted ${name}`, () => {
-      it('is detected — the round-trip test fails', () => {
+      it('is detected: the round-trip test fails', () => {
         const { breaches } = worst(path)
         expect(breaches, `the inserted ${name} was not detected by the invariance test`).toBeGreaterThan(0)
       })
@@ -89,7 +89,7 @@ describe('C1-IV-02 — the invariance test is confirmed capable of failing', () 
     })
   }
 
-  it('the nudge is invisible at displayed precision — which is what the ULP bound is for', () => {
+  it('the nudge is invisible at displayed precision, which is what the ULP bound is for', () => {
     // A relative error of 2^-50 changes no digit anyone sees. Six significant
     // figures cannot detect it and is not supposed to: this is the class of
     // defect the invariance test exists to catch, and the demonstration that
@@ -110,7 +110,7 @@ describe('C1-IV-02 — the invariance test is confirmed capable of failing', () 
   })
 })
 
-describe('the stepwise unit-normalisation path — regression guard', () => {
+describe('the stepwise unit-normalisation path, regression guard', () => {
   it('breaches the tolerance, which is why the folded divisor is used', () => {
     const { breaches, worstUlps, total } = worst(stepwisePath())
     expect(breaches).toBeGreaterThan(0)

@@ -43,13 +43,13 @@ const ulp = (n: number) => (Number.isFinite(n) ? n.toFixed(4) : '∞')
 
 const clean = measure(correctPath)
 const rows = [
-  { name: 'Clamp — molar result capped at 1e3', ...measure(clampedPath(1e3)) },
-  { name: 'Floor — molar result below 1e-9 flushed to zero', ...measure(flooredPath(1e-9)) },
-  { name: `Nudge — molar result scaled by 1 + 2⁻⁵⁰`, ...measure(nudgedPath()) },
+  { name: 'Clamp: molar result capped at 1e3', ...measure(clampedPath(1e3)) },
+  { name: 'Floor: molar result below 1e-9 flushed to zero', ...measure(flooredPath(1e-9)) },
+  { name: `Nudge: molar result scaled by 1 + 2⁻⁵⁰`, ...measure(nudgedPath()) },
 ]
 const stepwise = measure(stepwisePath())
 
-const doc = `# Confirmation — the invariance test is capable of failing
+const doc = `# Confirmation, the invariance test is capable of failing
 
 **C1-IV-01 and C1-IV-02.** Acceptance tests 5 and 7.
 
@@ -68,7 +68,7 @@ reproducible. The magnitude span is load-bearing: a corpus of realistic antibody
 concentrations alone leaves the clamp and the floor undetected, and a test that cannot
 detect them is what C1-IV-02 exists to rule out.
 
-## C1-IV-01 — the correct implementation
+## C1-IV-01: the correct implementation
 
 | | |
 |---|---|
@@ -83,7 +83,7 @@ bit-exactness unusable, reintroduced at the operator. The test is written \`≤\
 \`invariance.test.ts\` asserts the saturation directly so that the operator cannot quietly
 stop being load-bearing.
 
-## C1-IV-02 — each inserted defect is detected, and each exceeds the tolerance
+## C1-IV-02: each inserted defect is detected, and each exceeds the tolerance
 
 Both columns matter. That a defect is caught says the test fires; that its error exceeds
 1 ULP says it was caught because it is real, and not because the tolerance was too tight
@@ -99,7 +99,7 @@ ${rows
   .join('\n')}
 
 Each defect is a plausible thing a developer writes for a reason that sounds good at the
-time — a cap on implausible output, a denormal guard, a slightly wrong constant — rather
+time: a cap on implausible output, a denormal guard, a slightly wrong constant; rather
 than a random corruption. A defect nobody would write proves nothing about a test's
 sensitivity.
 
@@ -119,8 +119,8 @@ undetectable, and the suite reports it as undetected rather than as a pass. With
 | Worst round-trip error | **${ulp(stepwise.worstUlps)} ULP** |
 | Cases exceeding ${ROUND_TRIP_TOLERANCE_ULP} ULP | **${stepwise.breaches.toLocaleString('en-US')}** of ${CASES.length.toLocaleString('en-US')} (${pct(stepwise.breaches)}) |
 
-The obvious implementation of the correct formula — normalise the concentration to a base
-unit, divide by the molecular weight, denormalise to the output unit — breaches the
+The obvious implementation of the correct formula, normalise the concentration to a base
+unit, divide by the molecular weight, denormalise to the output unit; breaches the
 tolerance. It computes the right answer to six significant figures every time, and it fails
 C1-IV-01.
 

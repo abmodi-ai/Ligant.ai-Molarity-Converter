@@ -12,12 +12,12 @@ import { seededRandom } from '../src/lib/corpus'
 
 const UM = { mass: 'mg/mL', molar: 'uM', mw: 'g/mol' } as const
 
-console.log('1) Acceptance test 1 — the reference case')
+console.log('1) Acceptance test 1: the reference case')
 const ref = massToMolar(1, 150000, UM)
 console.log(`   150 kDa, 1 mg/mL -> ${formatSigFigs(ref)} µM   (URS §16.1 expects 6.66667)`)
-console.log(`   monomer error on the same case -> ${formatSigFigs(massToMolar(1, 75000, UM))} µM — unambiguous at six figures`)
+console.log(`   monomer error on the same case -> ${formatSigFigs(massToMolar(1, 75000, UM))} µM; unambiguous at six figures`)
 
-console.log('\n2) C1-IV-03 — g/mol vs kDa disagreement rate against displayed precision')
+console.log('\n2) C1-IV-03: g/mol vs kDa disagreement rate against displayed precision')
 const rnd = seededRandom(0xc1e7)
 const pairs: [number, number][] = []
 for (let i = 0; i < 200_000; i++) {
@@ -29,14 +29,14 @@ for (let i = 0; i < 200_000; i++) {
   ])
 }
 const bitDiff = pairs.filter(([a, b]) => a !== b).length
-console.log(`   pairs differing in the last bit: ${bitDiff} / ${pairs.length} (${((100 * bitDiff) / pairs.length).toFixed(3)}%) — URS §6 says ~0.9%`)
+console.log(`   pairs differing in the last bit: ${bitDiff} / ${pairs.length} (${((100 * bitDiff) / pairs.length).toFixed(3)}%): URS §6 says ~0.9%`)
 console.log('   figs  disagreeing at that displayed precision')
 for (let figs = 4; figs <= 16; figs++) {
   const d = pairs.filter(([a, b]) => formatSigFigs(a, figs) !== formatSigFigs(b, figs)).length
   console.log(`   ${String(figs).padStart(4)}  ${String(d).padStart(6)}${figs === 6 ? '   <-- C1-UN-06' : ''}`)
 }
 
-console.log('\n3) C1-FX-07 — rounding the unit-normalised intermediate')
+console.log('\n3) C1-FX-07: rounding the unit-normalised intermediate')
 const mw = 148327
 const entered = 1234.5678
 const normalised = entered * 1e-3

@@ -3,18 +3,18 @@
  *
  * C1-UN-06: results are displayed to six significant figures, rounded
  * half-to-even, and the displayed precision is stated on the output
- * (C1-OUT-07). Six is confirmed rather than assumed — see
+ * (C1-OUT-07). Six is confirmed rather than assumed, see
  * docs/open-item-07-displayed-precision.md.
  *
  * ON THE ROUNDING MODE. JavaScript's `toPrecision` resolves a tie to the larger
- * candidate — round-half-up. That is not what this tool does. Half-to-even is
+ * candidate: round-half-up. That is not what this tool does. Half-to-even is
  * the IEEE 754 default and the default in Python, R and Julia, so an
  * independent reimplementation agrees without being told; and being told is
  * exactly what compromises the independence acceptance test 3 depends on. It is
  * also unbiased under repeated rounding, where half-up drifts upward.
  *
  * Ties are unit-dependent and cannot be designed out of the input space. 1 g/L
- * at 51.2 kDa is exactly 19.53125 µM — a tie — and the same result expressed in
+ * at 51.2 kDa is exactly 19.53125 µM: a tie: and the same result expressed in
  * M is 1.9531250000000000406e-5, which is not one and rounds up under any rule.
  * The reagent is ordinary; only the output unit decides. That is why the rule
  * has to be named rather than avoided.
@@ -41,7 +41,7 @@ export const PRECISION_STATEMENT = `Displayed to ${DISPLAY_SIG_FIGS} significant
  * Every finite double is exactly `significand × 2^e`, and therefore exactly
  * `N / 10^k` for integers N and k ≥ 0. Computing that exactly is the only way to
  * know whether a value is really halfway: `toPrecision` cannot tell, because it
- * has already rounded, and a round-trip test cannot tell either — the double
+ * has already rounded, and a round-trip test cannot tell either; the double
  * nearest 1.953125e-5 round-trips through seven significant digits while its
  * exact expansion continues `…0004065…` and is not a tie at all.
  */
@@ -69,7 +69,7 @@ function exactDecimal(v: number): { digits: string; pointFromRight: number; nega
  * Round a digit string to `figs` significant digits, half-to-even.
  *
  * Returns the kept digits and how far the decimal exponent moved, which is
- * non-zero only when rounding carried across a decade — 999999.5 to six figures
+ * non-zero only when rounding carried across a decade, 999999.5 to six figures
  * is 1000000, seven digits, and has to become 1.00000e+6.
  */
 function roundHalfEven(digits: string, figs: number): { digits: string; carried: boolean } {

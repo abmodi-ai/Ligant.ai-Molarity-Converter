@@ -17,9 +17,9 @@ function run(f: (typeof ALL_FIXTURES)[number]) {
   return outcome
 }
 
-describe('§10 — the fixture set', () => {
+describe('§10: the fixture set', () => {
   for (const f of ALL_FIXTURES) {
-    describe(`${f.id} — ${f.name}`, () => {
+    describe(`${f.id}: ${f.name}`, () => {
       it('raises exactly the specified flags and no others', () => {
         const r = run(f)
         expect(r.flags.map((x) => x.code).sort()).toEqual([...f.expect.flags].sort())
@@ -38,7 +38,7 @@ describe('§10 — the fixture set', () => {
     })
   }
 
-  it('C1-FX-08 — every fixture states its construction assumption', () => {
+  it('C1-FX-08: every fixture states its construction assumption', () => {
     for (const f of ALL_FIXTURES) {
       expect(f.assumption, `${f.id} has no assumption`).toBeTruthy()
       // A sentence, not a placeholder. An empty-ish assumption would satisfy a
@@ -55,8 +55,8 @@ describe('§10 — the fixture set', () => {
     // That is the fixture-distribution failure §10 is written against, in the
     // form it is hardest to see: the suite passes by excluding the input class
     // that exposes the ambiguity, and two implementations disagreeing on real
-    // user data leave it green. Ties are unit-dependent — 1 g/L at 51.2 kDa is a
-    // tie in µM and is not one in M — so they cannot be designed out of the
+    // user data leave it green. Ties are unit-dependent: 1 g/L at 51.2 kDa is a
+    // tie in µM and is not one in M, so they cannot be designed out of the
     // input space, only out of the fixtures, which is worse than useless.
     const ties = ALL_FIXTURES.filter((f) => {
       const r = run(f)
@@ -96,7 +96,7 @@ describe('§10 — the fixture set', () => {
   })
 })
 
-describe('C1-FX-09 — the negative control', () => {
+describe('C1-FX-09: the negative control', () => {
   const f = FIXTURES.find((x) => x.id === 'C1-FX-09')!
 
   it('raises no flags, in both conversion directions (acceptance 9a)', () => {
@@ -128,7 +128,7 @@ describe('C1-FX-09 — the negative control', () => {
   })
 })
 
-describe('C1-FX-02 / C1-IV-03 — g/mol and kDa agree to displayed precision', () => {
+describe('C1-FX-02 / C1-IV-03, g/mol and kDa agree to displayed precision', () => {
   it('the two arms of the pair display identically', () => {
     const gmol = run(FIXTURES.find((f) => f.id === 'C1-FX-01')!)
     const kda = run(FIXTURES.find((f) => f.id === 'C1-FX-02')!)
@@ -149,7 +149,7 @@ describe('C1-FX-02 / C1-IV-03 — g/mol and kDa agree to displayed precision', (
   })
 })
 
-describe('C1-FX-03 — round trip', () => {
+describe('C1-FX-03: round trip', () => {
   it('returns the input to within 1 ULP', () => {
     const f = FIXTURES.find((x) => x.id === 'C1-FX-03')!
     const u = roundTripUlps({
@@ -161,7 +161,50 @@ describe('C1-FX-03 — round trip', () => {
   })
 })
 
-describe('C1-FX-04 — boundaries in both conversion directions', () => {
+describe('C1-FX-03b / C1-FX-14, the subnormal regime', () => {
+  /*
+   * The bound cannot apply where the value is not representable, so these
+   * fixtures assert the DOCUMENTED BEHAVIOUR and say which. A test that quietly
+   * loosened the tolerance to accommodate this would be the second family in
+   * docs/correspondence.md, run backwards.
+   */
+  const rt = (id: string) => {
+    const f = FIXTURES.find((x) => x.id === id)!
+    return roundTripUlps({ massValue: f.request.enteredValue, mwValue: f.request.mwValue, units: f.request.units })
+  }
+
+  it('an output unit that cannot hold the value loses it entirely, not by 1 ULP', () => {
+    const ulps = rt('C1-FX-03b')
+    // Documented, not tolerated: this is total loss of the value, and calling
+    // it a rounding difference would be the more dangerous description.
+    expect(withinTolerance(ulps)).toBe(false)
+    expect(ulps).toBeGreaterThan(1000)
+    expect(run(FIXTURES.find((x) => x.id === 'C1-FX-03b')!).molarValue).toBe(0)
+  })
+
+  it('an output unit that holds the value round-trips exactly, so the regime is not the fault', () => {
+    expect(rt('C1-FX-14')).toBe(0)
+    expect(run(FIXTURES.find((x) => x.id === 'C1-FX-14')!).molarValue).toBeGreaterThan(0)
+  })
+
+  it('neither raises C1-FL-10: the entered quantity is not zero', () => {
+    for (const id of ['C1-FX-03b', 'C1-FX-14']) {
+      const codes = run(FIXTURES.find((x) => x.id === id)!).flags.map((f) => f.code)
+      expect(codes, id).toContain('C1-FL-03')
+      expect(codes, id).not.toContain('C1-FL-10')
+    }
+  })
+
+  it('the record marks the zero that is not the value', () => {
+    const lost = run(FIXTURES.find((x) => x.id === 'C1-FX-03b')!)
+    const held = run(FIXTURES.find((x) => x.id === 'C1-FX-14')!)
+    expect(lost.underflow.molarConcentration).toBe(true)
+    expect(held.underflow.molarConcentration).toBe(false)
+    expect(lost.underflow.massConcentration).toBe(false)
+  })
+})
+
+describe('C1-FX-04: boundaries in both conversion directions', () => {
   const covered = [...BOUNDARY_FIXTURES, ...CONCENTRATION_BOUNDARY_FIXTURES]
   const THRESHOLDS: ThresholdId[] = ['mw-lower', 'mw-upper', 'mass-upper', 'molar-lower']
   const SIDES: BoundarySide[] = ['below', 'on', 'above']
@@ -179,7 +222,7 @@ describe('C1-FX-04 — boundaries in both conversion directions', () => {
     // The guard this replaces asserted `covered.length >= 12`, plus "at least
     // one fixture of each direction" across the whole set. Both are set-level
     // properties standing in for a per-threshold one, and both passed while the
-    // two molecular-weight bounds were exercised in `mass-to-molar` only — the
+    // two molecular-weight bounds were exercised in `mass-to-molar` only, the
     // §I failure mode from docs/correspondence.md, occurring inside the guard
     // written to prevent it.
     //
@@ -202,7 +245,7 @@ describe('C1-FX-04 — boundaries in both conversion directions', () => {
     expect(missing, `C1-FX-04 does not cover: ${missing.join(', ')}`).toEqual([])
   })
 
-  it('a value exactly on a threshold never flags — the operators are strict', () => {
+  it('a value exactly on a threshold never flags, the operators are strict', () => {
     // Selected by metadata rather than by a hand-maintained list of ids: a list
     // is a second place to forget a fixture, and forgetting one there makes the
     // suite quieter rather than redder.
@@ -228,14 +271,14 @@ describe('C1-FX-04 — boundaries in both conversion directions', () => {
   })
 })
 
-describe('C1-FX-04m / C1-FX-04n — a flagged and an unflagged result that display identically', () => {
+describe('C1-FX-04m / C1-FX-04n, a flagged and an unflagged result that display identically', () => {
   // Recorded as correct, deliberately, because it reads as a bug.
   //
   // §8 evaluates its conditions on the computed system, which is the unrounded
   // value. C1-UN-06 renders six significant figures. A molar concentration one
   // ULP below 1 pM satisfies "< 1 pM" and rounds to 1.00000; one exactly at
   // 1 pM does not satisfy it and also rounds to 1.00000. Neither requirement is
-  // wrong and the pair is not a contradiction — but nothing in the suite said
+  // wrong and the pair is not a contradiction, but nothing in the suite said
   // so, and the next person to read it would reasonably file a defect.
   const on = CONCENTRATION_BOUNDARY_FIXTURES.find((f) => f.id === 'C1-FX-04m')!
   const below = CONCENTRATION_BOUNDARY_FIXTURES.find((f) => f.id === 'C1-FX-04n')!

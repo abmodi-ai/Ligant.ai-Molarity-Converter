@@ -9,7 +9,7 @@
  * NOTE ON C1-OUT-03/04. `ConversionResult` below is the tool's internal result,
  * not the machine-readable structured object those requirements call for. The
  * structured object is specified to use the shipped Antigen Density
- * Calculator's format, and that format does not exist — see
+ * Calculator's format, and that format does not exist; see
  * docs/open-item-01-adc-format-finding.md. No serialiser is written here, and
  * no local extension of the ADC's CSV has been invented to stand in for one.
  * C1-OUT-04 and acceptance test 4 are held pending that escalation.
@@ -42,6 +42,7 @@ import {
   type MwProvenance,
 } from './units'
 import { NOTHING_RETAINED, type RetainedFields } from './retention'
+import { detectUnderflow, type UnderflowState } from './underflow'
 
 /**
  * Everything the user declared. There are no optional fields and no defaults.
@@ -67,7 +68,7 @@ export interface ConversionRequest {
    *
    * Optional, and defaulted to nothing retained, because a conversion with no
    * direction change behind it is the overwhelmingly common case and every
-   * §10 fixture is one. It is NOT optional in the structured object — see
+   * §10 fixture is one. It is NOT optional in the structured object, see
    * `serialise.ts`, where an absent key would be indistinguishable from a tool
    * that never recorded this.
    */
@@ -85,6 +86,15 @@ export interface ConversionResult {
   entered: 'mass' | 'molar'
   displayed: { mass: string; molar: string; sigFigs: number }
   flags: Flag[]
+  /**
+   * C1-UN-07. Which computed quantity, if any, is a zero that is not the value.
+   *
+   * Detection and the record proceed; the PRESENTATION is held pending NADIRA
+   *: whether this belongs in §8 as a flag beside the zero or in §7 as a
+   * refusal to display is her ruling, and nothing here decides it. This field
+   * is the single decision point: either outcome reads it.
+   */
+  underflow: UnderflowState
   units: ConversionUnits
   declarations: {
     mwValue: number
@@ -122,7 +132,7 @@ export type ConversionOutcome = ConversionResult | ConversionRejected
  *
  * Both concentration checks run against the entered value only, because the
  * computed one cannot be negative if the entered one is not and the molecular
- * weight is positive — both of which are established before the conversion
+ * weight is positive: both of which are established before the conversion
  * runs. Nothing here needs the computed value to decide a rejection.
  */
 export function computeConversion(request: ConversionRequest): ConversionOutcome {
@@ -170,6 +180,7 @@ export function computeConversion(request: ConversionRequest): ConversionOutcome
       sigFigs: DISPLAY_SIG_FIGS,
     },
     flags,
+    underflow: detectUnderflow(pair),
     units,
     declarations: { mwValue, provenance: request.provenance, massBasis: request.massBasis, retained },
     relation: relationApplied(direction),
@@ -208,8 +219,8 @@ function assumptionsFor(request: ConversionRequest): readonly string[] {
     `Molecular weight taken as ${request.mwValue} ${UNIT_LABEL[units.mw]}, ${
       retained.mw ? CARRIED : 'as declared'
     }. The tool does not supply or check molecular weights.`,
-    `Source of that weight: ${MW_PROVENANCE_LABEL[request.provenance]}${retained.provenance ? ` — ${CARRIED}` : ''}.`,
-    `The stated weight is the mass of: ${MASS_BASIS_LABEL[request.massBasis]}${retained.massBasis ? ` — ${CARRIED}` : ''}.`,
+    `Source of that weight: ${MW_PROVENANCE_LABEL[request.provenance]}${retained.provenance ? `: ${CARRIED}` : ''}.`,
+    `The stated weight is the mass of: ${MASS_BASIS_LABEL[request.massBasis]}${retained.massBasis ? `: ${CARRIED}` : ''}.`,
     'The solution is dilute enough that solute volume is not accounted for separately.',
   ]
 }

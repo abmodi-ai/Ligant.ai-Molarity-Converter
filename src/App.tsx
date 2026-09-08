@@ -36,7 +36,7 @@ import { formatSigFigs } from './lib/format'
  * C1-ST-02: nothing is persisted. There is no localStorage, no sessionStorage
  * and no URL state, so there is nothing that could survive a reload
  * invisibly. That is the strongest form of the requirement rather than a
- * shortcut past it — the alternative, persisting and marking it, adds a thing
+ * shortcut past it: the alternative, persisting and marking it, adds a thing
  * to get wrong for a convenience nobody asked for.
  *
  * C1-UN-01 / C1-MW-03: the two INPUT units arrive unselected, on the same terms
@@ -47,12 +47,12 @@ export function App() {
   const [entered, setEntered] = useState('')
 
   /**
-   * C1-UN-01 — the unit of the entered concentration. Unselected until chosen.
+   * C1-UN-01: the unit of the entered concentration. Unselected until chosen.
    *
    * This field arrived pre-filled with `mg/mL` until v0.1.1, alongside a
    * compelled provenance and a compelled mass basis. The form therefore taught
    * that some fields are the user's and some are the tool's, along a split the
-   * user cannot see — and the derivation echoed "150 kDa" identically whether
+   * user cannot see: and the derivation echoed "150 kDa" identically whether
    * the user chose kDa or never looked at it. The tool compelled a declaration
    * of where the digits came from and then supplied the exponent itself.
    *
@@ -62,8 +62,8 @@ export function App() {
    * one that is usually wrong, because it stops being read.
    *
    * It holds a mass unit or a molar unit depending on the direction, which is
-   * why it is one piece of state rather than two: it is one field — "the unit
-   * of the number you typed" — and what it measures changes with the swap.
+   * why it is one piece of state rather than two: it is one field: "the unit
+   * of the number you typed", and what it measures changes with the swap.
    */
   const [enteredUnit, setEnteredUnit] = useState<MassUnit | MolarUnit | ''>('')
 
@@ -72,7 +72,7 @@ export function App() {
    * the two cases are different.
    *
    * A wrong output unit gives a correct quantity displayed in an unexpected
-   * unit, with that unit rendered beside the number — visible, and wrong about
+   * unit, with that unit rendered beside the number; visible, and wrong about
    * nothing. A wrong input unit gives a quantity wrong by 1000× with nothing to
    * catch it. Two added selections, not three.
    */
@@ -222,7 +222,7 @@ export function App() {
                     setCopied(null)
                   }}
                 >
-                  <option value="" disabled>— unit —</option>
+                  <option value="" disabled>(select a unit)</option>
                   {(enteredIsMass ? MASS_UNITS : MOLAR_UNITS).map((u) => (
                     <option key={u} value={u}>{UNIT_LABEL[u]}</option>
                   ))}
@@ -234,7 +234,7 @@ export function App() {
             <div className="field">
               <label htmlFor="mw">
                 Molecular weight
-                {retained.has('mw') && <span className="retained">Retained — not re-confirmed</span>}
+                {retained.has('mw') && <span className="retained">Retained, not re-confirmed</span>}
               </label>
               <div className="row">
                 <input
@@ -260,7 +260,7 @@ export function App() {
                     setCopied(null)
                   }}
                 >
-                  <option value="" disabled>— unit —</option>
+                  <option value="" disabled>(select a unit)</option>
                   {MW_UNITS.map((u) => (
                     <option key={u} value={u}>{UNIT_LABEL[u]}</option>
                   ))}
@@ -268,7 +268,7 @@ export function App() {
               </div>
               <p className="hint">
                 Required, with its unit. The tool does not supply, look up, or suggest molecular
-                weights — not for common antibodies either.
+                weights: not for common antibodies either.
               </p>
             </div>
 
@@ -276,7 +276,7 @@ export function App() {
             <div className="field">
               <label htmlFor="prov">
                 Source of that weight
-                {retained.has('provenance') && <span className="retained">Retained — not re-confirmed</span>}
+                {retained.has('provenance') && <span className="retained">Retained, not re-confirmed</span>}
               </label>
               <select
                 id="prov"
@@ -287,7 +287,7 @@ export function App() {
                   setCopied(null)
                 }}
               >
-                <option value="" disabled>— select —</option>
+                <option value="" disabled>(select a source)</option>
                 {MW_PROVENANCE.map((p) => (
                   <option key={p} value={p}>{MW_PROVENANCE_LABEL[p]}</option>
                 ))}
@@ -297,8 +297,8 @@ export function App() {
             {/*
               C1-MW-07/08. Single-select, and radios rather than a dropdown.
 
-              The options are not strictly exclusive in the abstract — a
-              PE-conjugated scFv is both single-chain and conjugated — and §3.3
+              The options are not strictly exclusive in the abstract, a
+              PE-conjugated scFv is both single-chain and conjugated, and §3.3
               resolves that by carrying the precedence rule inside the conjugate
               option's own label. A <select> truncates its options to the width
               of the control, which hides exactly the clause the rule depends on,
@@ -309,7 +309,7 @@ export function App() {
             <fieldset className="field">
               <legend>
                 The stated weight is the mass of
-                {retained.has('massBasis') && <span className="retained">Retained — not re-confirmed</span>}
+                {retained.has('massBasis') && <span className="retained">Retained, not re-confirmed</span>}
               </legend>
               <div className="basis-options">
                 {MASS_BASIS.map((b) => (
@@ -389,7 +389,7 @@ export function App() {
                       {/*
                         C1-CV-03 exists so a reader can check the arithmetic.
                         The relation carried its unit handling inside the same
-                        string until v0.1.1 — "(mg/mL ÷ effective kDa → µM)" —
+                        string until v0.1.1: "(mg/mL ÷ effective kDa → µM)",
                         and "effective kDa" is not a unit; it was a name for the
                         folded divisor, and a coined term cannot be evaluated.
                         The relation is now named quantities only, and the unit
@@ -473,7 +473,7 @@ export function App() {
                     onClick={() => {
                       // C1-OUT-03. The structured object, with a unit on every
                       // quantity and the unrounded values per C1-UN-07. C1's
-                      // own schema — open item 1 is still open and no ADC shape
+                      // own schema: open item 1 is still open and no ADC shape
                       // has been invented to stand in for one.
                       void navigator.clipboard?.writeText(toJson(result))
                       setCopied('json')
@@ -538,7 +538,7 @@ export function App() {
           C1-NF-01 is an environment claim about the SERVED page, and acceptance
           test 14 establishes it. The shared footer will not render a
           transmission claim without being told which evidence state the tool is
-          in — see TransmissionEvidence in Brand.tsx. C1 supplies its own from
+          in: see TransmissionEvidence in Brand.tsx. C1 supplies its own from
           NETWORK_CLAIM_VERIFIED, which check-network.mjs refuses to let anyone
           set on the strength of a local run.
         */}
@@ -555,7 +555,7 @@ export function App() {
           }
         >
           <p>
-            No account, and nothing is stored between visits. Research use — not qualified for GxP
+            No account, and nothing is stored between visits. Research use: not qualified for GxP
             decision-making.
           </p>
         </SiteFooter>

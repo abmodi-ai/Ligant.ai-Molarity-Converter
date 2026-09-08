@@ -16,7 +16,7 @@ const FILLED = { mw: '150', provenance: 'certificate-of-analysis', massBasis: 'a
  * names one field while asserting about another fails against it, which is the
  * only useful definition of "would have caught".
  */
-describe('C1-ST-03 — retention is marked per field', () => {
+describe('C1-ST-03: retention is marked per field', () => {
   it('every declaration holding a value is marked when the direction changes', () => {
     expect([...retainedOnDirectionChange(FILLED)].sort()).toEqual(['massBasis', 'mw', 'provenance'])
   })
@@ -58,7 +58,7 @@ describe('C1-ST-03 — retention is marked per field', () => {
   it('a field holding nothing is never marked', () => {
     // The second facet of the defect: the boolean badged all three labels, so
     // filling only the weight and switching direction marked two empty selects
-    // as "retained — confirm". A badge on an empty field teaches the user that
+    // as "retained: confirm". A badge on an empty field teaches the user that
     // the badge means nothing.
     expect([...retainedOnDirectionChange({ mw: '150', provenance: '', massBasis: '' })]).toEqual(['mw'])
     expect([...retainedOnDirectionChange({ mw: '  ', provenance: 'vendor-datasheet', massBasis: '' })]).toEqual([
@@ -74,14 +74,14 @@ describe('C1-ST-03 — retention is marked per field', () => {
     expect([...RETAINABLE_FIELDS].sort()).toEqual(['massBasis', 'mw', 'provenance'])
   })
 
-  it('the returned set is a copy — confirming does not mutate the previous state', () => {
+  it('the returned set is a copy, confirming does not mutate the previous state', () => {
     const afterSwitch = retainedOnDirectionChange(FILLED)
     confirmField(afterSwitch, 'mw')
     expect(afterSwitch.has('mw')).toBe(true)
   })
 })
 
-describe('C1-FL-09 — retention reaches the result, not only the form', () => {
+describe('C1-FL-09: retention reaches the result, not only the form', () => {
   const BASE: ConversionRequest = {
     direction: 'molar-to-mass',
     enteredValue: 8.42733,
@@ -143,17 +143,17 @@ describe('C1-FL-09 — retention reaches the result, not only the form', () => {
     expect(weight).toContain('retained from the previous conversion direction, not re-confirmed')
     expect(weight).not.toContain('as declared')
     expect(source).toContain('retained from the previous conversion direction, not re-confirmed')
-    // The re-confirmed field is untouched — the wording is per field, like the badge.
+    // The re-confirmed field is untouched, the wording is per field, like the badge.
     expect(basis).not.toMatch(/retained/i)
   })
 
-  it('C1-ST-01 — the notebook line carries the retention flag', () => {
+  it('C1-ST-01: the notebook line carries the retention flag', () => {
     const r = ok({ ...BASE, retained: { mw: true, provenance: false, massBasis: false } })
     expect(notebookLine(r)).toContain('C1-FL-09')
   })
 })
 
-describe('C1-FL-10 — zero is the absence of solute, not a low concentration', () => {
+describe('C1-FL-10: zero is the absence of solute, not a low concentration', () => {
   const ZERO: ConversionRequest = {
     direction: 'mass-to-molar',
     enteredValue: 0,

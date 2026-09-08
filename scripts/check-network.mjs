@@ -12,7 +12,7 @@
  *   1. A REAL BROWSER. String scanning cannot establish what is requested.
  *   2. MONITORING BEFORE LOAD. The listeners are attached to a blank page and
  *      the navigation happens afterwards, so a request issued by the document
- *      itself — a stylesheet, a font, a CDN default injected by the host — is
+ *      itself: a stylesheet, a font, a CDN default injected by the host; is
  *      recorded. Attaching after `goto` misses exactly the requests that
  *      matter, which is how a claim like this gets made falsely.
  *   3. AGAINST THE DEPLOYED ADDRESS. A CDN or static host can add headers,
@@ -47,7 +47,7 @@ const SITE_URL = (SITE_TS.match(/SITE_URL\s*=\s*['"]([^'"]+)['"]/) ?? [])[1]
  * DEPLOYED address. This check enforces the other half of that pairing: if the
  * claim is live and this run is a local server over dist/, the check fails.
  * Otherwise the strong claim could ship on the strength of a run that cannot
- * see the CDN path — which is exactly how the claim failed twice before.
+ * see the CDN path: which is exactly how the claim failed twice before.
  */
 const NETWORK_CLAIM_VERIFIED = /NETWORK_CLAIM_VERIFIED\s*=\s*true/.test(SITE_TS)
 
@@ -57,14 +57,14 @@ const NETWORK_CLAIM_VERIFIED = /NETWORK_CLAIM_VERIFIED\s*=\s*true/.test(SITE_TS)
  * "Inputs and result shall fit one screen without scrolling on a standard
  * laptop display." Nothing defines the display. The figure was 1440x820 until
  * 4 September 2026 and then 1440x900, and BOTH were viewport heights this
- * script chose — which is the defect, not the numbers. A 1440x900 laptop does
+ * script chose: which is the defect, not the numbers. A 1440x900 laptop does
  * not have a 900px viewport: browser chrome takes about a hundred pixels and
  * the page gets 797. So the check was passing against a screen nobody owns.
  *
  * An undeclared constant governing a pass/fail test is the class §11 exists
  * for, and a check that passes against a number it made up is the proxy pattern
  * in docs/correspondence.md §I. So this reports the measurement at each
- * candidate and declares the standard UNSET — the same shape as acceptance test
+ * candidate and declares the standard UNSET, the same shape as acceptance test
  * 14 reporting UNRUN rather than a false pass.
  *
  * Owner: A. Modi. Smallest supported window AND zoom level, then it becomes a
@@ -90,8 +90,8 @@ if (!target) {
 }
 
 /*
- * Chromium's own background services — autofill, account sync, component
- * updates — talk to Google on startup regardless of what the page does. Those
+ * Chromium's own background services, autofill, account sync, component
+ * updates: talk to Google on startup regardless of what the page does. Those
  * are browser requests, not page requests, and Playwright's page/context
  * listeners below do not report them. They are disabled anyway so that anyone
  * watching this run at the network layer sees a clean trace and cannot mistake
@@ -144,7 +144,7 @@ const isOwn = (url) =>
 await page.goto(origin, { waitUntil: 'networkidle' })
 
 // Exercise the tool, because a request can be triggered by use rather than by
-// load — an autocomplete lookup, a telemetry ping on submit.
+// load: an autocomplete lookup, a telemetry ping on submit.
 await page.fill('#entered', '1')
 await page.selectOption('#enteredunit', 'mg/mL')
 await page.fill('#mw', '150')
@@ -169,8 +169,8 @@ if (overflows) failures.push('the page scrolls horizontally at 1440px')
  * C1-NF-03 again, on the worst case rather than the happy one.
  *
  * The clean case fits trivially. The case that decides the requirement is the
- * one raising the most flags at once — an implausible weight, a concentration
- * below the working range, and both declarations unrecorded — because every
+ * one raising the most flags at once, an implausible weight, a concentration
+ * below the working range, and both declarations unrecorded; because every
  * flag adds a paragraph to the column that has to fit. Measuring only the
  * negative control would let the layout regress without anything noticing,
  * which is the same shape of gap C1-FX-09 exists to close in the fixture set.
@@ -212,16 +212,16 @@ const measurements = []
 for (const candidate of VIEWPORT_CANDIDATES) measurements.push(await measure(candidate))
 await page.setViewportSize(VIEWPORT)
 
-console.log(`\n  C1-NF-03 — worst case, ${flagCount} flags`)
+console.log(`\n  C1-NF-03: worst case, ${flagCount} flags`)
 for (const m of measurements) {
   const verdict = m.over <= 0 ? `fits, ${-m.over}px spare` : `over by ${m.over}`
   console.log(`    window ${m.label}  viewport ${m.height}px  converter ${m.bottom}px  ${verdict}`)
 }
 console.log('    (identical converter heights: .wrap caps content at 1120px, so all three')
 console.log('     candidates differ in available height only, not in wrapping)')
-console.log('    STANDARD NOT SET — "standard laptop display" is undefined in C1-NF-03')
+console.log('    STANDARD NOT SET: "standard laptop display" is undefined in C1-NF-03')
 console.log('    and acceptance 20, so there is nothing to pass or fail against. Owner:')
-console.log('    A. Modi — smallest supported window and zoom level, then a register row.')
+console.log('    A. Modi: smallest supported window and zoom level, then a register row.')
 
 // C1-ST-02: nothing persists across a reload unless its persistence is visible.
 const stored = await page.evaluate(() => ({
@@ -255,13 +255,13 @@ if (server) server.close()
 if (NETWORK_CLAIM_VERIFIED && !target) {
   failures.push(
     'NETWORK_CLAIM_VERIFIED is true in src/lib/site.ts, so the footer asserts no network request ' +
-      'of any kind — but this run was a LOCAL SERVER over dist/, which cannot establish it. ' +
+      'of any kind: but this run was a LOCAL SERVER over dist/, which cannot establish it. ' +
       'Set the flag only after this script passes against the deployed address.',
   )
 }
 
 const external = requests.filter((r) => !isOwn(r.url))
-console.log(`\ncheck-network — ${origin}`)
+console.log(`\ncheck-network: ${origin}`)
 console.log(`  requests observed: ${requests.length} (monitoring armed before navigation)`)
 for (const r of requests) console.log(`    ${isOwn(r.url) ? 'own     ' : 'EXTERNAL'} ${r.method} ${r.type.padEnd(10)} ${r.url}`)
 
@@ -303,5 +303,5 @@ if (target) {
   console.log('  A CDN can inject conditionally on request characteristics; that is')
   console.log('  invisible anywhere but the deployed address.')
   console.log('\n      node scripts/check-network.mjs https://<deployed-address>/')
-  console.log('\n  Blocked on open item 5 — the public URL slug.')
+  console.log('\n  Blocked on open item 5, the public URL slug.')
 }

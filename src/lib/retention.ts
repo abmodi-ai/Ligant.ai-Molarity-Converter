@@ -1,5 +1,5 @@
 /**
- * C1-ST-03 — what is carried across a change of conversion direction, and what
+ * C1-ST-03: what is carried across a change of conversion direction, and what
  * is marked as carried.
  *
  * "Changing the conversion direction shall not silently carry a molecular
@@ -72,14 +72,14 @@ export function confirmField(
  * Which declarations a RESULT was computed from without re-confirmation.
  *
  * Retention was a property of the form until v0.1.2, and the badge was the
- * whole of it. That satisfied C1-ST-03 as written — the value is visibly
- * marked — and left the record wrong in a way the screen was not: the
+ * whole of it. That satisfied C1-ST-03 as written, the value is visibly
+ * marked: and left the record wrong in a way the screen was not: the
  * derivation said "as declared" of a weight the user had never re-affirmed in
  * this direction, and the structured object carried no trace of it at all. A
  * result copied into a notebook claimed provenance it did not have.
  *
- * So retention crosses into the computation. Not to change the arithmetic —
- * it changes nothing there — but because C1-ST-01 requires what qualifies a
+ * So retention crosses into the computation. Not to change the arithmetic,
+ * it changes nothing there, but because C1-ST-01 requires what qualifies a
  * value to travel with it, and "carried, not re-confirmed" qualifies a value.
  *
  * All three fields are always present, deliberately. A consumer must not have

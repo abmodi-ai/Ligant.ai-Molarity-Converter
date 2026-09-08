@@ -1,9 +1,9 @@
 /**
- * C1-OUT-03 — the structured, machine-readable result object.
+ * C1-OUT-03: the structured, machine-readable result object.
  *
  * WHY THIS EXISTS SEPARATELY FROM C1-OUT-04. C1-OUT-04 requires the object to
  * use the shipped Antigen Density Calculator's format, and that format does not
- * exist — `docs/open-item-01-adc-format-finding.md`. C1-OUT-03's text does not
+ * exist: `docs/open-item-01-adc-format-finding.md`. C1-OUT-03's text does not
  * reference the ADC at all. The two were held together until 4 September 2026,
  * which meant a finding about another tool stopped this one emitting anything
  * machine-readable. The hold on C1-OUT-03 is lifted; the hold on C1-OUT-04
@@ -17,12 +17,12 @@
  *
  * TWO PROPERTIES THE SHAPE IS BUILT FOR:
  *
- *   1. C1-OUT-03 — "units attached to every quantity". Every number that has a
+ *   1. C1-OUT-03: "units attached to every quantity". Every number that has a
  *      unit is a `{ value, unit }` pair. The first draft of `ConversionResult`
  *      put four bare numbers beside one shared `units` object, which reads as
  *      satisfying the requirement and does not: a consumer holding one quantity
  *      cannot tell what it is in.
- *   2. C1-DAT-03 — the object alone is sufficient to reproduce the reported
+ *   2. C1-DAT-03: the object alone is sufficient to reproduce the reported
  *      result. Nothing is elided as derivable. `reproduceFrom` below does the
  *      reproduction and `serialise.test.ts` runs it over the whole fixture set,
  *      so sufficiency is established by execution rather than by inspection.
@@ -56,19 +56,33 @@ import { NOTHING_RETAINED, type RetainedFields } from './retention'
  */
 export const SCHEMA_NAME = 'ligant-benchtools-c1-conversion'
 /**
+ * 1.1.0 → 1.2.0: every `Quantity` gained `underflowed`.
  * 1.0.0 → 1.1.0: `declarations.retained` added, and `flags[].kind` gained
  * `retention`. Additive for a consumer that ignores unknown keys; a new required
  * field for one that validates. Moving independently of ENGINE_VERSION, which
- * also moved this release for an unrelated reason — which is the point of
+ * also moved this release for an unrelated reason, which is the point of
  * having two.
  */
-export const SCHEMA_VERSION = '1.1.0'
+export const SCHEMA_VERSION = '1.2.0'
 
 /** A number that means nothing without its unit, carrying it. */
 export interface Quantity<U extends string = string> {
   /** Unrounded, per C1-UN-07. */
   value: number
   unit: U
+  /**
+   * C1-UN-07. `true` when this value is a zero that is NOT the value, the
+   * conversion underflowed the double range in this unit.
+   *
+   * On the quantity rather than beside it, for the reason the unit is: a
+   * consumer holding one quantity in isolation must be able to tell. A bare
+   * `0` here is not a rounded version of the true value; it is a different
+   * number, and a reimplementation with a wider exponent range returns
+   * something positive for the same input.
+   *
+   * Always present, never implied by absence.
+   */
+  underflowed: boolean
 }
 
 export interface StructuredFlag {
@@ -139,10 +153,20 @@ export function toStructuredResult(result: ConversionResult): StructuredResult {
     direction: result.direction,
     entered: result.entered,
     quantities: {
-      massConcentration: { value: result.massValue, unit: result.units.mass },
-      molarConcentration: { value: result.molarValue, unit: result.units.molar },
-      molecularWeight: { value: result.declarations.mwValue, unit: result.units.mw },
-      effectiveDivisor: { value: result.effectiveMw, unit: result.effectiveMwUnit },
+      massConcentration: {
+        value: result.massValue,
+        unit: result.units.mass,
+        underflowed: result.underflow.massConcentration,
+      },
+      molarConcentration: {
+        value: result.molarValue,
+        unit: result.units.molar,
+        underflowed: result.underflow.molarConcentration,
+      },
+      // Neither is a computed concentration: the weight is what the user typed,
+      // and the divisor is reported for checking rather than consumed.
+      molecularWeight: { value: result.declarations.mwValue, unit: result.units.mw, underflowed: false },
+      effectiveDivisor: { value: result.effectiveMw, unit: result.effectiveMwUnit, underflowed: false },
     },
     declarations: {
       molecularWeightProvenance: result.declarations.provenance,
@@ -176,7 +200,7 @@ export function toJson(result: ConversionResult): string {
 }
 
 /**
- * C1-DAT-03 — recompute the result from the object alone.
+ * C1-DAT-03: recompute the result from the object alone.
  *
  * Reads only the structured object. If a field the reproduction needs were
  * dropped from the schema, this stops compiling or stops agreeing, which is the
@@ -234,7 +258,7 @@ export function validateStructuredResult(obj: unknown): ValidationProblem[] {
   if (o.schema?.name !== SCHEMA_NAME) fail('schema.name', `expected ${SCHEMA_NAME}`)
   if (typeof o.schema?.version !== 'string' || !o.schema.version) fail('schema.version', 'missing')
   if (typeof o.tool?.engineVersion !== 'string' || !o.tool.engineVersion) {
-    fail('tool.engineVersion', 'missing — C1-NF-06 and C1-OUT-01 require it on the output')
+    fail('tool.engineVersion', 'missing: C1-NF-06 and C1-OUT-01 require it on the output')
   }
   if (o.direction !== 'mass-to-molar' && o.direction !== 'molar-to-mass') fail('direction', 'not a direction')
   if (o.entered !== 'mass' && o.entered !== 'molar') fail('entered', 'not "mass" or "molar"')
@@ -251,18 +275,22 @@ export function validateStructuredResult(obj: unknown): ValidationProblem[] {
     if (typeof q.unit !== 'string' || q.unit === '') {
       fail(`${path}.unit`, 'C1-OUT-03 requires a unit attached to every quantity')
     }
+    // C1-UN-07. A zero that is not the value must say so on the quantity.
+    if (typeof q.underflowed !== 'boolean') {
+      fail(`${path}.underflowed`, 'missing: a zero that is not the value must be marked, not merely reported')
+    }
   }
 
   if (typeof o.declarations?.molecularWeightProvenance !== 'string' || !o.declarations.molecularWeightProvenance) {
-    fail('declarations.molecularWeightProvenance', 'missing — C1-MW-04 makes it required')
+    fail('declarations.molecularWeightProvenance', 'missing; C1-MW-04 makes it required')
   }
   if (typeof o.declarations?.massBasis !== 'string' || !o.declarations.massBasis) {
-    fail('declarations.massBasis', 'missing — C1-MW-07 makes it required')
+    fail('declarations.massBasis', 'missing: C1-MW-07 makes it required')
   }
-  // C1-ST-03. Every key, every time — see the note on the field.
+  // C1-ST-03. Every key, every time: see the note on the field.
   for (const key of ['mw', 'provenance', 'massBasis']) {
     if (typeof o.declarations?.retained?.[key] !== 'boolean') {
-      fail(`declarations.retained.${key}`, 'missing — C1-ST-03 requires the retention state to be recorded, not implied by absence')
+      fail(`declarations.retained.${key}`, 'missing: C1-ST-03 requires the retention state to be recorded, not implied by absence')
     }
   }
 
@@ -273,7 +301,7 @@ export function validateStructuredResult(obj: unknown): ValidationProblem[] {
   }
 
   if (!Array.isArray(o.flags)) {
-    fail('flags', 'missing — an empty array is the no-flags case and is not the same as absent')
+    fail('flags', 'missing: an empty array is the no-flags case and is not the same as absent')
   } else {
     o.flags.forEach((f: any, i: number) => {
       if (!/^C1-FL-(0[1-9]|10)$/.test(f?.code ?? '')) fail(`flags[${i}].code`, 'not a machine-readable reason code')
@@ -282,10 +310,10 @@ export function validateStructuredResult(obj: unknown): ValidationProblem[] {
     })
   }
 
-  if (typeof o.derivation?.relation !== 'string' || !o.derivation.relation) fail('derivation.relation', 'missing — C1-CV-03')
+  if (typeof o.derivation?.relation !== 'string' || !o.derivation.relation) fail('derivation.relation', 'missing: C1-CV-03')
   if (typeof o.derivation?.unitHandling !== 'string' || !o.derivation.unitHandling) fail('derivation.unitHandling', 'missing')
   if (!Array.isArray(o.derivation?.assumptions) || o.derivation.assumptions.length === 0) {
-    fail('derivation.assumptions', 'missing — C1-OUT-01')
+    fail('derivation.assumptions', 'missing: C1-OUT-01')
   }
   for (const key of ['precision', 'scope', 'moleculesNotSites', 'thresholdEvaluation']) {
     if (typeof o.statements?.[key] !== 'string' || !o.statements[key]) fail(`statements.${key}`, 'missing')

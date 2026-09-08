@@ -1,5 +1,5 @@
 """
-Acceptance test 3 — the comparison.
+Acceptance test 3: the comparison.
 
 Reads reference/reference-set.json, which carries the inputs and what the
 shipped TypeScript returns for them, recomputes every case with molarity.py,
@@ -137,11 +137,11 @@ for case in cases:
     if want["flags"] != got["flags"]:
         flag_failures.append((src, want["flags"], got["flags"]))
 
-print("Acceptance test 3 — independent reimplementation (Python) vs shipped (TypeScript)")
+print("Acceptance test 3: independent reimplementation (Python) vs shipped (TypeScript)")
 print(f"  engine under test : {data['engineVersion']}")
 print(f"  cases compared    : {len(cases)}  ({compared_values} unrounded values)")
 print()
-print(f"  CORRECTNESS GATE — unrounded values, <= {TOLERANCE_ULP} ULP (C1-UN-07)")
+print(f"  CORRECTNESS GATE, unrounded values, <= {TOLERANCE_ULP} ULP (C1-UN-07)")
 print(f"    exceeding {TOLERANCE_ULP} ULP                        : {len(value_failures)}")
 print(f"    worst ULP distance observed          : {worst_ulps:g}")
 print(f"    bit-identical (recorded, not required): {identical}/{compared_values}")
@@ -149,14 +149,14 @@ if worst_case:
     src, key, a, b = worst_case
     print(f"        at {src} {key}: {a!r} vs {b!r}")
 print()
-print(f"  DISPLAY CHECK — {DISPLAY_SIG_FIGS} significant figures, half-to-even (C1-UN-06)")
+print(f"  DISPLAY CHECK: {DISPLAY_SIG_FIGS} significant figures, half-to-even (C1-UN-06)")
 print(f"    disagreeing renderings             : {len(display_failures)}")
 print(f"    exact ties in the reference set    : {len(ties)}")
 if ties:
     for src, key, v in ties[:5]:
         print(f"        {src} {key} = {v!r}  (rounding mode decides this value)")
 else:
-    print("        NONE — the rounding mode is untested by this comparison")
+    print("        NONE: the rounding mode is untested by this comparison")
 print()
 print(f"  flag-set disagreements               : {len(flag_failures)}")
 print(f"  rejection disagreements              : {len(reject_failures)}")
@@ -176,10 +176,10 @@ for src, want_r, got_r in reject_failures[:20]:
 # a ULP, that is a tolerance the URS has to state rather than something this
 # script should decide quietly.
 if not ties:
-    print("\n  WARNING: no exact tie in the reference set — C1-UN-06's rounding mode")
+    print("\n  WARNING: no exact tie in the reference set, C1-UN-06's rounding mode")
     print("  is not exercised by this comparison. See docs/rounding-ties.md.")
 
 failed = value_failures or display_failures or flag_failures or reject_failures or not ties
 print()
-print("FAILED" if failed else "PASSED — the two implementations agree on every unrounded value, and render every value identically.")
+print("FAILED" if failed else "PASSED: the two implementations agree on every unrounded value, and render every value identically.")
 sys.exit(1 if failed else 0)

@@ -1,5 +1,5 @@
 /**
- * §8 — compute and flag.
+ * §8: compute and flag.
  *
  * Flags never block the calculation. Each appears in both the human-readable
  * and the structured output with a machine-readable reason code.
@@ -47,12 +47,12 @@ export interface Flag {
    *
    * The first distinction is not cosmetic. A threshold flag is evaluated on the
    * UNROUNDED value, which can differ from the displayed value in the last
-   * significant figure — so a flagged result and an unflagged one can render
+   * significant figure: so a flagged result and an unflagged one can render
    * identically. See THRESHOLD_EVALUATION_STATEMENT. A declaration flag has no
    * such property: the declaration is what the user selected.
    *
    * `retention` is a third thing and not a declaration flag, because it does
-   * not read what the user chose — it reads what the user did NOT do. Keeping
+   * not read what the user chose, it reads what the user did NOT do. Keeping
    * it separate is what stops the threshold caveat from being shown beside it.
    */
   kind: 'threshold' | 'declaration' | 'retention'
@@ -66,8 +66,8 @@ export interface Flag {
  * raises nothing and displays as 1.00000 pM. Two results, identical on screen,
  * one flagged and one not.
  *
- * Neither is wrong — §8 evaluates against the computed system and C1-UN-06
- * governs the rendering — but a user who cannot reconcile the flag with the
+ * Neither is wrong: §8 evaluates against the computed system and C1-UN-06
+ * governs the rendering: but a user who cannot reconcile the flag with the
  * number in front of them loses confidence in both, and in a tool whose whole
  * claim is that it records what a spreadsheet hides, that is expensive.
  */
@@ -97,9 +97,9 @@ export const CONSTANTS_REGISTER: readonly Threshold[] = [
     value: '1 ULP, compared with ≤',
     basis: 'derived',
     status:
-      'Derived. Analytic: each of the two operations contributes at most ½ ULP of the result. Confirmed empirically — 500,000 random pairs, MW 10³–10⁶ g/mol, concentrations spanning 11 decades, both directions; worst observed error exactly 1.0 ULP, zero cases exceeding.',
+      'Derived, and a REQUIREMENT ON HOW THE CONVERSION IS STRUCTURED rather than an observation about it. The bound holds only because the unit factors are folded into a single divisor, so a round trip is two operations and not six, and folding is required for two independent reasons. Rounding: the stepwise path reaches 3.0 ULP and exceeds the bound in 0.54% of cases, against 1.0 ULP and zero exceedances folded. Range: the stepwise intermediate underflows where the folded divisor does not, so 1e-320 mg/mL at 1000 kDa returns 0 stepwise and 1e-320 in µM folded. A tool inheriting this row as an observation would fail the bound and lose range. APPLIES TO RESULTS THE CHOSEN UNITS CAN REPRESENT: once a result underflows, the ULP distance is unbounded and is not a rounding difference. Measured: 500,000 random pairs, MW 10³ to 10⁶ g/mol, 11 decades, both directions; worst observed error exactly 1.0 ULP, zero cases exceeding.',
   },
-  { id: 'mw-lower', label: 'Lower MW plausibility bound', value: '1 kDa', basis: 'inspection', status: 'Uncharacterised — open item 2' },
+  { id: 'mw-lower', label: 'Lower MW plausibility bound', value: '1 kDa', basis: 'inspection', status: 'Uncharacterised: open item 2' },
   {
     id: 'mw-upper',
     label: 'Upper MW plausibility bound',
@@ -113,10 +113,10 @@ export const CONSTANTS_REGISTER: readonly Threshold[] = [
     // this bound ordinary, and the constant and the declaration were changed in
     // the same document without either being checked against the other.
     status:
-      'Uncharacterised — open item 2, and KNOWN TO MISFIRE. IgM–PE at 1210 kDa is an ordinary reagent and is flagged as outside the usual range. Adding the conjugate mass basis made masses above this bound ordinary; the bound was not revisited. Under review — the candidate resolutions are a higher figure or a bound conditioned on the mass-basis declaration.',
+      'Uncharacterised: open item 2, and KNOWN TO MISFIRE. IgM–PE at 1210 kDa is an ordinary reagent and is flagged as outside the usual range. Adding the conjugate mass basis made masses above this bound ordinary; the bound was not revisited. Under review: the candidate resolutions are a higher figure or a bound conditioned on the mass-basis declaration.',
   },
-  { id: 'mass-upper', label: 'Upper mass concentration bound', value: '250 mg/mL', basis: 'inspection', status: 'Uncharacterised — open item 3' },
-  { id: 'molar-lower', label: 'Lower molar concentration bound', value: '1 pM', basis: 'inspection', status: 'Uncharacterised — open item 3' },
+  { id: 'mass-upper', label: 'Upper mass concentration bound', value: '250 mg/mL', basis: 'inspection', status: 'Uncharacterised: open item 3' },
+  { id: 'molar-lower', label: 'Lower molar concentration bound', value: '1 pM', basis: 'inspection', status: 'Uncharacterised: open item 3' },
   {
     id: 'displayed-precision',
     label: 'Displayed precision',
@@ -124,14 +124,14 @@ export const CONSTANTS_REGISTER: readonly Threshold[] = [
     basis: 'inspection',
     // Open item 7 is NOT closed here, and the register must not say it is.
     //
-    // The measurement exists — docs/open-item-07-displayed-precision.md, seven
-    // orders of headroom before C1-IV-03 first fails — but it has not reached
+    // The measurement exists: docs/open-item-07-displayed-precision.md, seven
+    // orders of headroom before C1-IV-03 first fails, but it has not reached
     // NADIRA, and a register line is not a review. The row said "open item 7
     // closed" until 4 September 2026, which is the register claiming an
     // owner's decision on her behalf: precisely the kind of silent
     // behaviour-determining choice §11 exists to prevent.
     status:
-      'Proposed — open item 7 remains OPEN. Measured as evaluable at build with seven orders of headroom before C1-IV-03 fails (docs/open-item-07-displayed-precision.md). The measurement is with the developer; the decision is NADIRA\'s and has not been made.',
+      'Proposed: open item 7 remains OPEN. Measured as evaluable at build with seven orders of headroom before C1-IV-03 fails (docs/open-item-07-displayed-precision.md). The measurement is with the developer; the decision is NADIRA\'s and has not been made.',
   },
   {
     id: 'reimplementation-tolerance',
@@ -139,7 +139,7 @@ export const CONSTANTS_REGISTER: readonly Threshold[] = [
     value: '≤ 1 ULP, compared with ≤',
     basis: 'derived',
     status:
-      'Requirement, not an observation. Bit-identical is what was measured, but making it the requirement would generalise one measured pair into a claim about all future reimplementations: a language with wider intermediates or FMA contraction can differ in the last bit on the same two operations, and bit-identical would then fail on correct code. Observed: 0 ULP over 40,058 values, so any drift from exact agreement is visible rather than absorbed. Consequence, stated rather than left implicit: a defect uniformly smaller than 1 ULP is invisible to acceptance tests 3 and 5 alike.',
+      'Requirement, not an observation. Bit-identical is what was measured, but making it the requirement would generalise one measured pair into a claim about all future reimplementations: a language with wider intermediates or FMA contraction can differ in the last bit on the same two operations, and bit-identical would then fail on correct code. APPLIES TO RESULTS THE CHOSEN UNITS CAN REPRESENT, on the same terms as the round-trip row: an implementation with a wider exponent range returns a small positive number where this returns zero, and that disagreement is unbounded in ULP terms rather than being a rounding difference. C1-FX-03b and C1-FX-14 put both regimes in the reference set, so the qualifier is exercised rather than asserted. Observed: 0 ULP over the comparison set, so any drift from exact agreement is visible rather than absorbed. Consequence, stated rather than left implicit: a defect uniformly smaller than 1 ULP is invisible to acceptance tests 3 and 5 alike.',
   },
   {
     id: 'rounding-mode',
@@ -174,7 +174,7 @@ export interface FlagInput {
  * Every §8 condition, evaluated against the computed system.
  *
  * The mass and molar conditions are evaluated on the system's quantity in
- * whichever role it occupies — entered or computed — so the same implausibility
+ * whichever role it occupies, entered or computed, so the same implausibility
  * is caught in both conversion directions. Nothing here reads the direction.
  *
  * Boundary behaviour is the operators exactly as §8 writes them: `<` and `>`
@@ -188,7 +188,7 @@ export function raiseFlags(input: FlagInput): Flag[] {
   const massGPerL = input.massValue * MASS_TO_G_PER_L[input.massUnit]
   const molarMolPerL = input.molarValue * MOLAR_TO_MOL_PER_L[input.molarUnit]
 
-  // C1-FL-01 — MW < 1 kDa or MW > 1000 kDa.
+  // C1-FL-01: MW < 1 kDa or MW > 1000 kDa.
   if (mwGPerMol < MW_LOWER_G_PER_MOL || mwGPerMol > MW_UPPER_G_PER_MOL) {
     flags.push({
       code: 'C1-FL-01',
@@ -199,7 +199,7 @@ export function raiseFlags(input: FlagInput): Flag[] {
     })
   }
 
-  // C1-FL-02 — mass concentration > 250 mg/mL.
+  // C1-FL-02: mass concentration > 250 mg/mL.
   if (massGPerL > MASS_UPPER_G_PER_L) {
     flags.push({
       code: 'C1-FL-02',
@@ -217,7 +217,7 @@ export function raiseFlags(input: FlagInput): Flag[] {
    * requirements were satisfied and their interaction was the defect: 0 mg/mL
    * returned 0.00000 µM flagged "below the range typical of biologic working
    * solutions", which is true of zero and says nothing about it. A flag that
-   * carries no information is the inert-check pattern in miniature — it looks
+   * carries no information is the inert-check pattern in miniature, it looks
    * like the tool noticed something.
    *
    * Both quantities are tested rather than one. They are zero together for
@@ -228,7 +228,7 @@ export function raiseFlags(input: FlagInput): Flag[] {
    */
   const isEmpty = molarMolPerL === 0 && massGPerL === 0
 
-  // C1-FL-10 — the system contains no solute.
+  // C1-FL-10: the system contains no solute.
   if (isEmpty) {
     flags.push({
       code: 'C1-FL-10',
@@ -239,7 +239,7 @@ export function raiseFlags(input: FlagInput): Flag[] {
     })
   }
 
-  // C1-FL-03 — molar concentration < 1 pM, excluding an empty system.
+  // C1-FL-03: molar concentration < 1 pM, excluding an empty system.
   if (!isEmpty && molarMolPerL < MOLAR_LOWER_MOL_PER_L) {
     flags.push({
       code: 'C1-FL-03',
@@ -249,7 +249,7 @@ export function raiseFlags(input: FlagInput): Flag[] {
     })
   }
 
-  // C1-FL-04 — provenance is "calculated from sequence". Also C1-MW-06.
+  // C1-FL-04: provenance is "calculated from sequence". Also C1-MW-06.
   if (input.provenance === 'calculated-from-sequence') {
     flags.push({
       code: 'C1-FL-04',
@@ -260,7 +260,7 @@ export function raiseFlags(input: FlagInput): Flag[] {
     })
   }
 
-  // C1-FL-05 — provenance is "not recorded".
+  // C1-FL-05: provenance is "not recorded".
   if (input.provenance === 'not-recorded') {
     flags.push({
       code: 'C1-FL-05',
@@ -271,7 +271,7 @@ export function raiseFlags(input: FlagInput): Flag[] {
     })
   }
 
-  // C1-FL-06 — mass basis is monomer or single chain.
+  // C1-FL-06: mass basis is monomer or single chain.
   //
   // A single-chain conjugate raises C1-FL-08 and not this, because the
   // declaration is single-select and the precedence in the option label makes
@@ -288,7 +288,7 @@ export function raiseFlags(input: FlagInput): Flag[] {
     })
   }
 
-  // C1-FL-07 — mass basis is "not recorded".
+  // C1-FL-07: mass basis is "not recorded".
   if (input.massBasis === 'not-recorded') {
     flags.push({
       code: 'C1-FL-07',
@@ -299,7 +299,7 @@ export function raiseFlags(input: FlagInput): Flag[] {
     })
   }
 
-  // C1-FL-08 — mass basis is conjugate.
+  // C1-FL-08: mass basis is conjugate.
   if (input.massBasis === 'conjugate') {
     flags.push({
       code: 'C1-FL-08',
@@ -311,7 +311,7 @@ export function raiseFlags(input: FlagInput): Flag[] {
   }
 
   /*
-   * C1-FL-09 — a declaration was carried across a change of conversion
+   * C1-FL-09: a declaration was carried across a change of conversion
    * direction and has not been re-confirmed.
    *
    * NOT a refusal to compute. The value is present and valid; only its
@@ -322,7 +322,7 @@ export function raiseFlags(input: FlagInput): Flag[] {
    *
    * The message names the fields because a reader on screen needs to know which
    * one to look at. `declarations.retained` in the structured object records the
-   * same thing in a form a consumer can branch on — the flag warns, the
+   * same thing in a form a consumer can branch on, the flag warns, the
    * declaration records, exactly as the mass basis already works.
    */
   if (anyRetained(input.retained)) {
@@ -357,10 +357,10 @@ function capitalise(s: string): string {
 export const UNDETECTABLE_FAILURES: readonly string[] = [
   'A molecular weight that is correct for a different construct.',
   'A molecular weight that was correct for a prior lot or formulation.',
-  'A monomer mass quoted where the assembled mass was needed, or the reverse — C1-MW-07 compels the declaration but cannot verify it.',
+  'A monomer mass quoted where the assembled mass was needed, or the reverse; C1-MW-07 compels the declaration but cannot verify it.',
   'A unit-magnitude transcription error where the entered weight still falls inside the plausible range. C1-FL-01 catches a 1000× error that lands outside 1–1000 kDa; it cannot catch one that lands inside, and it cannot distinguish a genuinely unusual protein from a typo.',
   'Any error in the input concentration itself.',
-  'A conjugate mass declared as unconjugated, or the reverse — C1-MW-07 compels the declaration but cannot verify it, as above.',
+  'A conjugate mass declared as unconjugated, or the reverse; C1-MW-07 compels the declaration but cannot verify it, as above.',
 ] as const
 
 /** C1-OUT-06 and C1-OUT-08. Displayed with every result. */

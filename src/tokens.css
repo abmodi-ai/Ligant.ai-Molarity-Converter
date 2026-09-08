@@ -1,9 +1,9 @@
 /*
- * Ligant Bench Tools — shared design tokens.
+ * Ligant Bench Tools: shared design tokens.
  *
  * THIS FILE IS NOT C1's. It is the suite's `:root` block, read from the
  * Antigen Density Calculator as deployed at https://benchtools.ligant.ai/ on
- * 4 September 2026 — the authored custom properties, not values eyeballed from
+ * 4 September 2026: the authored custom properties, not values eyeballed from
  * a screenshot.
  *
  * It lives in C1's tree only because there is nowhere else for it yet. It is
@@ -11,7 +11,7 @@
  * package that both tools depend on. Until then the rule is: **this file is
  * edited in the reference tool and copied here whole.** Nothing C1-specific
  * goes in it. Copying individual hex values into C1's own stylesheet is what
- * produced the divergence this file exists to end — it fixes today's mismatch
+ * produced the divergence this file exists to end, it fixes today's mismatch
  * and guarantees the next one.
  *
  * NO WEBFONT IS LOADED, deliberately, and this must stay true. `--font` and

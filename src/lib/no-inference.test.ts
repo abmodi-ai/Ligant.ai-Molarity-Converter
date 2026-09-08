@@ -4,12 +4,12 @@ import { join } from 'node:path'
 import { computeConversion, type ConversionRequest } from './compute'
 
 /**
- * C1-MW-02 — the system shall not infer, default, pre-fill, or suggest a
+ * C1-MW-02: the system shall not infer, default, pre-fill, or suggest a
  * molecular weight under any circumstance, including for common biologics.
  *
  * §15 lists molecular weight lookup and protein identification as deliberately
  * excluded, pointing here. This is the tool's reason to exist and, as the build
- * note put it, the first thing anyone will ask to relax — a convenience that
+ * note put it, the first thing anyone will ask to relax; a convenience that
  * would be added in one line by someone who did not know that. So it is
  * asserted against the source, not only against the type signature: a default
  * parameter, an optional field, or a lookup table would all satisfy the
@@ -24,7 +24,7 @@ function sourceFiles(): { name: string; text: string }[] {
     .map((f) => ({ name: f, text: readFileSync(join(LIB, f), 'utf8') }))
 }
 
-describe('C1-MW-02 — no molecular weight is ever inferred', () => {
+describe('C1-MW-02: no molecular weight is ever inferred', () => {
   it('no source file contains a table of protein or antibody weights', () => {
     // A lookup keyed by a protein name is the shape this would take. Names are
     // matched rather than numbers, because 150000 legitimately appears in
@@ -37,7 +37,7 @@ describe('C1-MW-02 — no molecular weight is ever inferred', () => {
     }
   })
 
-  it('mwValue is required — a request without one does not type-check and is rejected at runtime', () => {
+  it('mwValue is required: a request without one does not type-check and is rejected at runtime', () => {
     // The runtime half. TypeScript makes the field required, but the tool is
     // shipped as JavaScript and the requirement is about behaviour.
     const withoutMw = {
@@ -69,7 +69,7 @@ describe('C1-MW-02 — no molecular weight is ever inferred', () => {
     }
   })
 
-  it('acceptance 11 — no conversion completes without an explicit molecular weight', () => {
+  it('acceptance 11: no conversion completes without an explicit molecular weight', () => {
     const outcome = computeConversion({
       direction: 'mass-to-molar',
       enteredValue: 1,
