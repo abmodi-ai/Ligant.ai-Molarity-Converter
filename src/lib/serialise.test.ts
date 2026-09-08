@@ -100,6 +100,40 @@ describe('C1-UN-07 — the unrounded value is in the structured object', () => {
   })
 })
 
+describe('C1-ST-03 — the record says which declarations were carried', () => {
+  it('the retention state is always present, all three fields', () => {
+    // The flag says THAT something was retained; this says WHICH. One flag
+    // cannot, and a consumer deciding whether to trust a molecular weight needs
+    // to know it was the weight rather than the mass basis.
+    const clean = toStructuredResult(ok(BASE))
+    expect(clean.declarations.retained).toEqual({ mw: false, provenance: false, massBasis: false })
+
+    const carried = toStructuredResult(ok({ ...BASE, retained: { mw: true, provenance: false, massBasis: true } }))
+    expect(carried.declarations.retained).toEqual({ mw: true, provenance: false, massBasis: true })
+  })
+
+  it('an absent retention block fails validation rather than reading as false', () => {
+    // Absence and `false` are different facts: one says nothing was carried,
+    // the other says this tool does not record whether anything was.
+    const obj = toStructuredResult(ok(BASE)) as any
+    delete obj.declarations.retained
+    expect(validateStructuredResult(obj).some((p) => p.path.startsWith('declarations.retained'))).toBe(true)
+
+    obj.declarations.retained = { mw: false, provenance: false }
+    expect(validateStructuredResult(obj).some((p) => p.path === 'declarations.retained.massBasis')).toBe(true)
+  })
+
+  it('the retention flag and the derivation wording both survive serialisation', () => {
+    const obj = toStructuredResult(ok({ ...BASE, retained: { mw: true, provenance: false, massBasis: false } }))
+    const flag = obj.flags.find((f) => f.code === 'C1-FL-09')
+    expect(flag).toBeDefined()
+    expect(flag!.kind).toBe('retention')
+    // The export carried the same wording defect as the screen until v0.2.0.
+    expect(obj.derivation.assumptions.join(' ')).toContain('not re-confirmed')
+    expect(obj.derivation.assumptions[0]).not.toContain('as declared')
+  })
+})
+
 describe('C1-DAT-03 — the object alone reproduces the reported result', () => {
   it('over the whole fixture set, through JSON', () => {
     for (const f of ALL_FIXTURES) {
@@ -114,6 +148,17 @@ describe('C1-DAT-03 — the object alone reproduces the reported result', () => 
       expect(again.flags.map((x) => x.code), `${f.id} flags`).toEqual(original.flags.map((x) => x.code))
       expect(again.relation, `${f.id} relation`).toBe(original.relation)
     }
+  })
+
+  it('round-trips the retention state, which changes the flags but no arithmetic', () => {
+    // A reproduction that dropped retention would return a different flag set
+    // while looking faithful, because the numbers would still match.
+    const original = ok({ ...BASE, retained: { mw: true, provenance: true, massBasis: false } })
+    const again = reproduceFrom(JSON.parse(toJson(original)))
+    expect(again.declarations.retained).toEqual(original.declarations.retained)
+    expect(again.flags.map((f) => f.code)).toEqual(original.flags.map((f) => f.code))
+    expect(again.assumptions).toEqual(original.assumptions)
+    expect(again.molarValue).toBe(original.molarValue)
   })
 
   it('reproduces from the computed side as well as the entered side', () => {

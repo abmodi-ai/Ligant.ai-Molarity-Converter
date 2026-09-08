@@ -39,6 +39,10 @@ already being acted on and were not written down.
 | 9 | **§11** | Two rows added — the reimplementation tolerance and the rounding mode. A note records what is deliberately **not** a row, and why |
 | 10 | **Acceptance 3** | Split into a correctness gate on the unrounded value and a separate display check. v0.5 compared "to displayed precision", which makes correctness depend on a formatting choice |
 | 11 | **§15, new** | **Suite identity.** Shared tokens, masthead, footer and mark, and the evidenced-claim rule for the shared footer |
+| 12 ✚ | **C1-FL-09, C1-ST-05** | Retention becomes a **flag with a reason code** and a **recorded field in the structured object**. The derivation stops saying "as declared" of a carried value |
+| 13 ✚ | **C1-FL-10** | Zero raises its own flag. It is the absence of solute, not an implausibly low concentration |
+| 14 ✚ | **C1-NF-03** | The 1440 × 900 standard entered at round 1 is **withdrawn**. It was a viewport height, not a display, and no laptop of that size has it. The standard is UNSET and owed |
+| 15 | **C1-FL-01** | **Open, not resolved.** The 1000 kDa bound misfires on IgM–PE at 1210 kDa. Awaiting NADIRA's ruling — see §18 open item 2 |
 
 **On the acceptance numbering.** Still not reflowed, and still offered. v0.5 raised this and it
 was not answered; this revision adds tests 21–26 at the end rather than interleaving them, so
@@ -294,8 +298,32 @@ output with a machine-readable reason code.
 | C1-FL-06 | Mass basis is monomer or single chain | The mass-basis declaration | Molar concentration computed is of monomer, not of assembled molecule |
 | C1-FL-07 | Mass basis is "not recorded" | The mass-basis declaration | Mass basis not recorded; whether this concentration refers to the assembled molecule, a monomer, or a conjugate cannot be determined from the record |
 | C1-FL-08 | Mass basis is conjugate | The mass-basis declaration | Molecular weight includes label or payload; the molar concentration computed is of the conjugate, not of the underlying protein. The tool does not correct for drug-to-antibody ratio or degree of labelling |
+| C1-FL-09 ✚ | A declaration was carried across a change of conversion direction and not re-confirmed | The retention state | Which declarations were carried, that they were not re-confirmed, and that the result is computed from them |
+| C1-FL-10 ✚ | `mass concentration = 0` **and** `molar concentration = 0` | The system's two quantities | The concentration is zero: no solute is present. This is not an implausibly low concentration, and the conversion is exact |
 
 **↯ C1-FL-02 threshold remains inspection-chosen — open item 3.**
+
+**✚ On C1-FL-09.** Retention was a property of the FORM until v0.2.0 and the badge was the
+whole of it. That satisfied C1-ST-03 as written and left the record wrong in a way the screen
+was not: the derivation claimed "as declared" of a value the user had never re-affirmed in
+this direction, and the structured object carried no trace at all. It is a flag rather than a
+withholding because the value is present and valid — only its re-affirmation is missing, and
+C1-MW-01 already covers absence. It is a THIRD kind of flag, neither threshold nor
+declaration, because it reads what the user did not do; that is what keeps the C1-OUT-11
+caveat from appearing beside it.
+
+**✚ On C1-FL-10.** §7 makes zero legal and §8 did not exclude it, so both requirements were
+satisfied and their interaction was the defect: zero was flagged "below the range typical of
+biologic working solutions", which is true of zero and says nothing about it. **Both
+quantities are tested, not one.** They are zero together for every legal input, but a mass
+concentration small enough to underflow the division leaves a genuine trace amount reported
+as a zero molarity — and that is implausibly low rather than empty, so C1-FL-03 is still the
+right flag there.
+
+**On the numbering.** The reason-code series is now `C1-FL-01` to `C1-FL-10`. The v0.6 draft
+of 4 September deliberately did NOT use C1-FL-09 for the threshold caveat, on the grounds that
+a ninth identifier would imply a ninth flag that did not exist. It exists now, and the caveat
+kept its C1-OUT-11 number.
 
 Boundary behaviour is specified by the operators above and tested by acceptance test 10, in
 both conversion directions.
@@ -446,6 +474,7 @@ Both are revisited if either ever gates something computed.
 | C1-ST-01 | Any value handed to another tool shall carry its molecular weight, the molecular weight's declared source, its mass-basis declaration, and every flag raised on it. A value shall not be transferable stripped of its flags. | M |
 | C1-ST-02 | No input shall persist across a page reload unless its persistence is visible on screen. Recoverability is not sufficient; the user must be able to see that a value was carried over. | M |
 | C1-ST-03 ✎ | Changing the conversion direction shall not silently carry a molecular weight, its source, or its mass-basis declaration. Any value retained shall be visibly marked as retained, **and shall remain marked until that value is itself confirmed**. Marking shall be **per field**: confirming one retained value shall not clear the marking on another. A field holding **no** value shall not be marked. | M |
+| C1-ST-05 ✚ | A result computed from a retained declaration shall raise **C1-FL-09**, and the **structured object shall record which** declarations were retained. The derivation shall not describe a retained value as declared. | M |
 | C1-ST-04 | Same inputs shall always produce the same outputs. No hidden state, no time dependence. | M |
 
 **✎ On C1-ST-03.** The build held retention as one flag for the whole form. It satisfied the
@@ -524,7 +553,7 @@ serialised object over the whole fixture set — and not by inspection.
 |---|---|---|
 | C1-NF-01 ✎ | Entirely client-side. No user-entered data leaves the browser. Verified per acceptance test 14. **No claim that data is not transmitted shall be displayed at an address at which acceptance test 14 has not passed.** Where it has not, the tool shall state what has been verified and what has not. | M |
 | C1-NF-02 | No account, login, or registration. | M |
-| C1-NF-03 ✎ | Inputs and result shall fit one screen without scrolling on a standard laptop display. **Standard: 1440 × 900** ↯. | M |
+| C1-NF-03 ✎ | Inputs and result shall fit one screen without scrolling on a standard laptop display. **The display is UNDEFINED and is owed — open item 15.** Until it is set there is no pass or fail; the verification reports the measurement. | M |
 | C1-NF-04 | Result shall be perceptibly immediate. No progress indicator. | M |
 | C1-NF-05 | Reachable and usable at its own address, independently of any other tool. | M |
 | C1-NF-06 | Engine version stated on output, changing whenever calculation behaviour changes. | M |
@@ -540,17 +569,33 @@ the network check against the deployed address, and only then may the claim be d
 check **fails** if the claim is enabled on a local run, so it cannot ship on evidence that
 cannot support it. See C1-ID-06 for the same rule bound to the shared component.
 
-**↯ On C1-NF-03's standard.** 1440 × 820 until 4 September 2026. That figure predates the
-shared masthead: C1 carried its own 84px header, and the suite's — lockup, wordmark, 25px
-heading, description, rule — costs 180px above the converter. Every tool pays that, so it is
-not C1's to shave, and the converter is at its floor: the mass-basis fieldset alone is 188px
-because §3.3 requires every option label in full.
+**✎ On C1-NF-03, and the withdrawal of the 1440 × 900 standard.**
 
-Measured at the decision: **874px worst case, 868px clean.** Raised rather than met by cutting
-chrome; the alternative landed at 817px with three pixels of headroom and a masthead that no
-longer matched the reference — the layout that fits only because it got smaller, and fails
-again on the next flag. Inspection-chosen, and recorded in §11.1 as deliberately not a register
-row.
+The figure was 1440 × 820, then 1440 × 900 at round 1. **Both were viewport heights the
+verification chose, and neither describes a laptop.** A 1440 × 900 display does not give the
+page 900 pixels: browser chrome takes about a hundred and the page gets 797. The check was
+passing against a screen nobody owns — an undeclared constant governing a pass/fail test,
+which is the class §11 exists for, and the §I proxy pattern applied to a requirement rather
+than to a fixture.
+
+Measured at the worst case, five flags: **995px** of converter against
+
+| Window | Viewport | Over by |
+|---|---|---|
+| 1440 × 900 | 797 | 198 |
+| 1280 × 800 | 697 | 298 |
+| 1366 × 768 | 665 | 330 |
+
+Content is capped at 1120px wide, so the three differ in available height only. What falls
+below the fold is not decoration — the copy buttons, the scope statement and the tail of the
+flag list — and a user seeing the answer without the warnings attached to it inverts
+C1-OUT-05's guarantee that the two travel together.
+
+**Not compacted in the meantime.** A layout that fits only because the type got smaller fails
+again on the next flag, and C1-FL-09 and C1-FL-10 have just demonstrated it. The verification
+reports **STANDARD NOT SET**, the same shape as acceptance test 14 reporting UNRUN. Open item
+15: smallest supported window AND zoom level, owner A. Modi, then a register row with its
+basis and a gate again.
 
 ### 14.1 Verification
 
@@ -686,6 +731,8 @@ rather than an audit.
 24. ✚ The displayed relation contains no coined unit, and the effective divisor is given in standard units.
 25. ✚ The tool consumes the shared token set, renders the shared masthead and footer, uses the suite mark as its favicon, and titles itself to the suite pattern. Asserted against the source **and** the rendered page.
 26. ✚ The footer states the tool's transmission-claim evidence state, and the verified claim cannot be rendered where acceptance test 14 has not passed at that address.
+27. ✚ A result computed from a declaration carried across a change of direction raises C1-FL-09 on screen and in the structured object; the object records **which** declarations were carried; and the derivation describes them as retained rather than as declared. Exercised in a real browser and through the exported JSON.
+28. ✚ Zero concentration raises C1-FL-10 and **not** C1-FL-03, in both conversion directions, and a concentration that is merely very small still raises C1-FL-03.
 
 ---
 
@@ -694,7 +741,7 @@ rather than an audit.
 | # | Item | Owner | Note |
 |---|---|---|---|
 | 1 | Confirm the ADC output format can express a single conversion with provenance and mass-basis fields. If not, escalate — do not extend locally | Developer + NADIRA | **Open.** Answered as *no format exists*; the escalation is unresolved. C1-OUT-04 and acceptance 4 held. C1-OUT-03 is no longer held with it |
-| 2 | Characterise or disclose the 1 kDa / 1000 kDa bounds | NADIRA | Open. Disclosed as uncharacterised |
+| 2 ✎ | Characterise or disclose the 1 kDa / 1000 kDa bounds | NADIRA | **Open, and escalated. The upper bound is WRONG, not merely uncharacterised.** IgM–PE at 1210 kDa is an ordinary flow reagent and is told it is outside the usual range for a biologic. Disclosure covers a threshold that is unmeasured; it does not cover one that misfires on a case the tool was extended to handle. **Moves before ship.** Two candidate resolutions in the note below |
 | 3 | Characterise or disclose the 250 mg/mL and 1 pM bounds, or remove | NADIRA | Open. Disclosed as uncharacterised |
 | 4 | Establish whether anyone weighs out protein before that scope is built anywhere | A. Modi | Open |
 | 5 | Decide C1's public URL slug | A. Modi | **Open, and the highest-leverage item.** It alone unblocks acceptance 14, C1-NF-01's verified claim, and C1-NF-05 |
@@ -707,9 +754,31 @@ rather than an audit.
 | 12 ✚ | The reference tool's footer asserts no transmission unconditionally. Adopt the evidenced-claim component there | Developer | Same finding as C1-NF-01, pointing the other way |
 | 13 ✚ | Run the acceptance 19 observed-user session against the form as revised by C1-UN-01 | A. Modi | Never measured. Two added selections change the first-time path |
 | 14 ✚ | Reflow the acceptance numbering into a clean sequence, or keep 9a | A. Modi | Raised at v0.5, unanswered. Cheaper now than later |
+| 15 ✚ | Define the supported display for C1-NF-03 and acceptance 20 — smallest supported **window** and **zoom level** | A. Modi | The requirement has governed a pass/fail test with no constant behind it since v0.1. Two figures have been used and both were viewport heights the verification invented. Nothing to build against until this is set |
 
 No open item blocks the build. Items 5 and 7 block claims the tool would otherwise be entitled
-to make.
+to make. **Item 2 now blocks ship**, and item 15 blocks any further layout work.
+
+**On item 2 — the mechanism matters more than the number.** Adding the conjugate mass basis at
+v0.4 made masses above 1000 kDa ordinary. The constant and the declaration were changed *in
+the same document* without either being checked against the other, and that is the
+transferable finding: the heterogeneity tool will add declarations to a tool that already has
+bounds.
+
+Two resolutions are on the table and the choice is NADIRA's.
+
+*Raise the figure.* Replaces one inspection-chosen constant with another, and the headroom is
+thin whatever is picked — unconjugated IgM is already around 970 kDa, so a bound that clears
+IgM–PE sits close to useless for detecting a genuine unit error.
+
+*Condition the bound on the mass-basis declaration.* A conjugate legitimately carries a higher
+ceiling than an unconjugated protein. This makes the coupling explicit in the code rather than
+something to remember, and gives the register row a basis better than inspection. If it is
+chosen, **C1-FL-01 stops being a single constant**: the register row changes shape, and
+C1-FX-04 needs boundary fixtures per mass-basis branch.
+
+Nothing is implemented either way. The register row discloses the misfire in the meantime,
+which is strictly more than it said before and strictly less than a fix.
 
 ---
 

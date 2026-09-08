@@ -67,3 +67,57 @@ export function confirmField(
   next.delete(field)
   return next
 }
+
+/**
+ * Which declarations a RESULT was computed from without re-confirmation.
+ *
+ * Retention was a property of the form until v0.1.2, and the badge was the
+ * whole of it. That satisfied C1-ST-03 as written — the value is visibly
+ * marked — and left the record wrong in a way the screen was not: the
+ * derivation said "as declared" of a weight the user had never re-affirmed in
+ * this direction, and the structured object carried no trace of it at all. A
+ * result copied into a notebook claimed provenance it did not have.
+ *
+ * So retention crosses into the computation. Not to change the arithmetic —
+ * it changes nothing there — but because C1-ST-01 requires what qualifies a
+ * value to travel with it, and "carried, not re-confirmed" qualifies a value.
+ *
+ * All three fields are always present, deliberately. A consumer must not have
+ * to read an absent key as `false`, and a tool that has never recorded this
+ * must not be indistinguishable from one where nothing happened to be retained.
+ */
+export interface RetainedFields {
+  mw: boolean
+  provenance: boolean
+  massBasis: boolean
+}
+
+/** The overwhelmingly common case: a conversion with no direction change behind it. */
+export const NOTHING_RETAINED: RetainedFields = Object.freeze({
+  mw: false,
+  provenance: false,
+  massBasis: false,
+})
+
+/** The form's live set, as the shape a request and a structured object carry. */
+export function toRetainedFields(retained: ReadonlySet<RetainableField>): RetainedFields {
+  return {
+    mw: retained.has('mw'),
+    provenance: retained.has('provenance'),
+    massBasis: retained.has('massBasis'),
+  }
+}
+
+/** Whether anything at all was carried without re-confirmation. */
+export function anyRetained(r: RetainedFields): boolean {
+  return r.mw || r.provenance || r.massBasis
+}
+
+/** How the retained fields read in a message, in the order the form presents them. */
+export function retainedFieldNames(r: RetainedFields): string[] {
+  const names: string[] = []
+  if (r.mw) names.push('the molecular weight')
+  if (r.provenance) names.push('its source')
+  if (r.massBasis) names.push('the mass basis')
+  return names
+}

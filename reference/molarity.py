@@ -127,10 +127,15 @@ def _finite(x):
     return x == x and x not in (float("inf"), float("-inf"))
 
 
-def flags(mw_value, units, provenance, mass_basis, mass_value, molar_value):
+def flags(mw_value, units, provenance, mass_basis, mass_value, molar_value, retained=None):
     """
     Section 8. Conditions are evaluated against the computed system, so this
     takes both quantities and never sees the conversion direction.
+
+    `retained` is the exception and is not about the computed system at all: it
+    records which declarations were carried across a change of direction without
+    being re-confirmed (C1-ST-03). It changes no arithmetic. It is here because
+    it changes the flag set, and acceptance test 3 compares flag sets.
     """
     out = []
     mw_g_per_mol = mw_value * MW_TO_G_PER_MOL[units["mw"]]
@@ -141,7 +146,15 @@ def flags(mw_value, units, provenance, mass_basis, mass_value, molar_value):
         out.append("C1-FL-01")
     if mass_g_per_l > MASS_UPPER_G_PER_L:
         out.append("C1-FL-02")
-    if molar_mol_per_l < MOLAR_LOWER_MOL_PER_L:
+
+    # Zero is the absence of solute, not a low concentration. Both quantities
+    # are tested: they are zero together for every legal input, but a mass small
+    # enough to underflow the division leaves a real trace amount reported as a
+    # zero molarity, and that IS implausibly low - C1-FL-03 is right there.
+    empty = molar_mol_per_l == 0 and mass_g_per_l == 0
+    if empty:
+        out.append("C1-FL-10")
+    if not empty and molar_mol_per_l < MOLAR_LOWER_MOL_PER_L:
         out.append("C1-FL-03")
     if provenance == "calculated-from-sequence":
         out.append("C1-FL-04")
@@ -153,6 +166,8 @@ def flags(mw_value, units, provenance, mass_basis, mass_value, molar_value):
         out.append("C1-FL-07")
     if mass_basis == "conjugate":
         out.append("C1-FL-08")
+    if retained and (retained.get("mw") or retained.get("provenance") or retained.get("massBasis")):
+        out.append("C1-FL-09")
     return out
 
 
@@ -176,5 +191,13 @@ def compute(request):
             "mass": format_sig_figs(mass_value),
             "molar": format_sig_figs(molar_value),
         },
-        "flags": flags(mw, units, request["provenance"], request["massBasis"], mass_value, molar_value),
+        "flags": flags(
+            mw,
+            units,
+            request["provenance"],
+            request["massBasis"],
+            mass_value,
+            molar_value,
+            request.get("retained"),
+        ),
     }

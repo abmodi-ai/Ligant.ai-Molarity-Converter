@@ -73,7 +73,7 @@ node scripts/check-network.mjs https://<deployed-address>/
 **Built and passing:** the conversion engine, validation, flags, the fixture set, the
 invariance confirmation, and the interface including the tool's own page (§9 failure
 classes and §11 constants register, rendered from the same constants the flag rules read).
-139 unit tests, plus a static privacy check and two real-browser checks — one for the form's
+155 unit tests, plus a static privacy check and two real-browser checks — one for the form's
 own requirements and the suite's chrome (`check:ui`) and one for the network claim
 (`check:network`).
 
@@ -90,6 +90,8 @@ own requirements and the suite's chrome (`check:ui`) and one for the network cla
 | §13 — output | `src/lib/compute.ts`, `src/App.tsx` |
 | C1-OUT-03 — structured result, units on every quantity | `src/lib/serialise.ts`, `src/lib/serialise.test.ts` |
 | C1-ST-03 — retention marked per field | `src/lib/retention.ts`, `scripts/check-ui.mjs` |
+| C1-FL-09 — retention in the result, derivation and record | `src/lib/flags.ts`, `src/lib/retention.test.ts` |
+| C1-FL-10 — zero is empty, not implausibly low | `src/lib/flags.ts`, `reference/molarity.py` |
 | C1-UN-01, C1-MW-03 — both input units compelled | `src/App.tsx`, `scripts/check-ui.mjs` |
 | Suite identity — tokens, masthead, footer, mark | `src/tokens.css`, `src/Brand.tsx`, `src/branding.test.ts` |
 | C1-NF-01 — client-side, verified as far as it can be | `scripts/check-privacy.mjs`, `scripts/check-network.mjs` |
@@ -134,7 +136,7 @@ so the disclosure required by C1-CN-01 reads from the same place the behaviour d
 ```
 npm install
 npm run dev                  # the tool
-npm run verify               # typecheck, 139 tests, build, privacy, two real browsers,
+npm run verify               # typecheck, 155 tests, build, privacy, two real browsers,
                              # and acceptance test 3 (20,039-case cross-language comparison)
 
 npm run check:ui             # the form's own requirements in a real browser:
@@ -146,6 +148,45 @@ npm run record:invariance    # regenerates docs/invariance-confirmation.md from 
 
 node scripts/check-network.mjs https://<deployed-address>/   # acceptance test 14
 ```
+
+## Retention is not only a badge
+
+C1-ST-03 asked for a retained value to be visibly marked, and until v0.2.0 the badge was the
+whole of it. That satisfied the requirement and left the record wrong in a way the screen was
+not: the tool computed on carried values while the badge showed, the derivation said
+*"Molecular weight taken as 1210 kDa, **as declared**"* of a value the user had never
+re-affirmed in this direction, and the structured object carried no trace of retention at
+all. Arithmetically correct, provenance misrepresented — the paste defect wearing the tool's
+own wording, and worse in the export than on screen.
+
+Retention now reaches the computation. Not to change the arithmetic, which it does not touch,
+but because C1-ST-01 requires what qualifies a value to travel with it:
+
+- **C1-FL-09**, a flag with its own reason code and its own `kind`. Not withholding — the
+  value is present and valid, only its re-affirmation is missing — and not a declaration
+  flag either, because it reads what the user did *not* do. Its own kind is what keeps the
+  threshold caveat from appearing beside it.
+- **The derivation** says *retained from the previous conversion direction, not
+  re-confirmed*, per field, for exactly the fields that were carried.
+- **`declarations.retained`** in the structured object, all three keys always present. The
+  flag says *that* something was retained; this says *which*, because one flag cannot and a
+  consumer deciding whether to trust a molecular weight needs to know it was the weight. An
+  absent key would read as `false` to a careless consumer and as "this tool does not record
+  retention" to a careful one, and those are different facts.
+
+The badge reads **"Retained — not re-confirmed"**: the previous wording implied an action the
+interface does not offer.
+
+## Zero is the absence of solute
+
+`0 mg/mL` returned `0.00000 µM` flagged *"below the range typical of biologic working
+solutions"*. §7 makes zero legal and §8 does not exclude it, so both requirements were met and
+their interaction was the defect. The flag was true of zero and said nothing about it, which
+is the inert-check pattern in miniature.
+
+Zero now raises **C1-FL-10** and not C1-FL-03. Both quantities are tested rather than one: a
+mass concentration small enough to underflow the division leaves a real trace amount reported
+as a zero molarity, and that *is* implausibly low, so C1-FL-03 is still right there.
 
 ## Suite identity
 
@@ -170,11 +211,20 @@ is an environment claim only acceptance test 14 can establish, and a shared comp
 hard-codes it is a mechanism for reintroducing the beacon failure. C1 does not opt out of
 the shared footer — the shared footer stopped being able to make an unearned claim.
 
-**C1-NF-03's standard moved from 1440×820 to 1440×900.** The suite masthead costs 180px
-above the converter against C1's previous 84px; that cost is every tool's and is not C1's to
-shave. Measured at the decision: 874px worst case, 868px clean. Raised by A. Modi rather
-than met by cutting chrome — the alternative landed at 817px with three pixels of headroom
-and a masthead that no longer matched the reference.
+**C1-NF-03 has no standard, and the check no longer invents one.** It was 1440×820, then
+1440×900 — and both were *viewport* heights this repository chose. A 1440×900 laptop does not
+have a 900px viewport: browser chrome takes about a hundred pixels and the page gets 797. The
+check was passing against a screen nobody owns, which is the proxy pattern in
+`docs/correspondence.md` §I applied to a requirement rather than a fixture.
+
+`check-network.mjs` now reports the worst case at three candidate windows and declares
+**STANDARD NOT SET**, the same shape as acceptance test 14 reporting UNRUN. Current worst
+case, five flags: **995px**, against 797 / 697 / 665px of viewport. The content width is
+capped at 1120px, so the three candidates differ in available height only.
+
+Owner: A. Modi — smallest supported window *and* zoom level, then it becomes a register row
+with its basis and a gate again. Not compacted in the meantime: a layout that fits only
+because the type got smaller fails again on the next flag.
 
 ## C1-NF-01, and why there are two checks
 

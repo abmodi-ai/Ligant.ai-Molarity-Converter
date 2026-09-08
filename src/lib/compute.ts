@@ -41,6 +41,7 @@ import {
   type MassBasis,
   type MwProvenance,
 } from './units'
+import { NOTHING_RETAINED, type RetainedFields } from './retention'
 
 /**
  * Everything the user declared. There are no optional fields and no defaults.
@@ -60,6 +61,17 @@ export interface ConversionRequest {
   provenance: MwProvenance
   massBasis: MassBasis
   units: ConversionUnits
+  /**
+   * C1-ST-03. Which declarations were carried across a change of conversion
+   * direction and not re-confirmed.
+   *
+   * Optional, and defaulted to nothing retained, because a conversion with no
+   * direction change behind it is the overwhelmingly common case and every
+   * §10 fixture is one. It is NOT optional in the structured object — see
+   * `serialise.ts`, where an absent key would be indistinguishable from a tool
+   * that never recorded this.
+   */
+  retained?: RetainedFields
 }
 
 export interface ConversionResult {
@@ -74,7 +86,13 @@ export interface ConversionResult {
   displayed: { mass: string; molar: string; sigFigs: number }
   flags: Flag[]
   units: ConversionUnits
-  declarations: { mwValue: number; provenance: MwProvenance; massBasis: MassBasis }
+  declarations: {
+    mwValue: number
+    provenance: MwProvenance
+    massBasis: MassBasis
+    /** C1-ST-03. Always present, all three fields, whether or not anything was carried. */
+    retained: RetainedFields
+  }
   /** C1-CV-03, C1-OUT-01. The physical relation, in named quantities only. */
   relation: string
   /** The unit handling, stated separately from the relation. */
@@ -125,6 +143,7 @@ export function computeConversion(request: ConversionRequest): ConversionOutcome
   if (rejections.length > 0) return { ok: false, rejections }
 
   const pair = convert(direction, enteredValue, mwValue, units)
+  const retained = request.retained ?? NOTHING_RETAINED
 
   const flags = raiseFlags({
     mwValue,
@@ -135,6 +154,7 @@ export function computeConversion(request: ConversionRequest): ConversionOutcome
     massUnit: units.mass,
     molarValue: pair.molarValue,
     molarUnit: units.molar,
+    retained,
   })
 
   return {
@@ -151,7 +171,7 @@ export function computeConversion(request: ConversionRequest): ConversionOutcome
     },
     flags,
     units,
-    declarations: { mwValue, provenance: request.provenance, massBasis: request.massBasis },
+    declarations: { mwValue, provenance: request.provenance, massBasis: request.massBasis, retained },
     relation: relationApplied(direction),
     unitHandling: unitHandling(direction, units),
     effectiveMw: effectiveMw(mwValue, units),
@@ -172,11 +192,24 @@ export function computeConversion(request: ConversionRequest): ConversionOutcome
  * input echo.
  */
 function assumptionsFor(request: ConversionRequest): readonly string[] {
-  const { units, declarations } = { units: request.units, declarations: request }
+  const { units } = request
+  const retained = request.retained ?? NOTHING_RETAINED
+
+  /*
+   * "as declared" is a claim about provenance, and it was false for any value
+   * carried across a direction change: the user declared it in the other
+   * direction and has not re-affirmed it in this one. Arithmetically the result
+   * was correct and its provenance was misrepresented, which is the paste
+   * defect wearing the tool's own wording.
+   */
+  const CARRIED = 'retained from the previous conversion direction, not re-confirmed'
+
   return [
-    `Molecular weight taken as ${declarations.mwValue} ${UNIT_LABEL[units.mw]}, as declared. The tool does not supply or check molecular weights.`,
-    `Source of that weight: ${MW_PROVENANCE_LABEL[declarations.provenance]}.`,
-    `The stated weight is the mass of: ${MASS_BASIS_LABEL[declarations.massBasis]}.`,
+    `Molecular weight taken as ${request.mwValue} ${UNIT_LABEL[units.mw]}, ${
+      retained.mw ? CARRIED : 'as declared'
+    }. The tool does not supply or check molecular weights.`,
+    `Source of that weight: ${MW_PROVENANCE_LABEL[request.provenance]}${retained.provenance ? ` — ${CARRIED}` : ''}.`,
+    `The stated weight is the mass of: ${MASS_BASIS_LABEL[request.massBasis]}${retained.massBasis ? ` — ${CARRIED}` : ''}.`,
     'The solution is dilute enough that solute volume is not accounted for separately.',
   ]
 }

@@ -44,6 +44,7 @@ import { DISPLAY_SIG_FIGS, ROUNDING_MODE } from './format'
 import type { FlagCode } from './flags'
 import { TOOL_ID, TOOL_NAME } from './site'
 import type { MassBasis, MassUnit, MolarUnit, MwProvenance, MwUnit } from './units'
+import { NOTHING_RETAINED, type RetainedFields } from './retention'
 
 /**
  * The schema's own version, independent of the engine's.
@@ -54,7 +55,14 @@ import type { MassBasis, MassUnit, MolarUnit, MwProvenance, MwUnit } from './uni
  * the object.
  */
 export const SCHEMA_NAME = 'ligant-benchtools-c1-conversion'
-export const SCHEMA_VERSION = '1.0.0'
+/**
+ * 1.0.0 → 1.1.0: `declarations.retained` added, and `flags[].kind` gained
+ * `retention`. Additive for a consumer that ignores unknown keys; a new required
+ * field for one that validates. Moving independently of ENGINE_VERSION, which
+ * also moved this release for an unrelated reason — which is the point of
+ * having two.
+ */
+export const SCHEMA_VERSION = '1.1.0'
 
 /** A number that means nothing without its unit, carrying it. */
 export interface Quantity<U extends string = string> {
@@ -68,7 +76,7 @@ export interface StructuredFlag {
   code: FlagCode
   message: string
   evaluatedOn: string
-  kind: 'threshold' | 'declaration'
+  kind: 'threshold' | 'declaration' | 'retention'
 }
 
 export interface StructuredResult {
@@ -88,6 +96,20 @@ export interface StructuredResult {
   declarations: {
     molecularWeightProvenance: MwProvenance
     massBasis: MassBasis
+    /**
+     * C1-ST-03. Which declarations were carried across a change of conversion
+     * direction without being re-confirmed.
+     *
+     * The flag (C1-FL-09) says that something was; this says WHICH, because one
+     * flag cannot, and a consumer deciding whether to trust a molecular weight
+     * needs to know it was the weight rather than the mass basis. Same division
+     * the mass basis already uses: the flag warns, the declaration records.
+     *
+     * All three keys are always present. An absent key would be read as `false`
+     * by a careless consumer and as "this tool does not record retention" by a
+     * careful one, and those are different facts.
+     */
+    retained: RetainedFields
   }
   displayed: {
     massConcentration: string
@@ -125,6 +147,7 @@ export function toStructuredResult(result: ConversionResult): StructuredResult {
     declarations: {
       molecularWeightProvenance: result.declarations.provenance,
       massBasis: result.declarations.massBasis,
+      retained: { ...result.declarations.retained },
     },
     displayed: {
       massConcentration: result.displayed.mass,
@@ -170,6 +193,10 @@ export function reproduceFrom(obj: StructuredResult): ConversionResult {
     mwValue: q.molecularWeight.value,
     provenance: obj.declarations.molecularWeightProvenance,
     massBasis: obj.declarations.massBasis,
+    // C1-DAT-03. Retention changes no arithmetic but does change the flag set
+    // and the derivation, so a reproduction that dropped it would return a
+    // different result while looking like a faithful one.
+    retained: obj.declarations.retained ?? NOTHING_RETAINED,
     units: {
       mass: q.massConcentration.unit,
       molar: q.molarConcentration.unit,
@@ -232,6 +259,12 @@ export function validateStructuredResult(obj: unknown): ValidationProblem[] {
   if (typeof o.declarations?.massBasis !== 'string' || !o.declarations.massBasis) {
     fail('declarations.massBasis', 'missing — C1-MW-07 makes it required')
   }
+  // C1-ST-03. Every key, every time — see the note on the field.
+  for (const key of ['mw', 'provenance', 'massBasis']) {
+    if (typeof o.declarations?.retained?.[key] !== 'boolean') {
+      fail(`declarations.retained.${key}`, 'missing — C1-ST-03 requires the retention state to be recorded, not implied by absence')
+    }
+  }
 
   if (o.displayed?.significantFigures !== DISPLAY_SIG_FIGS) fail('displayed.significantFigures', 'not the displayed precision')
   if (o.displayed?.roundingMode !== ROUNDING_MODE) fail('displayed.roundingMode', 'not stated')
@@ -243,9 +276,9 @@ export function validateStructuredResult(obj: unknown): ValidationProblem[] {
     fail('flags', 'missing — an empty array is the no-flags case and is not the same as absent')
   } else {
     o.flags.forEach((f: any, i: number) => {
-      if (!/^C1-FL-0[1-8]$/.test(f?.code ?? '')) fail(`flags[${i}].code`, 'not a machine-readable reason code')
+      if (!/^C1-FL-(0[1-9]|10)$/.test(f?.code ?? '')) fail(`flags[${i}].code`, 'not a machine-readable reason code')
       if (typeof f?.message !== 'string' || !f.message) fail(`flags[${i}].message`, 'missing')
-      if (f?.kind !== 'threshold' && f?.kind !== 'declaration') fail(`flags[${i}].kind`, 'missing')
+      if (!['threshold', 'declaration', 'retention'].includes(f?.kind)) fail(`flags[${i}].kind`, 'missing')
     })
   }
 

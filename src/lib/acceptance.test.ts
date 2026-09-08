@@ -91,9 +91,17 @@ describe('Acceptance 8 / §7 — rejection names the quantity and the physical r
     expect(outcome.ok).toBe(true)
     if (outcome.ok) {
       expect(outcome.molarValue).toBe(0)
-      // It converts to zero, creates no division, and flags as below the
-      // working range rather than being refused.
-      expect(outcome.flags.map((f) => f.code)).toContain('C1-FL-03')
+      // It converts to zero, creates no division, and is not refused.
+      //
+      // It also does NOT raise C1-FL-03. Zero is the absence of solute, not an
+      // implausibly low concentration, and "below the range typical of biologic
+      // working solutions" is true of zero while saying nothing about it. This
+      // test asserted the opposite until v0.2.0, which is how the interaction
+      // between two individually-correct requirements survived: §7 makes zero
+      // legal, §8 does not exclude it, and the suite recorded the result as
+      // intended behaviour.
+      expect(outcome.flags.map((f) => f.code)).toContain('C1-FL-10')
+      expect(outcome.flags.map((f) => f.code)).not.toContain('C1-FL-03')
     }
   })
 })
@@ -103,7 +111,7 @@ describe('Acceptance 9 / §8 — flags compute a result and carry a reason code'
     const flagged = ok({ ...BASE, provenance: 'not-recorded', massBasis: 'not-recorded', mwValue: 0.5 })
     expect(flagged.flags.length).toBeGreaterThan(0)
     for (const f of flagged.flags) {
-      expect(f.code).toMatch(/^C1-FL-0[1-8]$/)
+      expect(f.code).toMatch(/^C1-FL-(0[1-9]|10)$/)
       expect(f.message.length).toBeGreaterThan(20)
       expect(f.evaluatedOn).toBeTruthy()
     }

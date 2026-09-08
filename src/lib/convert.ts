@@ -19,8 +19,17 @@ import {
 /** C1-CV-02. Selected before data entry; not a mode. */
 export type Direction = 'mass-to-molar' | 'molar-to-mass'
 
-/** C1-NF-06. Changes whenever calculation behaviour changes. */
-export const ENGINE_VERSION = '0.1.0'
+/**
+ * C1-NF-06. Changes whenever calculation behaviour changes.
+ *
+ * 0.1.0 → 0.2.0 at v0.1.2. The arithmetic is untouched — every pre-existing
+ * fixture returns the same doubles and the same rendering — but the FLAG SET
+ * changed, and flags are computed output rather than presentation: zero moved
+ * from C1-FL-03 to C1-FL-10, and C1-FL-09 was added. A consumer holding two
+ * records of the same input would otherwise see one engine version account for
+ * two different flag sets, which is the version failing to do its only job.
+ */
+export const ENGINE_VERSION = '0.2.0'
 
 export interface ConversionUnits {
   mass: MassUnit

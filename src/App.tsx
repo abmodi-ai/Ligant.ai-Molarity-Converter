@@ -18,7 +18,7 @@ import type { Direction } from './lib/convert'
 import { computeConversion, notebookLine } from './lib/compute'
 import { toJson } from './lib/serialise'
 import { CONSTANTS_REGISTER, UNDETECTABLE_FAILURES } from './lib/flags'
-import { confirmField, retainedOnDirectionChange, type RetainableField } from './lib/retention'
+import { confirmField, retainedOnDirectionChange, toRetainedFields, type RetainableField } from './lib/retention'
 import { NETWORK_CLAIM_VERIFIED, REPO_URL, TOOL_ID, TOOL_NAME, URS_VERSION } from './lib/site'
 import { SiteFooter, SiteHeader } from './Brand'
 import { formatSigFigs } from './lib/format'
@@ -149,8 +149,12 @@ export function App() {
       provenance,
       massBasis,
       units,
+      // C1-ST-03 / C1-FL-09. The badge was the whole of retention until v0.2.0,
+      // which left the derivation saying "as declared" of a carried value and
+      // the structured object with no trace of it at all.
+      retained: toRetainedFields(retained),
     })
-  }, [direction, entered, enteredUnit, mw, mwUnit, provenance, massBasis, units])
+  }, [direction, entered, enteredUnit, mw, mwUnit, provenance, massBasis, units, retained])
 
   const result = outcome && outcome.ok ? outcome : null
   const rejections = outcome && !outcome.ok ? outcome.rejections : null
@@ -230,7 +234,7 @@ export function App() {
             <div className="field">
               <label htmlFor="mw">
                 Molecular weight
-                {retained.has('mw') && <span className="retained">retained — confirm</span>}
+                {retained.has('mw') && <span className="retained">Retained — not re-confirmed</span>}
               </label>
               <div className="row">
                 <input
@@ -272,7 +276,7 @@ export function App() {
             <div className="field">
               <label htmlFor="prov">
                 Source of that weight
-                {retained.has('provenance') && <span className="retained">retained — confirm</span>}
+                {retained.has('provenance') && <span className="retained">Retained — not re-confirmed</span>}
               </label>
               <select
                 id="prov"
@@ -305,7 +309,7 @@ export function App() {
             <fieldset className="field">
               <legend>
                 The stated weight is the mass of
-                {retained.has('massBasis') && <span className="retained">retained — confirm</span>}
+                {retained.has('massBasis') && <span className="retained">Retained — not re-confirmed</span>}
               </legend>
               <div className="basis-options">
                 {MASS_BASIS.map((b) => (

@@ -15,6 +15,7 @@
 
 import { MASS_TO_G_PER_L, MOLAR_TO_MOL_PER_L, MW_TO_G_PER_MOL } from './units'
 import type { MassBasis, MassUnit, MolarUnit, MwProvenance, MwUnit } from './units'
+import { anyRetained, retainedFieldNames, type RetainedFields } from './retention'
 
 export type FlagCode =
   | 'C1-FL-01'
@@ -25,24 +26,36 @@ export type FlagCode =
   | 'C1-FL-06'
   | 'C1-FL-07'
   | 'C1-FL-08'
+  | 'C1-FL-09'
+  | 'C1-FL-10'
 
 export interface Flag {
   code: FlagCode
   /** What the flag states, in the terms §8 requires it to be stated. */
   message: string
   /** Which declaration or quantity the condition was evaluated on. */
-  evaluatedOn: 'molecular weight' | 'mass concentration' | 'molar concentration' | 'provenance declaration' | 'mass-basis declaration'
+  evaluatedOn:
+    | 'molecular weight'
+    | 'mass concentration'
+    | 'molar concentration'
+    | 'provenance declaration'
+    | 'mass-basis declaration'
+    | 'retention state'
   /**
-   * Whether the condition compares a quantity against a numeric threshold, or
-   * reads a declaration.
+   * Whether the condition compares a quantity against a numeric threshold,
+   * reads a declaration, or reads whether a declaration was re-confirmed.
    *
-   * The distinction is not cosmetic. A threshold flag is evaluated on the
+   * The first distinction is not cosmetic. A threshold flag is evaluated on the
    * UNROUNDED value, which can differ from the displayed value in the last
    * significant figure — so a flagged result and an unflagged one can render
    * identically. See THRESHOLD_EVALUATION_STATEMENT. A declaration flag has no
    * such property: the declaration is what the user selected.
+   *
+   * `retention` is a third thing and not a declaration flag, because it does
+   * not read what the user chose — it reads what the user did NOT do. Keeping
+   * it separate is what stops the threshold caveat from being shown beside it.
    */
-  kind: 'threshold' | 'declaration'
+  kind: 'threshold' | 'declaration' | 'retention'
 }
 
 /**
@@ -87,7 +100,21 @@ export const CONSTANTS_REGISTER: readonly Threshold[] = [
       'Derived. Analytic: each of the two operations contributes at most ½ ULP of the result. Confirmed empirically — 500,000 random pairs, MW 10³–10⁶ g/mol, concentrations spanning 11 decades, both directions; worst observed error exactly 1.0 ULP, zero cases exceeding.',
   },
   { id: 'mw-lower', label: 'Lower MW plausibility bound', value: '1 kDa', basis: 'inspection', status: 'Uncharacterised — open item 2' },
-  { id: 'mw-upper', label: 'Upper MW plausibility bound', value: '1000 kDa', basis: 'inspection', status: 'Uncharacterised — open item 2' },
+  {
+    id: 'mw-upper',
+    label: 'Upper MW plausibility bound',
+    value: '1000 kDa',
+    basis: 'inspection',
+    // The value is UNCHANGED and stays NADIRA's to rule on. What changed is
+    // what the register admits: this bound is not merely unmeasured, it is
+    // known to misfire. IgM-PE at 1210 kDa is an ordinary flow reagent and
+    // raises "outside the usual range for a biologic" beside a correct
+    // conjugate flag. Adding the conjugate mass basis at v0.4 made masses above
+    // this bound ordinary, and the constant and the declaration were changed in
+    // the same document without either being checked against the other.
+    status:
+      'Uncharacterised — open item 2, and KNOWN TO MISFIRE. IgM–PE at 1210 kDa is an ordinary reagent and is flagged as outside the usual range. Adding the conjugate mass basis made masses above this bound ordinary; the bound was not revisited. Under review — the candidate resolutions are a higher figure or a bound conditioned on the mass-basis declaration.',
+  },
   { id: 'mass-upper', label: 'Upper mass concentration bound', value: '250 mg/mL', basis: 'inspection', status: 'Uncharacterised — open item 3' },
   { id: 'molar-lower', label: 'Lower molar concentration bound', value: '1 pM', basis: 'inspection', status: 'Uncharacterised — open item 3' },
   {
@@ -139,6 +166,8 @@ export interface FlagInput {
   massUnit: MassUnit
   molarValue: number
   molarUnit: MolarUnit
+  /** C1-FL-09. Which declarations were carried without re-confirmation. */
+  retained: RetainedFields
 }
 
 /**
@@ -181,12 +210,37 @@ export function raiseFlags(input: FlagInput): Flag[] {
     })
   }
 
-  // C1-FL-03 — molar concentration < 1 pM.
-  //
-  // Zero is a legal concentration (§7) and is below the bound, so it flags
-  // rather than being rejected. That is the specified behaviour: the flag says
-  // the value is below the range of biologic working solutions, which zero is.
-  if (molarMolPerL < MOLAR_LOWER_MOL_PER_L) {
+  /*
+   * Zero is not a low concentration; it is the absence of solute.
+   *
+   * §7 makes zero legal and §8 does not exclude it, so until v0.1.2 both
+   * requirements were satisfied and their interaction was the defect: 0 mg/mL
+   * returned 0.00000 µM flagged "below the range typical of biologic working
+   * solutions", which is true of zero and says nothing about it. A flag that
+   * carries no information is the inert-check pattern in miniature — it looks
+   * like the tool noticed something.
+   *
+   * Both quantities are tested rather than one. They are zero together for
+   * every legal input, but a mass concentration small enough to underflow the
+   * division still leaves a genuine trace amount reported as a zero molarity,
+   * and THAT is an implausibly low concentration rather than an empty one.
+   * C1-FL-03 is the right flag there and still fires.
+   */
+  const isEmpty = molarMolPerL === 0 && massGPerL === 0
+
+  // C1-FL-10 — the system contains no solute.
+  if (isEmpty) {
+    flags.push({
+      code: 'C1-FL-10',
+      kind: 'threshold',
+      evaluatedOn: 'molar concentration',
+      message:
+        'The concentration is zero: no solute is present. This is not an implausibly low concentration, and the conversion is exact.',
+    })
+  }
+
+  // C1-FL-03 — molar concentration < 1 pM, excluding an empty system.
+  if (!isEmpty && molarMolPerL < MOLAR_LOWER_MOL_PER_L) {
     flags.push({
       code: 'C1-FL-03',
       kind: 'threshold',
@@ -256,7 +310,41 @@ export function raiseFlags(input: FlagInput): Flag[] {
     })
   }
 
+  /*
+   * C1-FL-09 — a declaration was carried across a change of conversion
+   * direction and has not been re-confirmed.
+   *
+   * NOT a refusal to compute. The value is present and valid; only its
+   * re-affirmation in this direction is missing, so the calculation proceeds
+   * and the result carries the qualification. Withholding would be the wrong
+   * instrument: it would treat an unconfirmed weight as an absent one, and
+   * C1-MW-01 already covers absence.
+   *
+   * The message names the fields because a reader on screen needs to know which
+   * one to look at. `declarations.retained` in the structured object records the
+   * same thing in a form a consumer can branch on — the flag warns, the
+   * declaration records, exactly as the mass basis already works.
+   */
+  if (anyRetained(input.retained)) {
+    const names = retainedFieldNames(input.retained)
+    const list =
+      names.length === 1
+        ? names[0]
+        : `${names.slice(0, -1).join(', ')} and ${names[names.length - 1]}`
+    const verb = names.length === 1 ? 'was' : 'were'
+    flags.push({
+      code: 'C1-FL-09',
+      kind: 'retention',
+      evaluatedOn: 'retention state',
+      message: `${capitalise(list)} ${verb} retained from the previous conversion direction and ${verb} not re-confirmed. The result is computed from carried values; confirm them before recording it.`,
+    })
+  }
+
   return flags
+}
+
+function capitalise(s: string): string {
+  return s.charAt(0).toUpperCase() + s.slice(1)
 }
 
 /**

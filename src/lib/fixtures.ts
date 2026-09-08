@@ -201,6 +201,37 @@ export const FIXTURES: readonly Fixture[] = [
     expect: { displayedMolar: '19.5312', flags: [] },
   },
   {
+    id: 'C1-FX-12',
+    name: 'A declaration retained across a change of direction',
+    assumption:
+      'The clean case of C1-FX-09 in the reverse direction, with the molecular weight and its source carried across the switch and the mass basis re-confirmed. Everything about the numbers is inside every bound, so C1-FL-09 is the only flag and the fixture cannot pass because of an unrelated condition. Two fields retained rather than one or three: one would not show that the message enumerates, and three would not show that a confirmed field drops out of it. This fixture exists because retention was a property of the FORM until v0.2.0 — the badge was the whole of it, so a result computed from carried values said "as declared" in its derivation and left no trace at all in the structured object.',
+    standard: 'C1-FL-09 raised, and declarations.retained recording which fields',
+    request: {
+      direction: 'molar-to-mass',
+      enteredValue: 8.42733,
+      mwValue: 148327,
+      ...CLEAN,
+      units: { mass: 'mg/mL', molar: 'uM', mw: 'g/mol' },
+      retained: { mw: true, provenance: true, massBasis: false },
+    },
+    expect: { flags: ['C1-FL-09'] },
+  },
+  {
+    id: 'C1-FX-13',
+    name: 'Zero concentration',
+    assumption:
+      'Zero is legal under §7 and is not excluded by §8, so until v0.2.0 both requirements were met and their interaction was the defect: 0 mg/mL returned 0.00000 µM flagged "below the range typical of biologic working solutions", which is true of zero and says nothing about it. Zero is the absence of solute, not an implausibly low concentration. Declarations are clean so the zero flag is isolated.',
+    standard: 'C1-FL-10 raised and C1-FL-03 NOT raised',
+    request: {
+      direction: 'mass-to-molar',
+      enteredValue: 0,
+      mwValue: 148327,
+      ...CLEAN,
+      units: { mass: 'mg/mL', molar: 'uM', mw: 'g/mol' },
+    },
+    expect: { displayedMolar: '0.00000', flags: ['C1-FL-10'] },
+  },
+  {
     id: 'C1-FX-09',
     name: 'Negative control',
     assumption:

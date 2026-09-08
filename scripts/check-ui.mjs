@@ -46,8 +46,12 @@ const browser = await chromium.launch({
   ...(existsSync(CHROME) ? { executablePath: CHROME } : {}),
   args: ['--disable-background-networking', '--disable-component-update', '--disable-sync', '--no-first-run'],
 })
-const page = await browser.newPage()
-// C1-NF-03's standard, raised with the shared masthead. See check-network.mjs.
+// A context rather than a bare page, so the structured-object assertion can
+// read what the copy button actually put on the clipboard rather than trusting
+// that the button exists.
+const context = await browser.newContext()
+await context.grantPermissions(['clipboard-read', 'clipboard-write'])
+const page = await context.newPage()
 await page.setViewportSize({ width: 1440, height: 900 })
 
 /** Which field labels currently carry a "retained — confirm" badge. */
@@ -55,7 +59,7 @@ const badgedFields = () =>
   page.evaluate(() =>
     [...document.querySelectorAll('.retained')].map((el) => {
       const owner = el.closest('label, legend')
-      return owner ? owner.textContent.replace('retained — confirm', '').trim() : '(orphan badge)'
+      return owner ? owner.textContent.replace('Retained — not re-confirmed', '').trim() : '(orphan badge)'
     }),
   )
 
@@ -191,6 +195,111 @@ const relation = await page.evaluate(() => {
 check(!/effective (kDa|g\/mol|mg\/mL|µM|M\b)/i.test(relation), `the relation still names a coined unit: "${relation}"`)
 check(/molar concentration = mass concentration ÷ molecular weight/.test(relation), `the physical relation is not stated: "${relation}"`)
 check(/mg\/mL per µM/.test(relation), 'the folded divisor is not given in standard units')
+
+// ---------------------------------------------------------------------------
+// C1-FL-09 — a retained declaration reaches the RESULT, not only the form.
+//
+// The badge was the whole of retention until v0.2.0. It satisfied C1-ST-03 as
+// written and left the record wrong in a way the screen was not: the derivation
+// said "as declared" of a value the user had never re-affirmed in this
+// direction, and the structured object carried no trace of it at all. So this
+// drives the switch and then inspects the result and the exported object,
+// rather than stopping at the badge.
+// ---------------------------------------------------------------------------
+
+await page.goto(origin, { waitUntil: 'networkidle' })
+await fillEverything()
+await page.click('.directions button:has-text("molar → mass")')
+await page.waitForTimeout(200)
+
+// Re-enter only the concentration. The three declarations stay carried.
+await page.fill('#entered', '6.66667')
+await page.selectOption('#enteredunit', 'uM')
+await page.waitForTimeout(250)
+
+check((await page.locator('.result-value').count()) === 1, 'no result after re-entering the concentration')
+
+const retentionFlag = await page.evaluate(() => {
+  const el = [...document.querySelectorAll('.flag')].find((p) => p.textContent.includes('C1-FL-09'))
+  return el ? el.textContent : null
+})
+check(retentionFlag !== null, 'a result computed from carried declarations raised no C1-FL-09')
+if (retentionFlag) {
+  check(/molecular weight/i.test(retentionFlag), 'C1-FL-09 does not name which declarations were carried')
+  check(/not re-confirmed/i.test(retentionFlag), 'C1-FL-09 does not say the values were not re-confirmed')
+}
+
+// The derivation must stop claiming a declaration that was not made here.
+const derivation = await page.evaluate(() => {
+  const dt = [...document.querySelectorAll('dl.derivation dt')].find((d) => d.textContent.trim() === 'Assumptions')
+  return dt ? dt.nextElementSibling.textContent : ''
+})
+check(/not re-confirmed/.test(derivation), 'the derivation does not mark the retained weight')
+check(
+  !/as declared/.test(derivation),
+  'the derivation still says "as declared" of a value carried across the direction switch',
+)
+
+// The threshold caveat is scoped to threshold flags, and retention is not one.
+check(
+  !(await page.evaluate(() => [...document.querySelectorAll('.statements p')].some((p) => p.textContent.includes('display identically')))),
+  'the threshold caveat appeared beside a retention-only flag',
+)
+
+// And the record. Read the clipboard rather than trusting the button.
+const exported = await page.evaluate(async () => {
+  const btn = [...document.querySelectorAll('button.copy')].find((b) => b.textContent.includes('JSON'))
+  btn.click()
+  await new Promise((r) => setTimeout(r, 150))
+  return navigator.clipboard.readText()
+})
+let obj = null
+try {
+  obj = JSON.parse(exported)
+} catch {
+  check(false, 'the structured result on the clipboard is not valid JSON')
+}
+if (obj) {
+  check(
+    obj.declarations?.retained?.mw === true,
+    `the structured object does not record WHICH declarations were retained: ${JSON.stringify(obj.declarations?.retained)}`,
+  )
+  check(
+    obj.declarations?.retained?.massBasis === true,
+    'the mass basis was carried across the switch and the object does not say so',
+  )
+  check(
+    obj.flags.some((f) => f.code === 'C1-FL-09' && f.kind === 'retention'),
+    'C1-FL-09 is missing from the exported flags',
+  )
+  check(
+    !obj.derivation.assumptions.join(' ').includes('as declared'),
+    'the exported derivation still claims "as declared" for a carried value',
+  )
+}
+
+// ---------------------------------------------------------------------------
+// C1-FL-10 — zero is the absence of solute, not a low concentration.
+// ---------------------------------------------------------------------------
+
+await page.goto(origin, { waitUntil: 'networkidle' })
+await page.fill('#entered', '0')
+await page.selectOption('#enteredunit', 'mg/mL')
+await page.fill('#mw', '150')
+await page.selectOption('#mwunit', 'kDa')
+await page.selectOption('#prov', 'certificate-of-analysis')
+await page.check('input[name="massBasis"][value="assembled"]')
+await page.waitForTimeout(250)
+
+const zeroFlags = await page.evaluate(() =>
+  [...document.querySelectorAll('.flag')].map((p) => p.textContent.trim()),
+)
+check(zeroFlags.length === 1, `zero raised ${zeroFlags.length} flags, expected exactly one`)
+check(zeroFlags.some((t) => t.includes('C1-FL-10')), 'zero does not raise C1-FL-10')
+check(
+  !zeroFlags.some((t) => t.includes('C1-FL-03')),
+  'zero still raises C1-FL-03 — "below the range typical of biologic working solutions" is true of zero and says nothing about it',
+)
 
 // ---------------------------------------------------------------------------
 // Ratified as built, 4 September 2026 — NADIRA, against the running tool.
@@ -344,6 +453,7 @@ if (favicon) {
   check(!/<text|font-family/i.test(favicon), 'the favicon is lettered — it must be the mark alone')
 }
 
+await context.close()
 await browser.close()
 server.close()
 
@@ -359,5 +469,7 @@ console.log('  C1-CV-03 — the relation names no coined unit')
 console.log('  C1-OUT-03 — the structured result is reachable')
 console.log('  C1-NF-01 — the footer claims only what has been established')
 console.log('  §0 ratified — half-to-even live, 9a visible, threshold caveat scoped')
+console.log('  C1-FL-09 — retention reaches the result, the derivation and the record')
+console.log('  C1-FL-10 — zero is flagged as empty, not as implausibly low')
 console.log('  Branding — suite tokens, masthead, suite label, mark, title tag')
 console.log('\ncheck-ui passed.')

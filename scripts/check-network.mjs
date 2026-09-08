@@ -52,27 +52,34 @@ const SITE_URL = (SITE_TS.match(/SITE_URL\s*=\s*['"]([^'"]+)['"]/) ?? [])[1]
 const NETWORK_CLAIM_VERIFIED = /NETWORK_CLAIM_VERIFIED\s*=\s*true/.test(SITE_TS)
 
 /*
- * C1-NF-03's standard, and the one number in this file chosen by inspection.
+ * C1-NF-03 HAS NO STANDARD, and this script must not invent one.
  *
- * It was 1440x820 until 4 September 2026. That figure predates the shared
- * masthead: C1 carried its own 84px header, and the suite's — lockup, wordmark,
- * 25px H1, description, rule — costs 180px above the converter. Every tool in
- * the suite pays that, so it is not C1's to shave, and the converter itself is
- * at its floor: the mass-basis fieldset alone is 188px because §3.3 requires
- * every option label in full.
+ * "Inputs and result shall fit one screen without scrolling on a standard
+ * laptop display." Nothing defines the display. The figure was 1440x820 until
+ * 4 September 2026 and then 1440x900, and BOTH were viewport heights this
+ * script chose — which is the defect, not the numbers. A 1440x900 laptop does
+ * not have a 900px viewport: browser chrome takes about a hundred pixels and
+ * the page gets 797. So the check was passing against a screen nobody owns.
  *
- * Raised to 900 by A. Modi rather than met by cutting chrome. The alternative
- * on the table landed at 817px with three pixels of headroom and a masthead
- * that no longer matched the reference — the layout that fits only because it
- * got smaller, and fails again on the next flag.
+ * An undeclared constant governing a pass/fail test is the class §11 exists
+ * for, and a check that passes against a number it made up is the proxy pattern
+ * in docs/correspondence.md §I. So this reports the measurement at each
+ * candidate and declares the standard UNSET — the same shape as acceptance test
+ * 14 reporting UNRUN rather than a false pass.
  *
- * Measured at the decision: 874px worst case, 868px clean.
+ * Owner: A. Modi. Smallest supported window AND zoom level, then it becomes a
+ * register row with its basis and this becomes a gate again.
  *
- * NOT a constants-register row. §11 lists thresholds at which the TOOL changes
- * behaviour; this is a standard the verification is held to and it governs
- * nothing the engine computes. Same reasoning as NETWORK_CLAIM_VERIFIED in
- * src/lib/site.ts. Carried to URS v0.6 as C1-NF-03's stated standard.
+ * Widths differ per candidate because they change wrapping, and heights are
+ * viewport heights measured from the real windows rather than assumed.
  */
+const VIEWPORT_CANDIDATES = [
+  { window: '1440 x 900', width: 1440, height: 797 },
+  { window: '1280 x 800', width: 1280, height: 697 },
+  { window: '1366 x 768', width: 1366, height: 665 },
+]
+
+/** The size this script drives the page at while exercising it. */
 const VIEWPORT = { width: 1440, height: 900 }
 
 let server = null
@@ -155,12 +162,6 @@ if (!result.startsWith('6.66667')) {
 // laptop display.
 await page.setViewportSize(VIEWPORT)
 await page.waitForTimeout(150)
-const converterFits = await page.evaluate(() => {
-  const el = document.querySelector('main.converter')
-  return el ? el.getBoundingClientRect().bottom <= window.innerHeight : false
-})
-if (!converterFits) failures.push(`C1-NF-03: the converter does not fit one screen at ${VIEWPORT.width}x${VIEWPORT.height}`)
-
 const overflows = await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth)
 if (overflows) failures.push('the page scrolls horizontally at 1440px')
 
@@ -181,18 +182,46 @@ await page.selectOption('#mwunit', 'kDa')
 await page.selectOption('#prov', 'not-recorded')
 await page.check('input[name="massBasis"][value="not-recorded"]')
 await page.waitForTimeout(250)
+
+/*
+ * The worst case gained a fifth flag at v0.2.0 and the measurement has to
+ * follow it. C1-FL-09 fires on a result computed from declarations carried
+ * across a direction switch, so reaching the true worst case now means driving
+ * the switch rather than filling the form once.
+ */
+await page.click('.directions button:has-text("molar → mass")')
+await page.waitForTimeout(150)
+await page.fill('#entered', '0.0001')
+await page.selectOption('#enteredunit', 'pM')
+await page.waitForTimeout(250)
+
 const flagCount = await page.locator('.flag').count()
-if (flagCount < 4) failures.push(`the worst case raised ${flagCount} flags, expected at least 4`)
-const worstBottom = await page.evaluate(() => {
-  const el = document.querySelector('main.converter')
-  return el ? Math.round(el.getBoundingClientRect().bottom) : Infinity
-})
-if (worstBottom > VIEWPORT.height) {
-  failures.push(
-    `C1-NF-03: with ${flagCount} flags the converter reaches ${worstBottom}px, past a ${VIEWPORT.height}px viewport`,
-  )
+if (flagCount < 5) failures.push(`the worst case raised ${flagCount} flags, expected at least 5`)
+
+const measure = async ({ window: label, width, height }) => {
+  await page.setViewportSize({ width, height })
+  await page.waitForTimeout(120)
+  const bottom = await page.evaluate(() => {
+    const el = document.querySelector('main.converter')
+    return el ? Math.round(el.getBoundingClientRect().bottom) : Infinity
+  })
+  return { label, height, bottom, over: bottom - height }
 }
-console.log(`  worst case: ${flagCount} flags, converter bottom ${worstBottom}px of ${VIEWPORT.height}`)
+
+const measurements = []
+for (const candidate of VIEWPORT_CANDIDATES) measurements.push(await measure(candidate))
+await page.setViewportSize(VIEWPORT)
+
+console.log(`\n  C1-NF-03 — worst case, ${flagCount} flags`)
+for (const m of measurements) {
+  const verdict = m.over <= 0 ? `fits, ${-m.over}px spare` : `over by ${m.over}`
+  console.log(`    window ${m.label}  viewport ${m.height}px  converter ${m.bottom}px  ${verdict}`)
+}
+console.log('    (identical converter heights: .wrap caps content at 1120px, so all three')
+console.log('     candidates differ in available height only, not in wrapping)')
+console.log('    STANDARD NOT SET — "standard laptop display" is undefined in C1-NF-03')
+console.log('    and acceptance 20, so there is nothing to pass or fail against. Owner:')
+console.log('    A. Modi — smallest supported window and zoom level, then a register row.')
 
 // C1-ST-02: nothing persists across a reload unless its persistence is visible.
 const stored = await page.evaluate(() => ({
