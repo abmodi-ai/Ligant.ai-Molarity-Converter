@@ -36,9 +36,10 @@ Two further findings came out of the same work:
   exponent, and an author following it exactly could write either.
 - [`docs/correspondence.md`](docs/correspondence.md) — instances where a check stood in for
   the property it was meant to establish, or a comparison was tightened past what correct
-  code satisfies. **Seven in the first family, three in the second.** Instances 1–4 were
+  code satisfies. **Eight in the first family, three in the second.** Instances 1–4 were
   found by accident; 5–7 by a clause-by-clause audit against the URS, and are marked as such
-  because a schedulable method is weaker evidence than a stumble. Includes three patterns
+  because a schedulable method is weaker evidence than a stumble; 8 by acting on a previous
+  finding, which is the provenance worth wanting. Includes three patterns
   transferable to C3: make the fixture-distribution rule executable, assert coverage per
   instance rather than per set, and give interface-only requirements a check that drives the
   interface.

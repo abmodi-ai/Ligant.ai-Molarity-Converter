@@ -10,6 +10,10 @@ audit against the URS, which is a schedulable method and a weaker kind of eviden
 provenances belong in the file. If every instance had to be stumbled over, the argument would
 be that nothing can be done.
 
+Instance 8 has a third provenance, and it is the one worth wanting: it was found by **acting on
+a previous finding**. Correcting the viewport number is what exposed that the number was a
+viewport at all.
+
 Two families. The first is the manuscript's thesis directly. The second is its mirror.
 
 ---
@@ -140,6 +144,34 @@ evaluate it — so the requirement was satisfied in form and defeated in exactly
 was written for. The relation is now named quantities only, with the unit handling as its own
 statement and the divisor given in `mg/mL per µM`, which is a ratio of two standard units and
 can be checked against.
+
+### 8. A viewport the verification chose as a proxy for a display someone owns
+
+**Tool: C1, this build.** C1-NF-03 says the inputs and result shall fit one screen "on a
+standard laptop display". Nothing defines the display, so the check supplied one: first
+1440 × 820, then 1440 × 900 after the shared masthead landed.
+
+Both were **viewport** heights. A 1440 × 900 laptop does not give a page 900 pixels — browser
+chrome takes about a hundred and the page gets 797. The check was passing against a screen
+nobody owns, and it had been doing so since v0.1: the second number was chosen with more care
+than the first and was wrong in the same way, which is the part worth recording. Raising it
+felt like addressing the finding.
+
+This is §I.5 one level further out. There the guard measured the wrong property of the right
+thing; here the guard measured the right property of a thing that does not exist. Both are
+comfortable to write, because a number in a test looks like a standard whether or not anything
+outside the test corresponds to it.
+
+**The resolution is not a better number.** `check-network.mjs` now reports the worst case at
+three candidate windows and prints `STANDARD NOT SET`, the same shape as acceptance test 14
+reporting `UNRUN`. There is no constant to pass against until the owner sets one, and a check
+that says so is worth more than a check that passes. The measured worst case is 995px against
+797, 697 and 665 pixels of viewport — so what the invented standard had been concealing is
+that the page does not fit at any size measured.
+
+**Transferable:** when a requirement names a physical thing — a display, a bench, a plate
+reader — and the check names a number, ask what the number is a measurement OF. If the answer
+is "the check", the constant belongs to the register and to its owner, not to the test.
 
 **A note on provenance for 5, 6 and 7.** Instances 1 to 4 were found by accident, which the
 preamble records as the point. These three were found by **looking** — a clause-by-clause
