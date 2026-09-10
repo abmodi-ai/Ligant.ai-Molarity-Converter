@@ -62,7 +62,21 @@ DISPLAY_SIG_FIGS = 6
 
 
 def effective_mw(mw_value, units):
-    """The molecular weight expressed in (mass unit) per (molar unit)."""
+    """The molecular weight expressed in (mass unit) per (molar unit).
+
+    FOLDING IS REQUIRED, NOT A CHOICE, and this is now load-bearing for
+    acceptance test 3 rather than incidental to it. URS 11's round-trip row
+    states folding as a requirement on how the conversion is structured, for two
+    reasons: rounding, and range. The range half is what matters here. A
+    stepwise implementation (normalise, divide, denormalise) forms an
+    intermediate that underflows, so for C1-FX-14 it returns 0 where this
+    returns 9.99989e-315.
+
+    Before the subnormal fixtures were added, a stepwise reimplementation would
+    have agreed with the shipped tool everywhere that mattered: the two differ
+    by at most 1 ULP in the normal range and the tolerance is 1 ULP. It no
+    longer would. Do not "simplify" this into separate normalisation steps.
+    """
     g_per_mol = mw_value * MW_TO_G_PER_MOL[units["mw"]]
     return (g_per_mol * MOLAR_TO_MOL_PER_L[units["molar"]]) / MASS_TO_G_PER_L[units["mass"]]
 

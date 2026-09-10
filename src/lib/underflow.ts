@@ -79,12 +79,25 @@ export function anyUnderflow(u: UnderflowState): boolean {
  * suggestion; suggesting pM where pM also underflows would be the inert-check
  * pattern with a helpful tone.
  *
- * It is not a hypothetical. Round 3's instruction reported that all five molar
- * units underflow for the 1e-320 mg/mL case and that no suggestion was
- * therefore possible. Run against the shipped conversion, four of the five hold
- * the value: only M underflows, and pM round-trips it losslessly.
- * `underflow.test.ts` records that, so the claim is a measurement rather than a
- * recollection.
+ * It is not a hypothetical, and the way it failed is worth keeping.
+ *
+ * Round 3's instruction reported that all five molar units underflow for the
+ * 1e-320 mg/mL case, so no unit could be suggested and the caveat against
+ * suggesting one was justified. Run against the shipped conversion, four of the
+ * five hold the value: only M underflows, and pM round-trips it losslessly.
+ *
+ * The reported measurement was taken by dividing to mol/L and then scaling to
+ * the unit, which is the STEPWISE path. That forms the intermediate which
+ * underflows, and avoiding it is the second of the two reasons §11 requires the
+ * divisor to be folded. The probe therefore reproduced the exact defect the
+ * requirement exists to prevent, while checking a finding about that
+ * requirement. Its independence from this code is what made it worth trusting,
+ * and it was independent in the wrong direction.
+ *
+ * The requirement it was written to support still stands: a suggested unit must
+ * be one the tool has CHECKED. Only the worked example inverts. The check finds
+ * units here; it does not find none. `underflow.test.ts` asserts both the
+ * result and the mechanism, so neither is a recollection.
  */
 export function representableMolarUnits(massValue: number, mwValue: number, units: ConversionUnits): MolarUnit[] {
   return MOLAR_UNITS.filter((molar) => {

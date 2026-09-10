@@ -14,8 +14,10 @@ Instance 8 has a third provenance, and it is the one worth wanting: it was found
 a previous finding**. Correcting the viewport number is what exposed that the number was a
 viewport at all.
 
-Three families. The first is the manuscript's thesis directly. The second is its mirror. The
-third is not about checks at all, and was added when one occurred.
+Four families. The first is the manuscript's thesis directly. The second is its mirror. The
+third and fourth are not about checks that were written badly: one is about a change nobody
+reviewed, and one is about a measurement that was independent in the wrong direction. Both
+were added when they occurred.
 
 ---
 
@@ -68,7 +70,7 @@ on the IEEE 754 fields in TypeScript, `Decimal(v)` in Python. `Decimal(str(v))` 
 reintroduced the same defect one layer down.
 
 Found only because the same value was examined in two output units and behaved differently,
-which is the observation in §IV below, not a method.
+which is the observation in §V below, not a method.
 
 ### 4. Excluding the input class as a proxy for handling it
 
@@ -80,10 +82,10 @@ This is the fixture-distribution failure §10 and C1-FX-09 were written against,
 that is hardest to see: it looks like hygiene. Two implementations could disagree on real
 user data with the suite green.
 
-Ties are unit-dependent (§IV), so they cannot be excluded from the input space at all; only
+Ties are unit-dependent (§V), so they cannot be excluded from the input space at all; only
 from the fixtures, which is strictly worse than not checking.
 
-**The guard is now inverted**, and that inversion is the transferable part: see §V.
+**The guard is now inverted**, and that inversion is the transferable part: see §VI.
 
 ### 5. A count over the set as a proxy for coverage of each threshold
 
@@ -265,7 +267,72 @@ trip over it. A blast radius is a property of the tool, not of the change.
 
 ---
 
-## IV. Two observations that are not defects but were mistaken for them
+## IV. A verification that reimplemented the defect under test
+
+The independence of a check is normally what makes it worth trusting. This is the case where
+it is what makes the check wrong, and it is not any of the three above: no check was written
+badly, nothing was compared too strictly, and nothing was edited without review. A
+measurement was taken of the wrong system, by someone deliberately not looking at the right
+one.
+
+### 1. The unit probe took the stepwise path
+
+**Tool: C1, this build.** Round 3 asked whether an underflowed result could suggest a smaller
+output unit, and stated as a finding that it could not: all five molar units were reported to
+underflow for 1e-320 mg/mL at 1000 kDa, so a suggestion would name a unit that fails too. A
+requirement was written on that basis, that a suggested unit must be one the tool has checked
+rather than assumed, with the case given as the worked example of a check finding nothing.
+
+Measured against the shipped conversion, four of the five hold the value. Only M underflows,
+and pM round-trips it exactly.
+
+**The mechanism is the entry.** The probe computed the molarity in mol/L and then scaled to
+each unit. That is the STEPWISE path: it forms the intermediate that underflows, and avoiding
+that intermediate is the second of the two reasons §11 requires the divisor to be folded.
+
+So the probe reproduced the exact defect the requirement exists to prevent, while checking a
+finding about that requirement, and reported the result as a property of the tool. Run both
+ways on the same input, the disagreement is total:
+
+| Unit | Folded, as shipped | Stepwise, as probed |
+|---|---|---|
+| M | 0.00000 | 0.00000 |
+| mM | 9.88131e-324 | 0.00000 |
+| µM | 9.99989e-321 | 0.00000 |
+| nM | 9.99989e-318 | 0.00000 |
+| pM | 9.99989e-315 | 0.00000 |
+
+**Why it is a family and not an instance of §I.** In §I a check correlates with the property
+and the gap is invisible until something falls into it. Here the check was of a different
+system entirely, and the reason it was a different system is the reason it was trusted: it
+did not consult the implementation. Independence is the defence against a check that merely
+agrees with the code, and it is not free. **An independent measurement must still be
+independent about the right thing.** This one varied the implementation, which was the one
+variable that had to be held fixed, because the implementation was the subject.
+
+**The requirement survives; the example inverts.** A suggested unit must still be one the
+tool has checked. What changed is that the check finds four units here rather than none, so
+the caveat the example was written to support does not apply to it.
+
+**A consequence nobody had noticed, found while writing this up.** The subnormal fixtures
+added in round 3 make folding load-bearing for acceptance test 3. Before them, a stepwise
+reimplementation would have agreed with the shipped tool everywhere that mattered, since the
+two differ by at most 1 ULP in the normal range and the comparison tolerance is 1 ULP. On
+C1-FX-14 they disagree totally, so acceptance test 3 now fails against a reimplementation
+that does not fold. That is not contamination of the independence the test depends on:
+folding is in the specification as a requirement on how the conversion is structured, so both
+implementations folding is two authors reading the same URS. It is recorded because it looks
+like contamination and is not, and because the Python reference folds today as an
+implementation choice rather than as a stated obligation.
+
+**Transferable.** When a verification and its subject are two implementations of the same
+thing, write down which properties the verification is allowed to differ on. For C1 that list
+is short and it is now explicit: derivation from the URS, language, and arithmetic ordering
+within a bound. Structure is not on it.
+
+---
+
+## V. Two observations that are not defects but were mistaken for them
 
 ### Ties are unit-dependent
 
@@ -301,7 +368,7 @@ Acceptance tests 3 and 5 are not redundant, and neither subsumes the other.
 
 ---
 
-## V. Transferable to C3 and after
+## VI. Transferable to C3 and after
 
 **Make the fixture-distribution rule executable, not an audit.**
 

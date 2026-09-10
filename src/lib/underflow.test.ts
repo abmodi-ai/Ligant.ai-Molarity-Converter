@@ -136,13 +136,57 @@ describe('the folded divisor preserves range as well as rounding', () => {
 
 describe('the unit suggestion is checked, not assumed', () => {
   it('four of the five molar units hold NADIRA\'s case; only M underflows', () => {
-    // Round 3 reported that every molar unit underflows for this input and that
-    // no suggestion was therefore possible. Measured, that is not so, and a
-    // message written on the reported premise would have told the user nothing
-    // could be done while pM was available and lossless.
     const holds = representableMolarUnits(1e-320, 1000, TINY.units)
     expect(holds).toEqual(['mM', 'uM', 'nM', 'pM'])
     expect(holds).not.toContain('M')
+  })
+
+  it('the probe that reported otherwise had reimplemented the defect under test', () => {
+    /*
+     * Round 3 reported that every molar unit underflows for this input, so no
+     * unit could be suggested. That measurement was taken by dividing to
+     * mol/L and then scaling to the unit, which is the STEPWISE path: it forms
+     * the intermediate that underflows, which is the second of the two reasons
+     * §11 requires the divisor to be folded.
+     *
+     * So the probe reproduced the exact defect the requirement exists to
+     * prevent, while checking a finding about that requirement, and reported
+     * the result as a property of the shipped tool. Its independence from the
+     * tool is what made it worth trusting, and it was independent in the wrong
+     * direction.
+     *
+     * Asserted rather than described, because the two paths disagreeing here is
+     * the whole of the explanation.
+     */
+    const stepwise = MOLAR_UNITS.filter(
+      (molar) => stepwisePath().massToMolar(1e-320, 1000, { ...TINY.units, molar }) !== 0,
+    )
+    expect(stepwise, 'the stepwise path finds no unit that holds the value').toEqual([])
+    expect(representableMolarUnits(1e-320, 1000, TINY.units), 'the shipped path finds four').toHaveLength(4)
+  })
+
+  it('C1-FX-14 makes folding load-bearing for acceptance test 3', () => {
+    /*
+     * A consequence of adding the subnormal fixtures that was not obvious.
+     *
+     * Before them, a stepwise reimplementation would have agreed with the
+     * shipped tool everywhere that mattered: the two differ by at most 1 ULP in
+     * the normal range, and the comparison tolerance is 1 ULP. In the subnormal
+     * regime they disagree totally, so C1-FX-14 is now a case acceptance test 3
+     * would FAIL against a reimplementation that did not fold.
+     *
+     * That is not a threat to the independence the test depends on. Folding is
+     * in the specification, as a requirement on how the conversion is
+     * structured rather than an observation about it, so both implementations
+     * folding is two authors reading the same URS. It is worth stating because
+     * it looks like contamination and is not.
+     */
+    const units = { mass: 'mg/mL', molar: 'pM', mw: 'kDa' } as const
+    const shipped = correctPath.massToMolar(1e-320, 1000, units)
+    const stepwise = stepwisePath().massToMolar(1e-320, 1000, units)
+    expect(shipped).toBeGreaterThan(0)
+    expect(stepwise).toBe(0)
+    expect(shipped).not.toBe(stepwise)
   })
 
   it('reports an empty list when nothing can represent the value', () => {

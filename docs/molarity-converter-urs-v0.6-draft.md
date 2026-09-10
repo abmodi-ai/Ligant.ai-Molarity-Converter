@@ -49,6 +49,7 @@ already being acted on and were not written down.
 | 19 ✚ | **§10** | **C1-FX-03b and C1-FX-14** put both subnormal regimes in the fixture set and in the reference set |
 | 20 ✎ | **§6** | The 0.9% disagreement rate is stale and is corrected, **with its corpus named** |
 | 21 ✚ | **§9** | The failure-class list gains the underflowed-to-zero case. The register discloses it to a reviewer; **§9 is what a user reads**, and the two answer different questions |
+| 23 ✚ | **Acceptance 3** | Names what the reimplementation may and may not vary. Folding is specified, so both implementations folding is two authors reading one URS rather than contamination |
 | 22 ✚ | **§11** | **Representability** is a register row and a C1-FX-04 threshold. It changes the output, so C1-CN-01 covers it, even though it is not a §8 flag condition |
 
 **On the acceptance numbering.** Still not reflowed, and still offered. v0.5 raised this and it
@@ -748,7 +749,7 @@ rather than an audit.
 
 1. A reference case verifies: IgG at 150 kDa, 1 mg/mL, returns **6.66667 µM** at six significant figures.
 2. A non-round molecular weight case verifies against hand calculation to displayed precision.
-3. ✎ An independent reimplementation in a second language agrees with the shipped implementation on the full reference set. **Two separate standards:** a **correctness gate** on the **unrounded** value at **≤ 1 ULP** (C1-UN-07), and a **display check** that every value renders identically at six significant figures (C1-UN-06). Code review does not satisfy this test.
+3. ✎ An independent reimplementation in a second language agrees with the shipped implementation on the full reference set. **The reimplementation is independent in its derivation, its language and its arithmetic ordering within the bound; it is NOT free to choose a conversion structure the specification fixes.** C1-FX-14 makes that load-bearing: a stepwise reimplementation returns 0 where the shipped tool returns 9.99989e-315, and before the subnormal fixtures existed the two would have agreed everywhere that mattered. **Two separate standards:** a **correctness gate** on the **unrounded** value at **≤ 1 ULP** (C1-UN-07), and a **display check** that every value renders identically at six significant figures (C1-UN-06). Code review does not satisfy this test.
 4. Every calculation produces a structured object validating against the Antigen Density Calculator's format. **HELD: open item 1.**
 
 **Invariance**
