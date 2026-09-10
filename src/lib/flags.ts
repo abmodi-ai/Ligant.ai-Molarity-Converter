@@ -226,7 +226,21 @@ export function raiseFlags(input: FlagInput): Flag[] {
    * and THAT is an implausibly low concentration rather than an empty one.
    * C1-FL-03 is the right flag there and still fires.
    */
-  const isEmpty = molarMolPerL === 0 && massGPerL === 0
+  /*
+   * Tested on the quantities themselves, NOT on their base-unit forms.
+   *
+   * Normalising first can manufacture a zero: 1e-320 ng/mL is a real, non-zero
+   * concentration, and multiplying it by the ng/mL factor of 1e-6 gives 1e-326,
+   * which underflows to exactly 0. Read from the normalised value, the rule
+   * concluded that a solution the user had described contained no solute, and
+   * said so confidently. That is the defect C1-FL-10 was added to remove,
+   * reproduced by C1-FL-10 itself in a unit nothing had tested.
+   *
+   * Zero is zero in every unit, so the raw comparison is strictly safer: a
+   * genuinely empty system still has both quantities at exactly 0, and no unit
+   * factor can turn a non-zero quantity into one.
+   */
+  const isEmpty = input.massValue === 0 && input.molarValue === 0
 
   // C1-FL-10: the system contains no solute.
   if (isEmpty) {

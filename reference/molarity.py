@@ -151,7 +151,10 @@ def flags(mw_value, units, provenance, mass_basis, mass_value, molar_value, reta
     # are tested: they are zero together for every legal input, but a mass small
     # enough to underflow the division leaves a real trace amount reported as a
     # zero molarity, and that IS implausibly low - C1-FL-03 is right there.
-    empty = molar_mol_per_l == 0 and mass_g_per_l == 0
+    # On the quantities themselves, not their base-unit forms: normalising a
+    # small enough value can underflow to zero and manufacture an empty system
+    # out of a real one (1e-320 ng/mL times 1e-6 is 1e-326, which is 0).
+    empty = mass_value == 0 and molar_value == 0
     if empty:
         out.append("C1-FL-10")
     if not empty and molar_mol_per_l < MOLAR_LOWER_MOL_PER_L:

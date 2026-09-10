@@ -40,6 +40,22 @@ describe('detection: a zero that is not the value', () => {
     expect(reverse.underflow).toEqual({ massConcentration: true, molarConcentration: false })
   })
 
+  it('stays exclusive of C1-FL-10 in a unit whose base-unit form underflows', () => {
+    /*
+     * The case the first version of this suite missed. The exclusivity test
+     * below used mg/mL, whose base-unit factor is 1, so normalising could not
+     * lose anything and the property held for a reason that had nothing to do
+     * with the rule being right. In ng/mL the factor is 1e-6 and the rule
+     * reported an empty system for a concentration the user had typed.
+     */
+    const r = ok({ ...TINY, units: { mass: 'ng/mL', molar: 'M', mw: 'kDa' }, mwValue: 150 })
+    expect(r.massValue).toBe(1e-320)
+    expect(r.molarValue).toBe(0)
+    expect(r.flags.map((f) => f.code)).toEqual(['C1-FL-03'])
+    expect(r.flags.map((f) => f.code)).not.toContain('C1-FL-10')
+    expect(r.underflow.molarConcentration).toBe(true)
+  })
+
   it('is mutually exclusive with C1-FL-10 by construction', () => {
     // C1-FL-10 is the genuine zero, where the system holds no solute and both
     // quantities are zero. Underflow is the case where the entered quantity is

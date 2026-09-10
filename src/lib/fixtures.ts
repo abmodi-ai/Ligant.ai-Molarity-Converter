@@ -262,6 +262,21 @@ export const FIXTURES: readonly Fixture[] = [
     expect: { flags: ['C1-FL-03'] },
   },
   {
+    id: 'C1-FX-15',
+    name: 'A real concentration whose base-unit form underflows',
+    assumption:
+      '1e-320 ng/mL at 150 kDa. The value is non-zero and the user typed it, but the ng/mL factor of 1e-6 takes it to 1e-326 in g/L, which underflows to exactly zero. C1-FL-10 read the normalised value and reported that the solution contained no solute, which is the defect C1-FL-10 was added to remove, reproduced by C1-FL-10 in a unit nothing had tested. The unit matters and mg/mL would not expose it, because its factor is 1. Fixed by testing the quantities rather than their base-unit forms.',
+    standard: 'C1-FL-03 raised, C1-FL-10 NOT raised, and the record marks the computed zero',
+    request: {
+      direction: 'mass-to-molar',
+      enteredValue: 1e-320,
+      mwValue: 150,
+      ...CLEAN,
+      units: { mass: 'ng/mL', molar: 'M', mw: 'kDa' },
+    },
+    expect: { displayedMolar: '0.00000', flags: ['C1-FL-03'] },
+  },
+  {
     id: 'C1-FX-09',
     name: 'Negative control',
     assumption:
