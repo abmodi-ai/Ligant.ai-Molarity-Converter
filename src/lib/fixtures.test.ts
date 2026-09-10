@@ -8,6 +8,7 @@ import {
   type ThresholdId,
 } from './fixtures'
 import { computeConversion } from './compute'
+import { BOUNDARY_THRESHOLDS, CONSTANTS_REGISTER } from './flags'
 import { roundTripUlps, withinTolerance } from './invariance'
 import { agreesToDisplayedPrecision, isExactTie } from './format'
 
@@ -205,8 +206,20 @@ describe('C1-FX-03b / C1-FX-14, the subnormal regime', () => {
 })
 
 describe('C1-FX-04: boundaries in both conversion directions', () => {
-  const covered = [...BOUNDARY_FIXTURES, ...CONCENTRATION_BOUNDARY_FIXTURES]
-  const THRESHOLDS: ThresholdId[] = ['mw-lower', 'mw-upper', 'mass-upper', 'molar-lower']
+  /*
+   * Both lists are DERIVED, and that is the fix rather than a tidy-up.
+   *
+   * The fixtures are every fixture that declares a boundary, not three named
+   * arrays; the thresholds are every register row marked for boundary
+   * coverage, not four names retyped here. The previous version hardcoded the
+   * four, which is why representability could be added to the register, to the
+   * failure-class list and to the documentation while this guard went on
+   * reporting complete coverage. A guard cannot report a threshold it was
+   * never told exists, and the register solved that class already by
+   * rendering from the constants the flag rules read.
+   */
+  const covered = ALL_FIXTURES.filter((f) => f.boundary !== undefined)
+  const THRESHOLDS: readonly ThresholdId[] = BOUNDARY_THRESHOLDS
   const SIDES: BoundarySide[] = ['below', 'on', 'above']
   const DIRECTIONS = ['mass-to-molar', 'molar-to-mass'] as const
 
@@ -245,12 +258,40 @@ describe('C1-FX-04: boundaries in both conversion directions', () => {
     expect(missing, `C1-FX-04 does not cover: ${missing.join(', ')}`).toEqual([])
   })
 
+  it("the derived threshold list is the register's, not a copy of it", () => {
+    // If this ever fails, a register row was added or removed without the
+    // fixture set following, which is the state the hardcoded list allowed.
+    expect([...THRESHOLDS].sort()).toEqual(
+      CONSTANTS_REGISTER.filter((t) => t.boundaryCoverage).map((t) => t.id).sort(),
+    )
+    expect(THRESHOLDS).toContain('representability')
+  })
+
+  it('representability is asserted on the marker, because its flags cannot tell the sides apart', () => {
+    const rep = covered.filter((f) => f.boundary?.threshold === 'representability')
+    expect(rep.length).toBe(6)
+    // Identical flags on every side, so a fixture asserting only flags would be
+    // inert here. That is what the `underflowed` expectation is for.
+    const flagSets = new Set(rep.map((f) => [...f.expect.flags].sort().join(',')))
+    expect(flagSets.size).toBe(1)
+    for (const f of rep) {
+      expect(f.expect.underflowed, `${f.id} declares no underflow expectation`).toBeTypeOf('boolean')
+      const r = run(f)
+      expect(r.underflow.molarConcentration || r.underflow.massConcentration, f.id).toBe(f.expect.underflowed)
+    }
+  })
+
   it('a value exactly on a threshold never flags, the operators are strict', () => {
     // Selected by metadata rather than by a hand-maintained list of ids: a list
     // is a second place to forget a fixture, and forgetting one there makes the
     // suite quieter rather than redder.
-    const onBound = covered.filter((f) => f.boundary?.side === 'on')
-    expect(onBound.length, 'four thresholds in two directions is eight on-the-bound cases').toBe(8)
+    // Representability is excluded: it is not a plausibility bound, and all
+    // three of its sides raise the same two flags by construction, so "on the
+    // bound does not flag" is not a claim about it.
+    const onBound = covered.filter(
+      (f) => f.boundary?.side === 'on' && f.boundary.threshold !== 'representability',
+    )
+    expect(onBound.length, 'four §8 thresholds in two directions is eight on-the-bound cases').toBe(8)
     for (const f of onBound) {
       expect(run(f).flags, `${f.id} flagged while sitting exactly on its threshold`).toEqual([])
     }

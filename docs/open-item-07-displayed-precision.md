@@ -28,8 +28,9 @@ is not doing this job alone.
 
 The binding constraint is C1-IV-03: the same weight entered as a g/mol integer and as a
 kDa decimal must agree **to displayed precision**. Those two paths differ in the last bit
-in roughly 0.9% of realistic cases (URS §6), so the question is whether a 1-ULP
-difference can move the displayed digit.
+in a fraction of a percent of realistic cases (see the table below for the rate and the
+corpus it came from), so the question is whether a 1-ULP difference can move the displayed
+digit.
 
 Disagreement rate against displayed precision, 200,000 random realistic pairs
 (MW 1,000–1,000,000 g/mol, concentration over seven decades), measured against the
@@ -44,11 +45,42 @@ conversion code that ships:
 | 15 sig figs | 92 (0.046%) |
 | 16 sig figs | 820 (0.410%) |
 
-Bit-level disagreement was measured at **0.620%** of pairs. The URS puts it at "roughly
-0.9%"; the difference is the folded divisor described below, which removes some of the
-path-dependence the stepwise implementation has. A prototype of the stepwise path measured
-0.863%, which is the figure §6 is describing. Either way the conclusion is the same and
-does not depend on which is right.
+### The last-bit rate, with the corpus it came from
+
+An earlier draft of this section reported bit-level disagreement as **0.620%** and set it
+against URS §6's "roughly 0.9%" as though the two were competing measurements of one
+quantity. They are not. **The rate is a property of the corpus as much as of the
+implementation**, and neither figure carried the corpus it was measured on, so neither
+could be checked by anyone.
+
+Measured in one run by `npm run study:precision`, which is also where the v0.6 draft's
+copy of this table comes from, so the two documents cannot drift apart on it:
+
+| Corpus | n | Folded (ships) | Stepwise |
+|---|---|---|---|
+| This study: MW 1e3 to 1e6 g/mol, 7 decades, mg/mL to µM | 200,000 | **0.620%** | 0.811% |
+| Acceptance-6 sweep: MW 10,000 to 500,000 step 617, five concentrations | 3,975 | 0.629% | 0.805% |
+| Invariance corpus: every unit combination, 11 decades | 200,000 | 0.410% | 0.575% |
+
+Two things the table settles that a single number could not.
+
+**Folded is lower on every corpus.** Two operations rather than six leaves fewer places for
+the g/mol and the kDa orderings to part in the last bit. That is the same property §11's
+round-trip row depends on, measured from the other side.
+
+**The spread across corpora is larger than the spread between implementations.** 0.620%
+against 0.410% is the same code on two different case sets; 0.620% against 0.811% is two
+implementations on the same one. A reader given only "0.9%" cannot tell which kind of
+difference they are looking at, which is why the earlier draft read the gap as evidence
+about the implementation when most of it was evidence about the sweep.
+
+**Recorded rather than corrected quietly.** §11 exists because a constant without its basis
+cannot be checked, and this document is the evidence for a decision about a constant. A
+precision study quoting a bare percentage is the same defect one level up, in the paper
+arguing against it. It was found here before review rather than at it, which is the only
+reason it is a note and not a finding.
+
+The conclusion is unchanged on every corpus: at six significant figures, nothing disagrees.
 
 **C1-IV-03 first fails at thirteen significant figures.** Six is seven orders of magnitude
 inside the safe region. This is the quantitative form of the URS's "staying below the point

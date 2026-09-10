@@ -48,6 +48,8 @@ already being acted on and were not written down.
 | 18 ✚ | **§11, round-trip row** | Restated as a **requirement on how the conversion is structured**. Folding is required for two reasons, not one: rounding *and* range |
 | 19 ✚ | **§10** | **C1-FX-03b and C1-FX-14** put both subnormal regimes in the fixture set and in the reference set |
 | 20 ✎ | **§6** | The 0.9% disagreement rate is stale and is corrected, **with its corpus named** |
+| 21 ✚ | **§9** | The failure-class list gains the underflowed-to-zero case. The register discloses it to a reviewer; **§9 is what a user reads**, and the two answer different questions |
+| 22 ✚ | **§11** | **Representability** is a register row and a C1-FX-04 threshold. It changes the output, so C1-CN-01 covers it, even though it is not a §8 flag condition |
 
 **On the acceptance numbering.** Still not reflowed, and still offered. v0.5 raised this and it
 was not answered; this revision adds tests 21–26 at the end rather than interleaving them, so
@@ -260,17 +262,23 @@ precision, not bit-exactly. C1-FX-02 tests against this standard and no other.
 described the stepwise prototype. Re-measured against the shipped folded implementation on
 8 September 2026:
 
-| Corpus | Rate |
-|---|---|
-| Acceptance-6 sweep, 3,975 realistic cases, mg/mL to µM | **0.629%** |
-| Same sweep, stepwise path, for comparison | 0.805% |
-| 200,000 generated cases across every unit combination | 0.410% |
+| Corpus | n | Folded (ships) | Stepwise |
+|---|---|---|---|
+| Precision study: MW 1e3 to 1e6 g/mol, 7 decades, mg/mL to µM | 200,000 | **0.620%** | 0.811% |
+| Acceptance-6 sweep: MW 10,000 to 500,000 step 617, five concentrations | 3,975 | 0.629% | 0.805% |
+| Invariance corpus: every unit combination, 11 decades | 200,000 | 0.410% | 0.575% |
+
+Measured in one run by `npm run study:precision`. `docs/open-item-07-displayed-precision.md`
+quotes the same table from the same run, so the specification and the evidence for open item
+7 cannot disagree on a figure that is the subject of both.
 
 The conclusion is unchanged and the figure is not, which is the drift class this revision
-exists to stop. **The corpus is now named with the number**, because 0.629% and 0.410% are
-both true of the same implementation and a bare percentage cannot be checked. Not one of the
-differing cases disagrees at displayed precision, which is the property C1-IV-03 actually
-requires.
+exists to stop. **The corpus is now named with the number**, because every rate in that table
+is true and they are true of different case sets. Note that the spread across corpora, 0.620%
+against 0.410%, is larger than the spread between implementations on one corpus, 0.620%
+against 0.811%: a bare percentage does not let a reader tell those two kinds of difference
+apart. Not one of the differing cases disagrees at displayed precision, which is the property
+C1-IV-03 actually requires.
 
 **On the control in C1-IV-02.** The build added one the URS did not ask for: a clamp set above
 every value in the corpus, which **must be reported as undetected**. Without it, "the test
@@ -377,6 +385,7 @@ and its mass basis are recorded. It cannot detect:
 3. A **monomer mass** quoted where the assembled mass was needed, or the reverse; C1-MW-07 compels the declaration but cannot verify it
 4. A **unit-magnitude transcription error** where the entered weight still falls inside the plausible range. C1-FL-01 catches a 1000× error that lands outside 1–1000 kDa; it cannot catch one that lands inside, and it cannot distinguish a genuinely unusual protein from a typo
 5. Any error in the **input concentration** itself
+5a. ✚ A **computed concentration too small to represent** in the chosen output unit, which is reported as `0.00000`. The tool marks it in the structured record, but a zero on screen for a non-zero solution cannot be told from an empty one by eye. Reporting in a smaller unit is usually enough
 6. A **conjugate mass declared as unconjugated**, or the reverse; C1-MW-07 compels the declaration but cannot verify it, as for item 3
 
 | ID | Requirement | Pri |
@@ -409,6 +418,7 @@ an implementation that raises flags spuriously would pass every other fixture.
 | C1-FX-10 ✚ | An **exact rounding tie**: 1 g/L at 51.2 kDa, exactly 19.53125 µM | **C1-UN-06: six significant figures, half-to-even** |
 | C1-FX-03b ✚ | A **subnormal** result in an output unit that cannot represent it | The documented behaviour in that regime, **not** the 1 ULP bound, which cannot apply |
 | C1-FX-14 ✚ | The **same input** in an output unit that can | C1-IV-01. The bound applies, and holds exactly |
+| C1-FX-04, representability ✚ | A computed quantity **below, exactly on, and above** the smallest representable value, in **both directions** | C1-UN-07. Marked `underflowed` if and only if the zero is not the value |
 
 | ID | Requirement | Pri |
 |---|---|---|
@@ -431,6 +441,16 @@ kept in the change log because the *guard* was the thing that failed, and that i
 **✚ On C1-FX-10.** Added by the build without being specified, and ratified. It is what makes
 §11's rounding-mode row testable: without a case that lands exactly halfway, the rounding mode
 is a claim nothing exercises.
+
+**✚ On deriving the guard's threshold list.** C1-FX-04's guard kept its own hardcoded list of
+four threshold names. Representability could therefore be added to the register, to §9 and to
+this document while the guard went on reporting complete coverage, because **a guard cannot
+report a threshold it was never told exists**. The register has rendered from the same
+constants the flag rules read since v0.1, precisely so the page cannot describe a threshold
+the tool does not apply; the guard now derives from the same place. Adding a register row
+marked for boundary coverage makes the guard demand its six fixtures immediately, which
+closes the class rather than the instance. Recorded in `docs/correspondence.md` §I.5 as a
+recurrence.
 
 **✚ On C1-FX-11.** §10 told the author to audit the set for shared properties. An audit is
 performed once, by whoever is looking, and passes silently thereafter; and two of the set's

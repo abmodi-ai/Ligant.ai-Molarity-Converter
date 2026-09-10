@@ -14,7 +14,8 @@ Instance 8 has a third provenance, and it is the one worth wanting: it was found
 a previous finding**. Correcting the viewport number is what exposed that the number was a
 viewport at all.
 
-Two families. The first is the manuscript's thesis directly. The second is its mirror.
+Three families. The first is the manuscript's thesis directly. The second is its mirror. The
+third is not about checks at all, and was added when one occurred.
 
 ---
 
@@ -67,7 +68,7 @@ on the IEEE 754 fields in TypeScript, `Decimal(v)` in Python. `Decimal(str(v))` 
 reintroduced the same defect one layer down.
 
 Found only because the same value was examined in two output units and behaved differently,
-which is the observation in §III below, not a method.
+which is the observation in §IV below, not a method.
 
 ### 4. Excluding the input class as a proxy for handling it
 
@@ -79,10 +80,10 @@ This is the fixture-distribution failure §10 and C1-FX-09 were written against,
 that is hardest to see: it looks like hygiene. Two implementations could disagree on real
 user data with the suite green.
 
-Ties are unit-dependent (§III), so they cannot be excluded from the input space at all; only
+Ties are unit-dependent (§IV), so they cannot be excluded from the input space at all; only
 from the fixtures, which is strictly worse than not checking.
 
-**The guard is now inverted**, and that inversion is the transferable part: see §IV.
+**The guard is now inverted**, and that inversion is the transferable part: see §V.
 
 ### 5. A count over the set as a proxy for coverage of each threshold
 
@@ -216,7 +217,55 @@ concern here. It is not nothing, and it should not have to be rediscovered.
 
 ---
 
-## III. Two observations that are not defects but were mistaken for them
+## III. An automated edit to a controlled artefact
+
+Neither of the families above. Those are checks that were not about the property, and
+comparisons stricter than correct code can satisfy. This is a change nobody asked for
+reaching a document whose entire value is that changes to it are reviewed.
+
+### 1. A punctuation sweep rewrote an approved specification
+
+**Tool: C1, this build.** A house rule was set that the project should contain no em dashes,
+the audience being a scientific one. There were 624 of them, so the change was made by a
+script over every source file, script and document in the tree.
+
+`docs/molarity-converter-urs-v0.5.md` was in the tree. It is the URS **approved at
+specification level by NADIRA on 3 September 2026** and is the authority this build is held
+to. The sweep rewrote **42 lines of it**, changing the punctuation of requirement text,
+option labels and the change log, with no review and no record that anything had happened.
+It was caught by reading `git diff --stat` before committing. Nothing in the process would
+have caught it otherwise, and the next step was a commit.
+
+**Why this is its own category.** The failure in §I is a check that establishes something
+other than what it was written for. The failure in §II is a check stricter than the truth.
+Here there was no check involved. A tool did what it was told, to everything it was pointed
+at, and the thing it was pointed at included an artefact whose whole function is that its
+contents are agreed rather than current. **An approved specification is not edited to match
+the project; the project is edited to match it**, and a silently reworded requirement is a
+requirement that now means something slightly different with nobody having decided that.
+
+The rule itself was not wrong and is still in force. What was missing was any notion that
+some files in the tree are not the project's to change.
+
+**What was done.** v0.5 was reverted whole and is excluded from the rule, which applies from
+v0.6 onward. Two strings the sweep had changed are specified verbatim in v0.5 and now differ
+from it, C1-MW-07's conjugate option label and the retention badge; both are flagged for
+agreement rather than quietly kept.
+
+**The exclusion is asserted, not remembered.** `typography.test.ts` fails if v0.5 ever stops
+containing an em dash, so a future sweep that catches it is reported as a failure rather than
+passing because the file now complies. A guard that only checked compliance would have gone
+green on exactly the outcome being guarded against.
+
+**Transferable.** Before pointing an automated edit at a tree, ask which files in it are
+agreed rather than current: approved specifications, signed records, incident evidence,
+anything a third party relies on being unchanged. That set is not defined by file type or by
+directory, so it has to be named, and the naming has to be enforced somewhere a person will
+trip over it. A blast radius is a property of the tool, not of the change.
+
+---
+
+## IV. Two observations that are not defects but were mistaken for them
 
 ### Ties are unit-dependent
 
@@ -252,7 +301,7 @@ Acceptance tests 3 and 5 are not redundant, and neither subsumes the other.
 
 ---
 
-## IV. Transferable to C3 and after
+## V. Transferable to C3 and after
 
 **Make the fixture-distribution rule executable, not an audit.**
 

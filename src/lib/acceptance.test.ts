@@ -217,6 +217,7 @@ describe('Acceptance 17 and 18, disclosure', () => {
       'mw-upper',
       'mass-upper',
       'molar-lower',
+      'representability',
       'displayed-precision',
       'reimplementation-tolerance',
       'rounding-mode',
@@ -232,7 +233,7 @@ describe('Acceptance 17 and 18, disclosure', () => {
     // the rounding mode. The last two are not thresholds at which the tool
     // changes behaviour, but they are behaviour-determining, and the register
     // exists so that no behaviour-determining choice is silent.
-    expect(CONSTANTS_REGISTER.filter((t) => t.basis === 'derived').length).toBe(3)
+    expect(CONSTANTS_REGISTER.filter((t) => t.basis === 'derived').length).toBe(4)
 
     // The two tolerances state a requirement and record what was observed
     // against it, so drift from the observed figure stays visible rather than
@@ -246,7 +247,7 @@ describe('Acceptance 17 and 18, disclosure', () => {
   })
 
   it('the failure classes the tool cannot detect are enumerated', () => {
-    expect(UNDETECTABLE_FAILURES.length).toBe(6)
+    expect(UNDETECTABLE_FAILURES.length).toBe(7)
     for (const f of UNDETECTABLE_FAILURES) expect(f.length).toBeGreaterThan(30)
   })
 })

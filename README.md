@@ -36,7 +36,8 @@ Two further findings came out of the same work:
   exponent, and an author following it exactly could write either.
 - [`docs/correspondence.md`](docs/correspondence.md): instances where a check stood in for
   the property it was meant to establish, or a comparison was tightened past what correct
-  code satisfies. **Eight in the first family, three in the second.** Instances 1–4 were
+  code satisfies, plus a third family added when one occurred. **Eight in the first, three in
+  the second, one in the third.** Instances 1–4 were
   found by accident; 5–7 by a clause-by-clause audit against the URS, and are marked as such
   because a schedulable method is weaker evidence than a stumble; 8 by acting on a previous
   finding, which is the provenance worth wanting. Includes three patterns

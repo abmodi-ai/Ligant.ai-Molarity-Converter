@@ -82,12 +82,41 @@ export const THRESHOLD_EVALUATION_STATEMENT =
  * the build. Built against the values as written; the wording of the disclosure
  * may change and the numbers are not expected to.
  */
+/**
+ * The four §8 thresholds plus representability, named once.
+ *
+ * This union and `BOUNDARY_THRESHOLDS` below are the SINGLE SOURCE the fixture
+ * guard enumerates from. It used to keep its own hardcoded list of four names,
+ * which is why representability could be added to the register and to the
+ * documentation while the guard reported full coverage: a guard cannot report a
+ * threshold it was never told exists. The register has rendered from the same
+ * constants the flag rules read since v0.1, precisely so the page cannot
+ * describe a threshold the tool does not apply; the guard now does the same.
+ */
+export type ThresholdId =
+  | 'mw-lower'
+  | 'mw-upper'
+  | 'mass-upper'
+  | 'molar-lower'
+  | 'representability'
+
 export interface Threshold {
   readonly id: string
   readonly label: string
   readonly value: string
   readonly basis: 'derived' | 'inspection'
   readonly status: string
+  /**
+   * Set where the row is a threshold WITH SIDES: a quantity can sit below it,
+   * exactly on it, or above it, and the output changes across it. C1-FX-04 must
+   * cover every such row on every side in both conversion directions, and
+   * `fixtures.test.ts` derives its enumeration from this field.
+   *
+   * Adding a row with this set makes the guard demand the fixtures immediately.
+   * That is the point: the previous arrangement closed the instance and left
+   * the class open, so the next threshold would have been invisible again.
+   */
+  readonly boundaryCoverage?: true
 }
 
 export const CONSTANTS_REGISTER: readonly Threshold[] = [
@@ -99,8 +128,9 @@ export const CONSTANTS_REGISTER: readonly Threshold[] = [
     status:
       'Derived, and a REQUIREMENT ON HOW THE CONVERSION IS STRUCTURED rather than an observation about it. The bound holds only because the unit factors are folded into a single divisor, so a round trip is two operations and not six, and folding is required for two independent reasons. Rounding: the stepwise path reaches 3.0 ULP and exceeds the bound in 0.54% of cases, against 1.0 ULP and zero exceedances folded. Range: the stepwise intermediate underflows where the folded divisor does not, so 1e-320 mg/mL at 1000 kDa returns 0 stepwise and 1e-320 in µM folded. A tool inheriting this row as an observation would fail the bound and lose range. APPLIES TO RESULTS THE CHOSEN UNITS CAN REPRESENT: once a result underflows, the ULP distance is unbounded and is not a rounding difference. Measured: 500,000 random pairs, MW 10³ to 10⁶ g/mol, 11 decades, both directions; worst observed error exactly 1.0 ULP, zero cases exceeding.',
   },
-  { id: 'mw-lower', label: 'Lower MW plausibility bound', value: '1 kDa', basis: 'inspection', status: 'Uncharacterised: open item 2' },
+  { boundaryCoverage: true, id: 'mw-lower', label: 'Lower MW plausibility bound', value: '1 kDa', basis: 'inspection', status: 'Uncharacterised: open item 2' },
   {
+    boundaryCoverage: true,
     id: 'mw-upper',
     label: 'Upper MW plausibility bound',
     value: '1000 kDa',
@@ -115,8 +145,17 @@ export const CONSTANTS_REGISTER: readonly Threshold[] = [
     status:
       'Uncharacterised: open item 2, and KNOWN TO MISFIRE. IgM–PE at 1210 kDa is an ordinary reagent and is flagged as outside the usual range. Adding the conjugate mass basis made masses above this bound ordinary; the bound was not revisited. Under review: the candidate resolutions are a higher figure or a bound conditioned on the mass-basis declaration.',
   },
-  { id: 'mass-upper', label: 'Upper mass concentration bound', value: '250 mg/mL', basis: 'inspection', status: 'Uncharacterised: open item 3' },
-  { id: 'molar-lower', label: 'Lower molar concentration bound', value: '1 pM', basis: 'inspection', status: 'Uncharacterised: open item 3' },
+  { boundaryCoverage: true, id: 'mass-upper', label: 'Upper mass concentration bound', value: '250 mg/mL', basis: 'inspection', status: 'Uncharacterised: open item 3' },
+  { boundaryCoverage: true, id: 'molar-lower', label: 'Lower molar concentration bound', value: '1 pM', basis: 'inspection', status: 'Uncharacterised: open item 3' },
+  {
+    boundaryCoverage: true,
+    id: 'representability',
+    label: 'Representable range of a computed quantity',
+    value: '4.94e-324 in the reported unit (the smallest positive double)',
+    basis: 'derived',
+    status:
+      'Derived from IEEE 754 double precision, not chosen. A computed quantity below this is reported as 0 and marked `underflowed` in the structured object; a bare 0 there is not a rounded value but a different number. It is the CHOICE OF UNIT that decides representability rather than the value alone: 1e-320 mg/mL at 1000 kDa underflows reported in M and is exact reported in pM. Listed under C1-CN-01 because it is a threshold at which the output changes, even though it is not a §8 flag condition. How an underflowed result is PRESENTED is open item 16 and is not settled by this row.',
+  },
   {
     id: 'displayed-precision',
     label: 'Displayed precision',
@@ -150,6 +189,15 @@ export const CONSTANTS_REGISTER: readonly Threshold[] = [
       'IEEE 754 default, and the default in Python, R and Julia, so an independent reimplementation agrees without being told. Unbiased under repeated rounding, where half-up drifts upward. Not a threshold, but behaviour-determining: 1 g/L at 51.2 kDa is exactly 19.53125 µM and its displayed value is decided by this row alone.',
   },
 ] as const
+
+/**
+ * The rows C1-FX-04 must cover, derived rather than restated.
+ *
+ * `fixtures.test.ts` reads this. Nothing maintains a second list.
+ */
+export const BOUNDARY_THRESHOLDS: readonly ThresholdId[] = CONSTANTS_REGISTER.filter(
+  (t) => t.boundaryCoverage,
+).map((t) => t.id as ThresholdId)
 
 /** The threshold values themselves, in base units, written once. */
 export const MW_LOWER_G_PER_MOL = 1_000        // 1 kDa
@@ -374,6 +422,7 @@ export const UNDETECTABLE_FAILURES: readonly string[] = [
   'A monomer mass quoted where the assembled mass was needed, or the reverse; C1-MW-07 compels the declaration but cannot verify it.',
   'A unit-magnitude transcription error where the entered weight still falls inside the plausible range. C1-FL-01 catches a 1000× error that lands outside 1–1000 kDa; it cannot catch one that lands inside, and it cannot distinguish a genuinely unusual protein from a typo.',
   'Any error in the input concentration itself.',
+  'A computed concentration too small to represent, which is reported as 0.00000 in the unit you chose. The tool marks it in the structured record, but a zero on screen for a non-zero solution is indistinguishable from an empty one by eye. Reporting the result in a smaller unit is usually enough: 1e-320 mg/mL of a 1000 kDa protein is zero in M and exact in pM.',
   'A conjugate mass declared as unconjugated, or the reverse; C1-MW-07 compels the declaration but cannot verify it, as above.',
 ] as const
 

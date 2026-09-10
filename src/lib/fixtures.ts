@@ -17,13 +17,11 @@
 
 import type { ConversionRequest } from './compute'
 import { effectiveMw } from './convert'
-import type { FlagCode } from './flags'
+import type { FlagCode, ThresholdId } from './flags'
 
-/**
- * The four §8 thresholds, named so C1-FX-04 coverage can be asserted per
- * threshold rather than counted across the set.
- */
-export type ThresholdId = 'mw-lower' | 'mw-upper' | 'mass-upper' | 'molar-lower'
+// The threshold names live in flags.ts beside the register that defines them,
+// so the guard and the disclosure cannot describe different sets.
+export type { ThresholdId }
 
 /** Which side of its threshold a boundary case sits on. Geometric, not "flags or not". */
 export type BoundarySide = 'below' | 'on' | 'above'
@@ -54,6 +52,15 @@ export interface Fixture {
     displayedMass?: string
     /** The exact set of flags. An empty array means no flags, and is asserted as such. */
     flags: FlagCode[]
+    /**
+     * C1-UN-07. Whether the computed quantity is a zero that is not the value.
+     *
+     * The representability boundary needs this because its three sides raise
+     * IDENTICAL flags: what differs across the threshold is the marker, not the
+     * flag set, so a fixture that asserted only flags would pass on all three
+     * sides without testing anything.
+     */
+    underflowed?: boolean
   }
 }
 
@@ -591,6 +598,67 @@ export const CONCENTRATION_BOUNDARY_FIXTURES: readonly Fixture[] = [
   },
 ]
 
+/**
+ * C1-FX-04, representability. Three sides, both directions, constructed exactly.
+ *
+ * The divisor is a power of two so the division is exact and the side is not a
+ * matter of luck: at an effective divisor of 2, an entered MIN_VALUE halves to
+ * exactly the midpoint between 0 and MIN_VALUE and rounds to zero, 2×MIN_VALUE
+ * lands exactly ON the smallest representable value, and 3×MIN_VALUE lands
+ * above it. A hand-chosen decimal cannot place a subnormal boundary reliably,
+ * which is the same reasoning C1-FX-04m already used.
+ *
+ * All six raise the SAME two flags. The molecular weight has to be tiny to make
+ * the divisor a small power of two, so C1-FL-01 fires throughout, and the
+ * concentration is far below 1 pM, so C1-FL-03 does too. That is not noise
+ * obscuring the test: it is what makes the test necessary, because nothing in
+ * the flag set distinguishes a value the tool kept from one it lost.
+ */
+const MIN = Number.MIN_VALUE
+
+export const REPRESENTABILITY_BOUNDARY_FIXTURES: readonly Fixture[] = [
+  representability('C1-FX-04s', 'below', 'mass-to-molar', MIN, true),
+  representability('C1-FX-04t', 'on', 'mass-to-molar', 2 * MIN, false),
+  representability('C1-FX-04u', 'above', 'mass-to-molar', 3 * MIN, false),
+  representability('C1-FX-04s-rev', 'below', 'molar-to-mass', MIN, true),
+  representability('C1-FX-04t-rev', 'on', 'molar-to-mass', 2 * MIN, false),
+  representability('C1-FX-04u-rev', 'above', 'molar-to-mass', 3 * MIN, false),
+]
+
+function representability(
+  id: string,
+  side: BoundarySide,
+  direction: 'mass-to-molar' | 'molar-to-mass',
+  enteredValue: number,
+  underflowed: boolean,
+): Fixture {
+  // Forward halves the entered value, reverse also halves it: 2 and 0.5 are the
+  // two ways to reach an effective divisor that moves one step of the subnormal
+  // ladder, and both are exact in binary.
+  const mwValue = direction === 'mass-to-molar' ? 2 : 0.5
+  const where =
+    side === 'below'
+      ? 'halves to the exact midpoint between zero and the smallest representable value, and rounds to zero'
+      : side === 'on'
+        ? 'lands exactly ON the smallest representable value'
+        : 'lands one step above it'
+  return {
+    id,
+    name: `Computed quantity ${side} the representable range, ${direction}`,
+    assumption: `Entered as ${enteredValue} with a molecular weight of ${mwValue} g/mol, giving an effective divisor of ${direction === 'mass-to-molar' ? 2 : 0.5}, which is exact in binary. The entered value ${where}. All six representability fixtures raise the same two flags, C1-FL-01 for the tiny weight the construction requires and C1-FL-03 for the tiny concentration, so the flag set cannot tell the three sides apart and the fixture asserts the underflow marker instead. That is the property under test: nothing a user sees distinguishes a value the tool kept from one it lost.`,
+    standard: 'C1-UN-07. The computed quantity is marked underflowed if and only if it is a zero that is not the value',
+    boundary: { threshold: 'representability', side },
+    request: {
+      direction,
+      enteredValue,
+      mwValue,
+      ...CLEAN,
+      units: { mass: 'g/L', molar: 'M', mw: 'g/mol' },
+    },
+    expect: { flags: ['C1-FL-01', 'C1-FL-03'], underflowed },
+  }
+}
+
 function nextUp(x: number): number {
   const buf = new DataView(new ArrayBuffer(8))
   buf.setFloat64(0, x)
@@ -608,4 +676,5 @@ export const ALL_FIXTURES: readonly Fixture[] = [
   ...FIXTURES,
   ...BOUNDARY_FIXTURES,
   ...CONCENTRATION_BOUNDARY_FIXTURES,
+  ...REPRESENTABILITY_BOUNDARY_FIXTURES,
 ]
