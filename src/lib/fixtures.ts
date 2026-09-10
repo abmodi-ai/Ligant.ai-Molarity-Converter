@@ -645,7 +645,7 @@ function representability(
   return {
     id,
     name: `Computed quantity ${side} the representable range, ${direction}`,
-    assumption: `Entered as ${enteredValue} with a molecular weight of ${mwValue} g/mol, giving an effective divisor of ${direction === 'mass-to-molar' ? 2 : 0.5}, which is exact in binary. The entered value ${where}. All six representability fixtures raise the same two flags, C1-FL-01 for the tiny weight the construction requires and C1-FL-03 for the tiny concentration, so the flag set cannot tell the three sides apart and the fixture asserts the underflow marker instead. That is the property under test: nothing a user sees distinguishes a value the tool kept from one it lost.`,
+    assumption: `Entered as ${enteredValue} with a molecular weight of ${mwValue} g/mol, giving an effective divisor of ${direction === 'mass-to-molar' ? 2 : 0.5}, which is exact in binary. The entered value ${where}. All six representability fixtures raise the same two flags, C1-FL-01 for the tiny weight the construction requires and C1-FL-03 for the tiny concentration, so the fixture asserts the underflow marker rather than the flag set. That is the property under test: NOTHING IN THE FLAG SET DISTINGUISHES A VALUE THE TOOL KEPT FROM ONE IT LOST. A fixture asserting only flags would pass on all three sides of this threshold while testing nothing.`,
     standard: 'C1-UN-07. The computed quantity is marked underflowed if and only if it is a zero that is not the value',
     boundary: { threshold: 'representability', side },
     request: {

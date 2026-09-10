@@ -258,9 +258,15 @@ cannot quietly stop being load-bearing.
 produces molarities differing by 1 ULP. Agreement is therefore specified to displayed
 precision, not bit-exactly. C1-FX-02 tests against this standard and no other.
 
-**✎ The rate, corrected, and stated with its corpus.** v0.5 said "roughly 0.9%", which
-described the stepwise prototype. Re-measured against the shipped folded implementation on
-8 September 2026:
+**✎ The rate: replaced, not reconciled.** v0.5 said "roughly 0.9%" and **recorded no corpus
+for it**. An earlier draft of this revision attributed the gap to the stepwise prototype. That
+attribution does not hold, and it fails in two separate ways.
+
+First, 0.9% does not match the stepwise path on any corpus measured: 0.811%, 0.805% and
+0.575%. It is from a fourth sweep nobody has identified.
+
+Second, and more instructive, the gap was never good evidence about the implementation in the
+first place. Measured on 8 September 2026:
 
 | Corpus | n | Folded (ships) | Stepwise |
 |---|---|---|---|
@@ -272,13 +278,28 @@ Measured in one run by `npm run study:precision`. `docs/open-item-07-displayed-p
 quotes the same table from the same run, so the specification and the evidence for open item
 7 cannot disagree on a figure that is the subject of both.
 
-The conclusion is unchanged and the figure is not, which is the drift class this revision
-exists to stop. **The corpus is now named with the number**, because every rate in that table
-is true and they are true of different case sets. Note that the spread across corpora, 0.620%
-against 0.410%, is larger than the spread between implementations on one corpus, 0.620%
-against 0.811%: a bare percentage does not let a reader tell those two kinds of difference
-apart. Not one of the differing cases disagrees at displayed precision, which is the property
-C1-IV-03 actually requires.
+**The spread across corpora is larger than the spread between implementations.** 0.620%
+against 0.410% is one implementation on two case sets; 0.620% against 0.811% is two
+implementations on one. A bare percentage does not let a reader tell those two kinds of
+difference apart, which is why reading v0.5's figure as a statement about folding was
+available and wrong.
+
+So §6's figure is **replaced rather than reconciled**. A number with no recorded corpus cannot
+be brought into agreement with one that has a corpus; there is nothing to agree with. That is
+the whole of the drift class this revision exists to stop, and it is why every rate in the
+table above is stated with the sweep it came from. Not one of the differing cases disagrees at
+displayed precision, which is the property C1-IV-03 actually requires.
+
+**This does not touch C1-IV-01 or §11's round-trip row, and must not be read as though it
+does.** Folding is required on two measurements, and neither is a disagreement rate:
+
+| Requirement | Stepwise | Folded |
+|---|---|---|
+| ULP exceedance on the round trip | 3.0 ULP worst, 0.54% of cases exceeding | 1.0 ULP, zero exceeding |
+| Range | intermediate underflows: 1e-320 mg/mL at 1000 kDa returns 0 in µM | returns 1e-320 |
+
+Neither figure is affected by which corpus a last-bit disagreement rate was measured on. The
+register row stands as written.
 
 **On the control in C1-IV-02.** The build added one the URS did not ask for: a clamp set above
 every value in the corpus, which **must be reported as undetected**. Without it, "the test

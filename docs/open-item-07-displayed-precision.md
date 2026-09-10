@@ -47,11 +47,17 @@ conversion code that ships:
 
 ### The last-bit rate, with the corpus it came from
 
-An earlier draft of this section reported bit-level disagreement as **0.620%** and set it
-against URS §6's "roughly 0.9%" as though the two were competing measurements of one
-quantity. They are not. **The rate is a property of the corpus as much as of the
-implementation**, and neither figure carried the corpus it was measured on, so neither
-could be checked by anyone.
+An earlier draft of this section reported bit-level disagreement as **0.620%**, set it against
+URS §6's "roughly 0.9%", and explained the gap as the difference between the stepwise
+prototype and the folded implementation that ships. **That explanation does not hold.**
+
+0.9% does not match the stepwise path on any corpus measured here: 0.811%, 0.805%, 0.575%.
+§6 recorded no corpus for its figure, so it is from a fourth sweep nobody has identified and
+**cannot be reconciled, only replaced**.
+
+The deeper error was treating the two numbers as competing measurements of one quantity at
+all. **The rate is a property of the corpus as much as of the implementation**, and neither
+figure carried the corpus it was measured on, so neither could be checked by anyone.
 
 Measured in one run by `npm run study:precision`, which is also where the v0.6 draft's
 copy of this table comes from, so the two documents cannot drift apart on it:
@@ -73,6 +79,12 @@ against 0.410% is the same code on two different case sets; 0.620% against 0.811
 implementations on the same one. A reader given only "0.9%" cannot tell which kind of
 difference they are looking at, which is why the earlier draft read the gap as evidence
 about the implementation when most of it was evidence about the sweep.
+
+**None of this weakens the case for the folded divisor**, and it should not be read as
+though it does. Folding is required on ULP exceedance, 3.0 ULP worst with 0.54% of cases
+exceeding the round-trip bound against 1.0 and zero folded, and on range, where the stepwise
+intermediate underflows and the folded divisor does not. Neither is a disagreement rate and
+neither depends on a corpus choice. §11's round-trip row stands as written.
 
 **Recorded rather than corrected quietly.** §11 exists because a constant without its basis
 cannot be checked, and this document is the evidence for a decision about a constant. A
