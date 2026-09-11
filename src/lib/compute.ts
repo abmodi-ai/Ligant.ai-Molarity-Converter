@@ -154,6 +154,8 @@ export function computeConversion(request: ConversionRequest): ConversionOutcome
 
   const pair = convert(direction, enteredValue, mwValue, units)
   const retained = request.retained ?? NOTHING_RETAINED
+  // Detected before the flag rules run, because C1-FL-11 reads it.
+  const underflow = detectUnderflow(pair)
 
   const flags = raiseFlags({
     mwValue,
@@ -165,6 +167,7 @@ export function computeConversion(request: ConversionRequest): ConversionOutcome
     molarValue: pair.molarValue,
     molarUnit: units.molar,
     retained,
+    underflow,
   })
 
   return {
@@ -180,7 +183,7 @@ export function computeConversion(request: ConversionRequest): ConversionOutcome
       sigFigs: DISPLAY_SIG_FIGS,
     },
     flags,
-    underflow: detectUnderflow(pair),
+    underflow,
     units,
     declarations: { mwValue, provenance: request.provenance, massBasis: request.massBasis, retained },
     relation: relationApplied(direction),

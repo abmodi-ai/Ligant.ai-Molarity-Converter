@@ -105,9 +105,9 @@ describe('Acceptance 8 / §7, rejection names the quantity and the physical reas
     if (negativeMw.ok || unreadableMw.ok || negativeConc.ok || unreadableConc.ok) return
 
     expect(negativeMw.rejections.map((r) => r.code)).toEqual(['C1-HI-01'])
-    expect(unreadableMw.rejections.map((r) => r.code)).toEqual(['C1-HI-03'])
+    expect(unreadableMw.rejections.map((r) => r.code)).toEqual(['C1-AD-01'])
     expect(negativeConc.rejections.map((r) => r.code)).toEqual(['C1-HI-02'])
-    expect(unreadableConc.rejections.map((r) => r.code)).toEqual(['C1-HI-04'])
+    expect(unreadableConc.rejections.map((r) => r.code)).toEqual(['C1-AD-02'])
 
     // The four codes are distinct, which is the whole requirement.
     const codes = [negativeMw, unreadableMw, negativeConc, unreadableConc].flatMap((o) =>
@@ -148,7 +148,7 @@ describe('Acceptance 9 / §8, flags compute a result and carry a reason code', (
     const flagged = ok({ ...BASE, provenance: 'not-recorded', massBasis: 'not-recorded', mwValue: 0.5 })
     expect(flagged.flags.length).toBeGreaterThan(0)
     for (const f of flagged.flags) {
-      expect(f.code).toMatch(/^C1-FL-(0[1-9]|10)$/)
+      expect(f.code).toMatch(/^C1-FL-(0[1-9]|1[01])$/)
       expect(f.message.length).toBeGreaterThan(20)
       expect(f.evaluatedOn).toBeTruthy()
     }

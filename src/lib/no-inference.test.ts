@@ -51,11 +51,11 @@ describe('C1-MW-02: no molecular weight is ever inferred', () => {
     const outcome = computeConversion(withoutMw)
     expect(outcome.ok, 'a conversion completed without a molecular weight').toBe(false)
     if (!outcome.ok) {
-      // C1-HI-03 since 10 September 2026, not C1-HI-01. An absent weight does
+      // C1-AD-01 since 10 September 2026, not C1-HI-01. An absent weight does
       // not parse, and "not a quantity" is now a different code from "a mass
       // per mole cannot be zero or negative". The requirement is unchanged:
       // no conversion completes without an explicit molecular weight.
-      expect(outcome.rejections.some((r) => r.code === 'C1-HI-03')).toBe(true)
+      expect(outcome.rejections.some((r) => r.code === 'C1-AD-01')).toBe(true)
     }
   })
 

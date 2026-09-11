@@ -16,6 +16,8 @@
 import { MASS_TO_G_PER_L, MOLAR_TO_MOL_PER_L, MW_TO_G_PER_MOL } from './units'
 import type { MassBasis, MassUnit, MolarUnit, MwProvenance, MwUnit } from './units'
 import { anyRetained, retainedFieldNames, type RetainedFields } from './retention'
+import { anyUnderflow, representableMassUnits, representableMolarUnits, type UnderflowState } from './underflow'
+import { UNIT_LABEL } from './units'
 
 export type FlagCode =
   | 'C1-FL-01'
@@ -28,6 +30,7 @@ export type FlagCode =
   | 'C1-FL-08'
   | 'C1-FL-09'
   | 'C1-FL-10'
+  | 'C1-FL-11'
 
 export interface Flag {
   code: FlagCode
@@ -153,7 +156,7 @@ export const CONSTANTS_REGISTER: readonly Threshold[] = [
     value: '2000 kDa',
     basis: 'inspection',
     status:
-      'Uncharacterised, and THE FIGURE IS THE DEVELOPER\'S PENDING NADIRA\'S. The conditional form is hers: a conjugate legitimately carries a higher ceiling than the protein inside it, so the bound is conditioned on the mass-basis declaration rather than raised for everything. She did not give a number, and this one is inspection-chosen on the reasoning that IgM is about 970 kDa and R-phycoerythrin about 240 kDa, so a conjugate can exceed 1200 kDa with one label and more with several, while a 1000-fold unit error on any plausible weight lands two orders above this. It exists so the ruling is implemented rather than waiting on a figure; replace it when she gives one.',
+      'Uncharacterised: open item 2. The conditional form and this figure are both NADIRA\'s; what remains uncharacterised is the number itself. Basis: the largest routine label is not R-phycoerythrin at 240 kDa but the Brilliant Violet polymers. Streptavidin–BV421 averages 340 kDa against 52 kDa for streptavidin alone, so the polymer contributes about 290 kDa, and IgM with BV421 reaches roughly 1260 kDa. 2000 kDa clears that with room for about three labels, while a 1000-fold unit error on any plausible weight lands two orders above, so detection is preserved in both directions. NOT CHECKED: BUV polymers, and heavily labelled conjugates. That residual is stated because the mechanism which produced the original defect was assuming the top end, and the next person should read what was not verified rather than rediscover it the way IgM was rediscovered.',
   },
   { boundaryCoverage: true, id: 'mass-upper', label: 'Upper mass concentration bound', value: '250 mg/mL', basis: 'inspection', status: 'Uncharacterised: open item 3' },
   { boundaryCoverage: true, id: 'molar-lower', label: 'Lower molar concentration bound', value: '1 pM', basis: 'inspection', status: 'Uncharacterised: open item 3' },
@@ -227,6 +230,8 @@ export interface FlagInput {
   molarUnit: MolarUnit
   /** C1-FL-09. Which declarations were carried without re-confirmation. */
   retained: RetainedFields
+  /** C1-FL-11. Which computed quantity is a zero that is not the value. */
+  underflow: UnderflowState
 }
 
 /**
@@ -430,6 +435,50 @@ export function raiseFlags(input: FlagInput): Flag[] {
       kind: 'retention',
       evaluatedOn: 'retention state',
       message: `${capitalise(list)} ${verb} retained from the previous conversion direction and ${verb} not re-confirmed. The result is computed from carried values; confirm them before recording it.`,
+    })
+  }
+
+  /*
+   * C1-FL-11. A computed quantity too small to represent, reported as zero.
+   *
+   * WHY A FLAG AND NOT ONLY A QUANTITY ATTRIBUTE. `quantities[].underflowed`
+   * stays, and both are correct, because they answer different questions: the
+   * flag says something is wrong with this result, the attribute says WHICH
+   * quantity. That is the division C1-FL-09 and `declarations.retained` already
+   * use, and the attribute alone reached export and nothing else.
+   *
+   * The positive argument for the attribute being sufficient does not hold.
+   * Every other condition on a computed quantity here is a flag, and each names
+   * its quantity through `evaluatedOn`, so underflow being the one exception
+   * would force every consumer to special-case it. More concretely, C1-ST-01
+   * forbids a value being transferable stripped of its flags, and the notebook
+   * line carries flag codes: without this, a user copying an underflowed result
+   * into a lab record copied a confident `0.00000` with nothing attached.
+   *
+   * THE MESSAGE NAMES A UNIT THAT HAS BEEN CHECKED. Round 3 required that and
+   * the instrument was built then; this is the first thing to use it. Four of
+   * the five molar units hold the case that prompted it, and a message written
+   * on the assumption that none did would have told the user nothing could be
+   * done.
+   */
+  if (anyUnderflow(input.underflow)) {
+    const units = { mass: input.massUnit, molar: input.molarUnit, mw: input.mwUnit }
+    const which = input.underflow.molarConcentration ? 'molar' : 'mass'
+    const alternatives: readonly string[] = input.underflow.molarConcentration
+      ? representableMolarUnits(input.massValue, input.mwValue, units)
+      : representableMassUnits(input.molarValue, input.mwValue, units)
+    // The smallest available unit carries the most significant bits.
+    const best = alternatives[alternatives.length - 1]
+    const remedy = best
+      ? `Reported in ${UNIT_LABEL[best as keyof typeof UNIT_LABEL] ?? best} the value is representable.`
+      : 'No available unit can represent it.'
+    flags.push({
+      code: 'C1-FL-11',
+      kind: 'threshold',
+      evaluatedOn: which === 'molar' ? 'molar concentration' : 'mass concentration',
+      message: `The ${which} concentration is too small to represent in ${
+        UNIT_LABEL[(which === 'molar' ? input.molarUnit : input.massUnit) as keyof typeof UNIT_LABEL]
+      } and is reported as zero. It is not zero. ${remedy}`,
     })
   }
 

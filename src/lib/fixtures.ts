@@ -251,7 +251,7 @@ export const FIXTURES: readonly Fixture[] = [
       ...CLEAN,
       units: { mass: 'mg/mL', molar: 'M', mw: 'kDa' },
     },
-    expect: { displayedMolar: '0.00000', flags: ['C1-FL-03'] },
+    expect: { displayedMolar: '0.00000', flags: ['C1-FL-03', 'C1-FL-11'] },
   },
   {
     id: 'C1-FX-14',
@@ -296,7 +296,7 @@ export const FIXTURES: readonly Fixture[] = [
       ...CLEAN,
       units: { mass: 'ng/mL', molar: 'M', mw: 'kDa' },
     },
-    expect: { displayedMolar: '0.00000', flags: ['C1-FL-03'] },
+    expect: { displayedMolar: '0.00000', flags: ['C1-FL-03', 'C1-FL-11'] },
   },
   {
     id: 'C1-FX-09',
@@ -750,7 +750,15 @@ function representability(
       ...CLEAN,
       units: { mass: 'g/L', molar: 'M', mw: 'g/mol' },
     },
-    expect: { flags: ['C1-FL-01', 'C1-FL-03'], underflowed },
+    expect: {
+      // C1-FL-11 exactly on the underflowed side. The three sides no longer
+      // raise an identical flag set, which is a change from round 3: the marker
+      // reached the surface the user reads, so the flag set now distinguishes
+      // what it previously could not. The `underflowed` expectation stays,
+      // because it says WHICH quantity and the flag does not.
+      flags: underflowed ? ['C1-FL-01', 'C1-FL-03', 'C1-FL-11'] : ['C1-FL-01', 'C1-FL-03'],
+      underflowed,
+    },
   }
 }
 

@@ -55,6 +55,9 @@ already being acted on and were not written down.
 | 26 ✚ | **C1-FL-01** | **Conditioned on the mass-basis declaration**, per NADIRA's ruling: 1000 kDa for a protein, 2000 kDa for a conjugate. The figure for the conjugate ceiling is the developer's pending hers |
 | 27 ✚ | **§7** | Unparseable input gets its own codes, **C1-HI-03** and **C1-HI-04**. A machine reading C1-OUT-03 could not tell a negative quantity from a string that is not a quantity |
 | 28 ✚ | **§9 item 6** | Reworded. The tool **does** detect underflow; what it cannot do is show the value |
+| 30 ✚ | **C1-FL-11** | Underflow reaches the surface the user reads, **closing open item 16**. The quantity attribute stays: the flag warns, the attribute says which quantity |
+| 31 ✚ | **§7A, new** | **Admissibility** is its own section, **closing open item 19**. C1-HI-03 and C1-HI-04 are renamed C1-AD-01 and C1-AD-02, which is a breaking schema change |
+| 32 ✚ | **C1-OUT-12** | The citability property, specified rather than emergent |
 | 29 ✚ | **C1-OUT-03** | The object renders into the page behind `?record`, from the same serialiser the copy button uses, so the record can be verified without clipboard access |
 | 22 ✚ | **§11** | **Representability** is a register row and a C1-FX-04 threshold. It changes the output, so C1-CN-01 covers it, even though it is not a §8 flag condition |
 
@@ -332,20 +335,40 @@ physical impossibility is caught wherever it arises.
 |---|---|---|
 | C1-HI-01 | `MW ≤ 0` | The molecular weight, and that mass per mole cannot be zero or negative |
 | C1-HI-02 | `concentration < 0` | Which concentration, and that a concentration cannot be negative |
-| C1-HI-03 ✚ | The molecular weight does not parse | That the field did not read as a quantity, and how to enter it: the value alone, unit chosen beside it |
-| C1-HI-04 ✚ | The concentration does not parse | The same, naming which concentration |
 
-**✚ On C1-HI-03 and C1-HI-04, and why they may not belong in §7 at all.** `1,5` in a
-concentration field and `150 kDa` pasted into a weight field were rejected correctly and
-reused §7's codes, so a machine reading C1-OUT-03 could not tell *the user entered a negative
-number* from *the user entered something that is not a number*. Those call for different
-responses and now carry different codes.
+**✎ Admissibility has moved out of this section.** `1,5` in a concentration field and
+`150 kDa` pasted into a weight field are rejected, but not by §7: a string that does not parse
+never enters the computed system, so there is no quantity to test `< 0` against. Stretching §7
+to cover it would blur the one distinction this section exists to make. See **§7A**. Open item
+19 is closed.
 
-**The structural question is open item 19 and is not settled here.** §7's conditions are
-stated against the computed system, and an unparseable string never enters it: there is no
-quantity to test `< 0` against, because the parse failed before a quantity existed. So this
-may be a class sitting *before* validation rather than a pair of rows inside it. The codes are
-separated because that is needed either way.
+---
+
+## 7A. Admissibility ✚
+
+Prior to §7, and a different question. §7 asks whether a quantity is physically possible.
+This asks whether a quantity was stated at all.
+
+| ID | Condition | Message shall name |
+|---|---|---|
+| C1-AD-01 | The molecular weight does not parse as a number | That the field did not read as a quantity, and how to enter it: the value alone, with the unit chosen beside it |
+| C1-AD-02 | A concentration does not parse as a number | The same, naming which concentration |
+
+Admissibility failures are refusals on the same terms as §7: no result is produced, and the
+message names the field and what to do. They are not flags, because there is no result to
+qualify.
+
+**✎ BREAKING CHANGE, named so a consumer can be updated.** These conditions carried
+`C1-HI-03` and `C1-HI-04` at schema 1.2.0. Reason codes are machine-readable under C1-OUT-03,
+so a consumer matching on the old codes stops matching silently rather than failing. Schema
+moves to **1.3.0**:
+
+| Was | Is |
+|---|---|
+| `C1-HI-03` | `C1-AD-01` |
+| `C1-HI-04` | `C1-AD-02` |
+
+`C1-HI-01` and `C1-HI-02` are unchanged and keep their meaning.
 
 **Zero concentration is legal.** It converts to zero and creates no division. It shall not be
 rejected defensively.
@@ -377,6 +400,7 @@ output with a machine-readable reason code.
 | C1-FL-08 | Mass basis is conjugate | The mass-basis declaration | Molecular weight includes label or payload; the molar concentration computed is of the conjugate, not of the underlying protein. The tool does not correct for drug-to-antibody ratio or degree of labelling |
 | C1-FL-09 ✚ | A declaration was carried across a change of conversion direction and not re-confirmed | The retention state | Which declarations were carried, that they were not re-confirmed, and that the result is computed from them |
 | C1-FL-10 ✚ | `mass concentration = 0` **and** `molar concentration = 0` | The system's two quantities | The concentration is zero: no solute is present. This is not an implausibly low concentration, and the conversion is exact |
+| C1-FL-11 ✚ | A computed quantity is zero and the quantity it was computed from is not | The computed concentration | That the value is too small to represent in the chosen unit and is reported as zero, that it is not zero, and **a unit the tool has checked can represent it**, or that none can |
 
 **↯ C1-FL-02 threshold remains inspection-chosen, open item 3.**
 
@@ -605,6 +629,7 @@ tool cannot interpret. C1-ST-01 is what prevents that.
 | C1-OUT-08 | The output shall state that the molar concentration is of molecules, not of binding sites. A bivalent IgG at 1 µM presents 2 µM of paratope. | M |
 | C1-OUT-09 | The result shall be copyable in a form suitable for pasting into a lab notebook. | D |
 | C1-OUT-10 ✚ | The structured object shall carry a **schema version distinct from the engine version**, and shall name its schema. | M |
+| C1-OUT-12 ✚ ✎ | The output shall carry everything needed to **reproduce the reported number without the page**: the rounding mode alongside the displayed precision, and the effective divisor with its unit alongside the relation. | M |
 | C1-OUT-11 ✚ | Where a **threshold** flag is raised, the output shall state that threshold flags are evaluated on the unrounded value and that a flagged and an unflagged result can therefore display identically. It shall **not** state this where only declaration flags are raised, there being no rounding between a declaration and its condition. | M |
 
 **✎ On separating C1-OUT-03 from C1-OUT-04.** The Antigen Density Calculator has no structured
@@ -625,6 +650,22 @@ required by open item 1 has to be visible rather than silent.
 four bare numbers beside one shared `units` object reads as satisfying it and does not, a
 consumer holding one quantity cannot tell what it is in. Every quantity is a value and a unit
 together.
+
+**✚ On C1-OUT-12, and ✎ on its wording.** This emerged from implementation and was never
+specified. `displayed.roundingMode` and `quantities.effectiveDivisor` travelling with the
+result are what let a reader recompute the number from the record alone: the divisor is the
+single value the conversion multiplies or divides by, and the rounding mode is what decides
+the last displayed digit, so together with the unrounded values they close the loop. That is
+the citability property made concrete.
+
+**The wording above is a placeholder and is A. Modi's to draft.** Checked against what the
+code actually does, so the drafting can be checked against it: the object carries
+`displayed.roundingMode` as a literal (`half-to-even`), `displayed.significantFigures`,
+`quantities.effectiveDivisor` as a `{value, unit}` pair whose unit is a ratio of two standard
+units (`mg/mL per µM`), and `derivation.relation` in named quantities with
+`derivation.unitHandling` beside it. A requirement written as "the structured object shall
+carry the divisor" would understate it: the divisor is also on the page, and it is the pairing
+with the rounding mode that does the work.
 
 **✚ On C1-OUT-11.** Built before it was specified, and ratified by NADIRA against the running
 tool as better than what v0.5 asked for. Written down so it cannot be removed later as an
@@ -848,7 +889,7 @@ rather than an audit.
 | 14 ✚ | Reflow the acceptance numbering into a clean sequence, or keep 9a | A. Modi | Raised at v0.5, unanswered. Cheaper now than later |
 | 15 ✚ | Define the supported display for C1-NF-03 and acceptance 20, smallest supported **window** and **zoom level** | A. Modi |
 | 17 ✚ | Rule on whether acceptance 3 may exclude conversion STRUCTURE from what the reimplementation varies. If it may, structural coverage rests on C1-FX-03b and C1-FX-14 rather than on the test, which changes what gate item 2 proves | NADIRA | Raised with the C1-FX-14 derivation attached, since whether the mitigation holds depends on it |
-| 19 ✚ | Rule whether unparseable input is a §7 condition at all, or a class before validation. §7 is written against the computed system and a string that does not parse never enters it | NADIRA | C1-HI-03 and C1-HI-04 exist either way |
+| ~~19~~ | ~~Rule whether unparseable input is a §7 condition~~ | ~~NADIRA~~ | **CLOSED at round 6.** Ruled that it is not: §7A carries it, with C1-AD-01 and C1-AD-02 |
 | 18 ✚ | Rule on the displayed precision of a subnormal result. C1-UN-06 promises six significant figures; at 1e-323 the double carries about one bit and five of the six displayed digits are representation. Disclosed by C1-FX-16, not corrected | NADIRA | Adjacent to open item 7 and probably the same ruling |
 | 16 ✚ | Rule on how an underflowed result is PRESENTED: a §8 flag beside the zero, or a §7 refusal to display. Detection and the record already exist either way | NADIRA || The requirement has governed a pass/fail test with no constant behind it since v0.1. Two figures have been used and both were viewport heights the verification invented. Nothing to build against until this is set |
 

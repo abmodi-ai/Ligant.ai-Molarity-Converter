@@ -22,6 +22,10 @@ export type Direction = 'mass-to-molar' | 'molar-to-mass'
 /**
  * C1-NF-06. Changes whenever calculation behaviour changes.
  *
+ * 0.3.0 → 0.4.0 at v0.1.4: C1-FL-11 added, so the flag set changed again. This
+ * is the bump the previous one anticipated and did not get: underflow now
+ * reaches the surface the user reads rather than the record alone.
+ *
  * 0.2.0 → 0.3.0 at v0.1.3: the result gained underflow state, which is
  * computed output. NOTE that the flag set did NOT change this time, because
  * the presentation of underflow is held pending NADIRA, so the bump rests on
@@ -35,7 +39,7 @@ export type Direction = 'mass-to-molar' | 'molar-to-mass'
  * records of the same input would otherwise see one engine version account for
  * two different flag sets, which is the version failing to do its only job.
  */
-export const ENGINE_VERSION = '0.3.0'
+export const ENGINE_VERSION = '0.4.0'
 
 export interface ConversionUnits {
   mass: MassUnit

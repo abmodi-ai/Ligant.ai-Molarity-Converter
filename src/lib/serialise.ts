@@ -56,6 +56,16 @@ import { NOTHING_RETAINED, type RetainedFields } from './retention'
  */
 export const SCHEMA_NAME = 'ligant-benchtools-c1-conversion'
 /**
+ * 1.2.0 → 1.3.0: BREAKING. Two rejection reason codes were RENAMED when
+ * admissibility became its own section, so a consumer matching on them stops
+ * matching rather than failing loudly:
+ *
+ *     C1-HI-03  ->  C1-AD-01   molecular weight does not parse
+ *     C1-HI-04  ->  C1-AD-02   concentration does not parse
+ *
+ * C1-HI-01 and C1-HI-02 are unchanged and keep their meaning. Also additive:
+ * `flags` may now carry C1-FL-11, a computed quantity too small to represent.
+ *
  * 1.1.0 → 1.2.0: every `Quantity` gained `underflowed`.
  * 1.0.0 → 1.1.0: `declarations.retained` added, and `flags[].kind` gained
  * `retention`. Additive for a consumer that ignores unknown keys; a new required
@@ -63,7 +73,7 @@ export const SCHEMA_NAME = 'ligant-benchtools-c1-conversion'
  * also moved this release for an unrelated reason, which is the point of
  * having two.
  */
-export const SCHEMA_VERSION = '1.2.0'
+export const SCHEMA_VERSION = '1.3.0'
 
 /** A number that means nothing without its unit, carrying it. */
 export interface Quantity<U extends string = string> {
@@ -304,7 +314,7 @@ export function validateStructuredResult(obj: unknown): ValidationProblem[] {
     fail('flags', 'missing: an empty array is the no-flags case and is not the same as absent')
   } else {
     o.flags.forEach((f: any, i: number) => {
-      if (!/^C1-FL-(0[1-9]|10)$/.test(f?.code ?? '')) fail(`flags[${i}].code`, 'not a machine-readable reason code')
+      if (!/^C1-FL-(0[1-9]|1[01])$/.test(f?.code ?? '')) fail(`flags[${i}].code`, 'not a machine-readable reason code')
       if (typeof f?.message !== 'string' || !f.message) fail(`flags[${i}].message`, 'missing')
       if (!['threshold', 'declaration', 'retention'].includes(f?.kind)) fail(`flags[${i}].kind`, 'missing')
     })

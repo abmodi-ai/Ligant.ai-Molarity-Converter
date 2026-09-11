@@ -134,11 +134,11 @@ def rejections(direction, entered_value, mw_value, units):
     # Unparseable input is separated from the physical impossibility. A machine
     # reading the codes must be able to tell "negative" from "not a quantity".
     if not _finite(mw_value):
-        out.append("C1-HI-03")
+        out.append("C1-AD-01")
     elif mw_value <= 0:
         out.append("C1-HI-01")
     if not _finite(entered_value):
-        out.append("C1-HI-04")
+        out.append("C1-AD-02")
     elif entered_value < 0:
         out.append("C1-HI-02")
     return out
@@ -148,7 +148,7 @@ def _finite(x):
     return x == x and x not in (float("inf"), float("-inf"))
 
 
-def flags(mw_value, units, provenance, mass_basis, mass_value, molar_value, retained=None):
+def flags(mw_value, units, provenance, mass_basis, mass_value, molar_value, retained=None, entered=None):
     """
     Section 8. Conditions are evaluated against the computed system, so this
     takes both quantities and never sees the conversion direction.
@@ -197,6 +197,14 @@ def flags(mw_value, units, provenance, mass_basis, mass_value, molar_value, reta
         out.append("C1-FL-08")
     if retained and (retained.get("mw") or retained.get("provenance") or retained.get("massBasis")):
         out.append("C1-FL-09")
+    # C1-FL-11. A computed quantity that underflowed to zero from a non-zero
+    # input. Only the CODE is compared, so the unit suggestion in the message is
+    # not reproduced here.
+    if entered is not None:
+        computed = molar_value if entered == "mass" else mass_value
+        other = mass_value if entered == "mass" else molar_value
+        if other != 0 and computed == 0:
+            out.append("C1-FL-11")
     return out
 
 
@@ -228,5 +236,6 @@ def compute(request):
             mass_value,
             molar_value,
             request.get("retained"),
+            "mass" if direction == "mass-to-molar" else "molar",
         ),
     }

@@ -12,8 +12,11 @@
 import { UNIT_LABEL, type MassUnit, type MolarUnit, type MwUnit } from './units'
 
 /**
- * C1-HI-01 and C1-HI-02 are §7's two conditions. C1-HI-03 and C1-HI-04 are not,
- * and that is the point of separating them.
+ * Two sections, not one, and the split is NADIRA's ruling on open item 19.
+ *
+ * §7 is PHYSICAL IMPOSSIBILITY, stated against the computed system: C1-HI-01
+ * and C1-HI-02. §12A is ADMISSIBILITY, which is prior to it: C1-AD-01 and
+ * C1-AD-02.
  *
  * `1,5` in a concentration field and `150 kDa` pasted into a weight field were
  * both rejected correctly and both reused a §7 code, so a machine reading
@@ -21,14 +24,22 @@ import { UNIT_LABEL, type MassUnit, type MolarUnit, type MwUnit } from './units'
  * entered something that is not a number". Those call for different responses:
  * one is a quantity the physics forbids, the other is not a quantity at all.
  *
- * FLAGGED, NOT SETTLED. §7's conditions are stated against the computed system,
- * and an unparseable string never enters it: there is no quantity to test `< 0`
- * against, because the parse failed before a quantity existed. So this may not
- * be a §7 condition at all but a class sitting BEFORE validation rather than
- * inside it. The codes are separated now because that is needed either way;
- * whether §7 is restructured around them is NADIRA's, as open item 19.
+ * A string that does not parse never enters the computed system: there is no
+ * quantity to test `< 0` against, because the parse failed before a quantity
+ * existed. Stretching §7 to cover it would blur the one distinction that
+ * section exists to make.
+ *
+ * BREAKING CHANGE, and deliberately so. C1-HI-03 and C1-HI-04 carried these
+ * conditions at schema 1.2.0 and are renamed here. Reason codes are
+ * machine-readable under C1-OUT-03, so a consumer matching on them must be
+ * updated rather than left to silently stop matching; the schema moves to 1.3.0
+ * and the change is named in its own note in `serialise.ts` and in the v0.6
+ * change log.
+ *
+ *   C1-HI-03  ->  C1-AD-01   molecular weight does not parse
+ *   C1-HI-04  ->  C1-AD-02   concentration does not parse
  */
-export type RejectionCode = 'C1-HI-01' | 'C1-HI-02' | 'C1-HI-03' | 'C1-HI-04'
+export type RejectionCode = 'C1-HI-01' | 'C1-HI-02' | 'C1-AD-01' | 'C1-AD-02'
 
 export interface Rejection {
   code: RejectionCode
@@ -46,9 +57,10 @@ export interface Rejection {
  */
 export function checkMolecularWeight(value: number, unit: MwUnit): Rejection | null {
   if (!Number.isFinite(value)) {
-    // C1-HI-03, not C1-HI-01. Nothing was weighed; the field did not parse.
+    // C1-AD-01, not C1-HI-01: §12A, not §7. Nothing was weighed; the field
+    // did not parse, so no quantity exists to be impossible.
     return {
-      code: 'C1-HI-03',
+      code: 'C1-AD-01',
       message: `The molecular weight is not a number. Enter the value on its own and choose the unit beside it: a weight typed as "150 kDa", or with a comma for a decimal point, cannot be read as a quantity.`,
     }
   }
@@ -73,10 +85,10 @@ export function checkConcentration(
   quantity: 'mass concentration' | 'molar concentration',
 ): Rejection | null {
   if (!Number.isFinite(value)) {
-    // C1-HI-04, not C1-HI-02. A concentration that cannot be negative is a
-    // different statement from a concentration that was never read.
+    // C1-AD-02, not C1-HI-02: §12A, not §7. A concentration that cannot be
+    // negative is a different statement from one that was never read.
     return {
-      code: 'C1-HI-04',
+      code: 'C1-AD-02',
       message: `The ${quantity} is not a number. Enter the value on its own and choose the unit beside it: a value typed with a comma for a decimal point, or with its unit in the same field, cannot be read as a quantity.`,
     }
   }

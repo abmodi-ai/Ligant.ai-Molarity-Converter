@@ -51,7 +51,7 @@ describe('detection: a zero that is not the value', () => {
     const r = ok({ ...TINY, units: { mass: 'ng/mL', molar: 'M', mw: 'kDa' }, mwValue: 150 })
     expect(r.massValue).toBe(1e-320)
     expect(r.molarValue).toBe(0)
-    expect(r.flags.map((f) => f.code)).toEqual(['C1-FL-03'])
+    expect(r.flags.map((f) => f.code)).toEqual(['C1-FL-03', 'C1-FL-11'])
     expect(r.flags.map((f) => f.code)).not.toContain('C1-FL-10')
     expect(r.underflow.molarConcentration).toBe(true)
   })

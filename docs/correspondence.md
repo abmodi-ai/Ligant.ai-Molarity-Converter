@@ -14,10 +14,10 @@ Instance 8 has a third provenance, and it is the one worth wanting: it was found
 a previous finding**. Correcting the viewport number is what exposed that the number was a
 viewport at all.
 
-Four families. The first is the manuscript's thesis directly. The second is its mirror. The
-third and fourth are not about checks that were written badly: one is about a change nobody
-reviewed, and one is about a measurement that was independent in the wrong direction. Both
-were added when they occurred.
+Five families. The first is the manuscript's thesis directly. The second is its mirror. The
+last three are not about checks that were written badly at all: a change nobody reviewed, a
+measurement that was independent in the wrong direction, and an instruction that was correct
+and was put where it would not be read as one. Each was added when it occurred.
 
 ---
 
@@ -70,7 +70,7 @@ on the IEEE 754 fields in TypeScript, `Decimal(v)` in Python. `Decimal(str(v))` 
 reintroduced the same defect one layer down.
 
 Found only because the same value was examined in two output units and behaved differently,
-which is the observation in §V below, not a method.
+which is the observation in §VI below, not a method.
 
 ### 4. Excluding the input class as a proxy for handling it
 
@@ -82,10 +82,10 @@ This is the fixture-distribution failure §10 and C1-FX-09 were written against,
 that is hardest to see: it looks like hygiene. Two implementations could disagree on real
 user data with the suite green.
 
-Ties are unit-dependent (§V), so they cannot be excluded from the input space at all; only
+Ties are unit-dependent (§VI), so they cannot be excluded from the input space at all; only
 from the fixtures, which is strictly worse than not checking.
 
-**The guard is now inverted**, and that inversion is the transferable part: see §VI.
+**The guard is now inverted**, and that inversion is the transferable part: see §VII.
 
 ### 5. A count over the set as a proxy for coverage of each threshold
 
@@ -332,7 +332,47 @@ within a bound. Structure is not on it.
 
 ---
 
-## V. Two observations that are not defects but were mistaken for them
+## V. A correct instruction, placed where it would not be read as one
+
+Nothing above covers this. The document was right, the reader was attentive, and the
+instruction still did not take effect for two rounds, because of where in the document it
+sat.
+
+### 1. A ruling inside a status table
+
+**Tool: C1, this build.** NADIRA ruled that the upper molecular-weight bound should be
+conditioned on the mass-basis declaration rather than raised. The ruling reached the
+developer's round-3 instruction in two places:
+
+- §0, a table headed *verified complete*: the register row is "ratified as written, keep
+  exactly as-is **until the conditional bound lands**". That presumes the form was chosen.
+- §7, *still held, unchanged*: "the 1000 kDa bound | NADIRA, **ruling pending**. Constant
+  stays untouched, row stays as written."
+
+**Both statements were individually accurate.** The row was ratified; the bound's
+implementation had not been scheduled. Compressed into one document they read as a
+contradiction, and the reader resolved it toward the row that named an owner and an
+instruction, which is the conservative reading and was the wrong one. Two rounds passed on a
+blocker that was described at the time as a live defect misfiring on an ordinary reagent.
+
+**Why it is not a communication failure in the ordinary sense.** No sentence was unclear. The
+defect is positional: a ruling placed in a table whose heading says *already done* is not read
+as an instruction, because the reader's model of that table is "nothing here requires action".
+A status table is a summary, and a summary is the one place a new decision cannot live.
+
+**The generalisation, which is the fix.** A ruling lives in ONE place, in its own section, and
+status tables point at it rather than restating it. Restatement is what allows the two copies
+to disagree, and the copy in the summary is the one that will be read as needing nothing.
+
+**On authorship, because it is part of the finding.** The reviewer initially took the blame
+for the contradiction, and the author of the compressed document corrected her. A structural
+failure that gets attributed to the person downstream of it is a structural failure that will
+recur, because the fix then gets aimed at the wrong place. Noted because the correction had to
+be made explicitly rather than being obvious.
+
+---
+
+## VI. Two observations that are not defects but were mistaken for them
 
 ### Ties are unit-dependent
 
@@ -368,7 +408,7 @@ Acceptance tests 3 and 5 are not redundant, and neither subsumes the other.
 
 ---
 
-## VI. Transferable to C3 and after
+## VII. Transferable to C3 and after
 
 **Make the fixture-distribution rule executable, not an audit.**
 
@@ -392,6 +432,21 @@ distribution" into a claim a machine re-establishes on every run.
 
 The general form: for each property the fixture set is supposed to have, ask what a set that
 *lacked* it would look like, and write the test that fails on that set.
+
+**The fixture-distribution rule applies to ASSERTIONS as much as to fixtures.**
+
+An assertion can share a property that real cases do not, exactly as a fixture set can.
+`a value exactly on a threshold never flags` asserted an EMPTY FLAG SET, and held for a year
+of review passes because every boundary fixture happened to be declared assembled. The moment
+the molecular-weight ceiling was conditioned on the mass basis, a conjugate sitting exactly on
+its ceiling raised C1-FL-08: the declaration that lifts the ceiling is the declaration that
+raises the flag. The property was never "no flags at all"; it was "this threshold's own flag
+does not fire", and the two agreed only on the cases that existed.
+
+Ask of an assertion what §10 asks of a fixture set: what does every case I am asserting over
+have in common that real cases do not? Here it was a single declaration value, held fixed
+across every case while the values varied, in a suite whose whole discipline is varying the
+thing that matters.
 
 **Assert the property per instance, not per set.**
 

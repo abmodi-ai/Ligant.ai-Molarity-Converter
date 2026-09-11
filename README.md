@@ -36,8 +36,8 @@ Two further findings came out of the same work:
   exponent, and an author following it exactly could write either.
 - [`docs/correspondence.md`](docs/correspondence.md): instances where a check stood in for
   the property it was meant to establish, or a comparison was tightened past what correct
-  code satisfies, plus two further families added when they occurred. **Eight in the first,
-  three in the second, one each in the third and fourth.** Instances 1–4 were
+  code satisfies, plus three further families added when they occurred. **Eight in the first,
+  three in the second, one each in the third, fourth and fifth.** Instances 1–4 were
   found by accident; 5–7 by a clause-by-clause audit against the URS, and are marked as such
   because a schedulable method is weaker evidence than a stumble; 8 by acting on a previous
   finding, which is the provenance worth wanting. Includes three patterns
@@ -75,9 +75,10 @@ node scripts/check-network.mjs https://<deployed-address>/
 **Built and passing:** the conversion engine, validation, flags, the fixture set, the
 invariance confirmation, and the interface including the tool's own page (§9 failure
 classes and §11 constants register, rendered from the same constants the flag rules read).
-155 unit tests, plus a static privacy check and two real-browser checks; one for the form's
+208 unit tests, plus a static privacy check, two real-browser checks; one for the form's
 own requirements and the suite's chrome (`check:ui`) and one for the network claim
-(`check:network`).
+(`check:network`), and an exact-arithmetic check that is not an implementation at all
+(`reference/exact.py`).
 
 | Requirement | Where |
 |---|---|
@@ -138,7 +139,7 @@ so the disclosure required by C1-CN-01 reads from the same place the behaviour d
 ```
 npm install
 npm run dev                  # the tool
-npm run verify               # typecheck, 155 tests, build, privacy, two real browsers,
+npm run verify               # typecheck, 208 tests, build, privacy, two real browsers,
                              # and acceptance test 3 (20,039-case cross-language comparison)
 
 npm run check:ui             # the form's own requirements in a real browser:

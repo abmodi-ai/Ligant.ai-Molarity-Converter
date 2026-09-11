@@ -267,13 +267,24 @@ describe('C1-FX-04: boundaries in both conversion directions', () => {
     expect(THRESHOLDS).toContain('representability')
   })
 
-  it('representability is asserted on the marker, because its flags cannot tell the sides apart', () => {
+  it('representability is asserted on the marker, which says WHICH quantity', () => {
     const rep = covered.filter((f) => f.boundary?.threshold === 'representability')
     expect(rep.length).toBe(6)
-    // Identical flags on every side, so a fixture asserting only flags would be
-    // inert here. That is what the `underflowed` expectation is for.
+    /*
+     * The flag sets stopped being identical at engine 0.4.0, when C1-FL-11 took
+     * underflow to the surface the user reads. Until then all three sides raised
+     * the same two flags and the marker was the only thing that could tell them
+     * apart, which is why the expectation was written on the marker.
+     *
+     * It stays on the marker. The flag says a quantity underflowed; the marker
+     * says which one, and a fixture that checked only the flag would not
+     * distinguish the mass side from the molar side.
+     */
     const flagSets = new Set(rep.map((f) => [...f.expect.flags].sort().join(',')))
-    expect(flagSets.size).toBe(1)
+    expect(flagSets.size).toBe(2)
+    for (const f of rep) {
+      expect(f.expect.flags.includes('C1-FL-11'), `${f.id}`).toBe(f.expect.underflowed)
+    }
     for (const f of rep) {
       expect(f.expect.underflowed, `${f.id} declares no underflow expectation`).toBeTypeOf('boolean')
       const r = run(f)
