@@ -166,15 +166,28 @@ comfortable to write, because a number in a test looks like a standard whether o
 outside the test corresponds to it.
 
 **The resolution is not a better number.** `check-network.mjs` now reports the worst case at
-three candidate windows and prints `STANDARD NOT SET`, the same shape as acceptance test 14
-reporting `UNRUN`. There is no constant to pass against until the owner sets one, and a check
-that says so is worth more than a check that passes. The measured worst case is 995px against
-797, 697 and 665 pixels of viewport; so what the invented standard had been concealing is
-that the page does not fit at any size measured.
+three candidate windows and reports the requirement as UNMET, the same shape as acceptance
+test 14 reporting `UNRUN`. There is no constant to pass against until the owner sets one, and
+a check that says so is worth more than a check that passes. What the invented standard had
+been concealing is that the page does not fit at any size measured, and at round 7 that
+shortfall became a declared deviation on the page rather than a fact known only to the
+verification.
+
+**It recurred, one step along, which is why the transferable below gained a second sentence.**
+At round 7 a clean result was reported as 698px against an 802px viewport and therefore
+fitting comfortably. 698px is the converter's HEIGHT. Its bottom edge is 868px, because the
+shared masthead and the page padding put 180px above it, so a clean result overflows a
+1440 x 900 laptop by 71px and the conclusion inverts. The same error class as the
+viewport-versus-window one: the right property of the wrong thing, measured carefully by
+someone looking directly at it. `check-network.mjs` now prints both numbers and names which
+one answers the requirement, because a measurement taken by hand twice will be taken by hand
+a third time.
 
 **Transferable:** when a requirement names a physical thing, a display, a bench, a plate
 reader: and the check names a number, ask what the number is a measurement OF. If the answer
-is "the check", the constant belongs to the register and to its owner, not to the test.
+is "the check", the constant belongs to the register and to its owner, not to the test. And
+when the number is a distance on a screen, say from where: a height and a bottom edge differ
+by everything above them.
 
 **A note on provenance for 5, 6 and 7.** Instances 1 to 4 were found by accident, which the
 preamble records as the point. These three were found by **looking**, a clause-by-clause

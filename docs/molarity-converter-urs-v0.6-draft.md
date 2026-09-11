@@ -576,7 +576,7 @@ Recorded because "nobody looked" is not an acceptable answer to an omission from
 | Choice | Why it is not a row |
 |---|---|
 | The acceptance-14 claim gate (C1-NF-01) | It determines what the **footer** says, and the footer states which claim it is making and that acceptance 14 is unrun. The disclosure and the behaviour are the same sentence; a register row would restate on one part of the page what another part already says in full. It also governs nothing the engine computes |
-| C1-NF-03's 1440 × 900 standard | A standard the **verification** is held to, not a threshold at which the tool changes behaviour. It is recorded where it is applied, with its basis |
+| ~~C1-NF-03's viewport standard~~ | ~~A standard the verification is held to, not a threshold~~. **Reversed at round 7.** That reasoning held while there was nothing to disclose. There is now: the requirement is NOT MET, and an unmet requirement recorded everywhere except the page a user reads is the omission §11 exists to prevent. It is a register row, `viewport-supported`, and the register's scope is stated as covering declared deviations as well as behaviour-determining choices |
 
 Both are revisited if either ever gates something computed.
 
@@ -685,7 +685,7 @@ serialised object over the whole fixture set, and not by inspection.
 |---|---|---|
 | C1-NF-01 ✎ | Entirely client-side. No user-entered data leaves the browser. Verified per acceptance test 14. **No claim that data is not transmitted shall be displayed at an address at which acceptance test 14 has not passed.** Where it has not, the tool shall state what has been verified and what has not. | M |
 | C1-NF-02 | No account, login, or registration. | M |
-| C1-NF-03 ✎ | Inputs and result shall fit one screen without scrolling on a standard laptop display. **The display is UNDEFINED and is owed, open item 15.** Until it is set there is no pass or fail; the verification reports the measurement. | M |
+| C1-NF-03 ✎ | Inputs and result shall fit one screen without scrolling on a standard laptop display. **NOT MET. Declared as an accepted deviation** in §11 and on the page. The supported display is undefined and is owed, open item 15. | M |
 | C1-NF-04 | Result shall be perceptibly immediate. No progress indicator. | M |
 | C1-NF-05 | Reachable and usable at its own address, independently of any other tool. | M |
 | C1-NF-06 | Engine version stated on output, changing whenever calculation behaviour changes. | M |
@@ -724,10 +724,34 @@ flag list: and a user seeing the answer without the warnings attached to it inve
 C1-OUT-05's guarantee that the two travel together.
 
 **Not compacted in the meantime.** A layout that fits only because the type got smaller fails
-again on the next flag, and C1-FL-09 and C1-FL-10 have just demonstrated it. The verification
-reports **STANDARD NOT SET**, the same shape as acceptance test 14 reporting UNRUN. Open item
-15: smallest supported window AND zoom level, owner A. Modi, then a register row with its
-basis and a gate again.
+again on the next flag, and C1-FL-09, C1-FL-10 and C1-FL-11 have each demonstrated it.
+
+**✎ It ships DECLARED rather than silently, which is the change at round 7.** Everything else
+unmet on this tool is written down; this was not, anywhere. It is now a register row and is
+therefore on the page a user reads. Measured 11 September 2026 at 1440 wide:
+
+| Case | Converter bottom | Fits |
+|---|---|---|
+| Clean result | 868px | From about 879px of viewport, a 14-inch class display |
+| Worst case, five flags | 1012px | Nowhere measured |
+
+**A correction to the measurement that produced the earlier reading.** A clean result was
+reported as 698px against an 802px viewport and therefore fitting comfortably. 698px is the
+converter's HEIGHT; its bottom edge is 868px, because the shared masthead and the page padding
+put 180px above it. A clean result overflows a 1440 x 900 laptop by 71px. `check-network.mjs`
+now prints both numbers and names which one answers the requirement, because this is the
+second time the same class of error has been made about this requirement: see
+`docs/correspondence.md` §I.8.
+
+**What is lost, and it differs by case.** On a 1440 x 900 laptop a clean result loses the foot
+of the input column and keeps the whole result, including every statement. A flagged result
+loses the scope statement, the copy buttons and the tail of the flag list, so **the user sees
+the number without the warnings attached to it.** That is the inversion of C1-OUT-05's
+guarantee, it lands on exactly the cases that matter most, and it is why the deviation is
+declared rather than carried quietly.
+
+Open item 15 remains: smallest supported window AND zoom level, owner A. Modi, then a gate
+again.
 
 ### 14.1 Verification
 
@@ -853,7 +877,7 @@ rather than an audit.
 
 **Usability**
 
-19. A first-time user completes a conversion in under one minute without instruction. **To be measured against the form as revised by C1-UN-01, open item 13.**
+19. ✎ A first-time user completes a conversion in under one minute without instruction. **To be measured against the form as revised by C1-UN-01, open item 13. THE DISPLAY IT IS RUN ON SHALL BE RECORDED**, because C1-NF-03 is not met and whether the observed user had to scroll to reach the copy buttons changes what was measured. Either run it on a display large enough that the form does not scroll and say so, or record the display used. Unrecorded does not satisfy this test.
 20. Inputs and result fit one screen without scrolling, at 1440 × 900.
 
 **Added at v0.6**

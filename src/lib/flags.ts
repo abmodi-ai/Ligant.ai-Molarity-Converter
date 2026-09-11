@@ -104,6 +104,22 @@ export type ThresholdId =
   | 'molar-lower'
   | 'representability'
 
+/**
+ * §11's scope, stated because it has widened twice and has now widened again.
+ *
+ * C1-CN-01 asks for every threshold at which the tool changes behaviour. The
+ * rounding mode and the two tolerances were added because they determine
+ * behaviour without being thresholds, on the principle that no
+ * behaviour-determining choice should be silent. `viewport-supported` is a
+ * third kind: a requirement the tool DOES NOT MEET, declared here because this
+ * is the page's disclosure surface and an undeclared shortfall is exactly the
+ * thing the register exists to prevent. Everything else unmet on this tool is
+ * written down; that one was not.
+ *
+ * Flagged rather than assumed: if the register should not carry deviations,
+ * they need their own surface, and the answer should not be that they go
+ * unwritten.
+ */
 export interface Threshold {
   readonly id: string
   readonly label: string
@@ -160,6 +176,14 @@ export const CONSTANTS_REGISTER: readonly Threshold[] = [
   },
   { boundaryCoverage: true, id: 'mass-upper', label: 'Upper mass concentration bound', value: '250 mg/mL', basis: 'inspection', status: 'Uncharacterised: open item 3' },
   { boundaryCoverage: true, id: 'molar-lower', label: 'Lower molar concentration bound', value: '1 pM', basis: 'inspection', status: 'Uncharacterised: open item 3' },
+  {
+    id: 'viewport-supported',
+    label: 'Viewport at which C1-NF-03 is met',
+    value: '879px of viewport height for a clean result; NOT MET for a flagged result at any viewport measured',
+    basis: 'inspection',
+    status:
+      'ACCEPTED DEVIATION, declared rather than met. C1-NF-03 and acceptance 20 require the inputs and the result to fit one screen without scrolling. Measured 11 September 2026 at 1440 wide: a clean result reaches 868px and fits only from about 879px of viewport, which is a 14-inch class display; the worst case, five flags, reaches 1012px and fits nowhere measured. On a 1440x900 laptop (797px of viewport) a CLEAN result loses the foot of the input column, and a FLAGGED result loses the scope statement, the copy buttons and the tail of the flag list, so the user sees the number without the warnings attached to it. That inverts the guarantee the tool is built around and it is the reason this row exists rather than staying an unwritten shortfall. The supported viewport is undecided, open item 15, and the layout is deliberately not compacted in the meantime.',
+  },
   {
     boundaryCoverage: true,
     id: 'representability',

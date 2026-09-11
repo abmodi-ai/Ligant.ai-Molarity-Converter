@@ -255,6 +255,7 @@ describe('Acceptance 17 and 18, disclosure', () => {
       'mw-upper-conjugate',
       'mass-upper',
       'molar-lower',
+      'viewport-supported',
       'representability',
       'displayed-precision',
       'reimplementation-tolerance',
@@ -282,6 +283,14 @@ describe('Acceptance 17 and 18, disclosure', () => {
       expect(row.status, `${id} records no observed figure`).toMatch(/observed|Observed/)
     }
     expect(CONSTANTS_REGISTER.filter((t) => t.status.includes('Uncharacterised')).length).toBe(5)
+
+    // C1-NF-03 is not met and says so on the page. An unmet requirement that is
+    // written down everywhere except where a user would look is the one kind of
+    // omission the register cannot allow.
+    const deviation = CONSTANTS_REGISTER.find((t) => t.id === 'viewport-supported')!
+    expect(deviation.status).toMatch(/ACCEPTED DEVIATION/)
+    expect(deviation.status).toMatch(/1012px/)
+    expect(deviation.status).toMatch(/open item 15/)
   })
 
   it('the failure classes the tool cannot detect are enumerated', () => {

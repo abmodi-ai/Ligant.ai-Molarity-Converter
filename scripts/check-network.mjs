@@ -201,11 +201,23 @@ if (flagCount < 5) failures.push(`the worst case raised ${flagCount} flags, expe
 const measure = async ({ window: label, width, height }) => {
   await page.setViewportSize({ width, height })
   await page.waitForTimeout(120)
-  const bottom = await page.evaluate(() => {
+  /*
+   * BOTH numbers, because confusing them is how this went unrecorded.
+   *
+   * The converter's HEIGHT is about 180px less than its BOTTOM, since the
+   * shared masthead and the page padding sit above it. A reviewer measuring
+   * height against viewport concluded a clean result fits at 1440x900 with room
+   * to spare; measured as a bottom edge it overflows by 71px. "Fits one screen
+   * without scrolling" is a statement about the bottom edge, so both are
+   * printed and the one that answers the requirement is named.
+   */
+  const box = await page.evaluate(() => {
     const el = document.querySelector('main.converter')
-    return el ? Math.round(el.getBoundingClientRect().bottom) : Infinity
+    if (!el) return { bottom: Infinity, height: Infinity }
+    const r = el.getBoundingClientRect()
+    return { bottom: Math.round(r.bottom), height: Math.round(r.height) }
   })
-  return { label, height, bottom, over: bottom - height }
+  return { label, height, bottom: box.bottom, boxHeight: box.height, over: box.bottom - height }
 }
 
 const measurements = []
@@ -215,13 +227,19 @@ await page.setViewportSize(VIEWPORT)
 console.log(`\n  C1-NF-03: worst case, ${flagCount} flags`)
 for (const m of measurements) {
   const verdict = m.over <= 0 ? `fits, ${-m.over}px spare` : `over by ${m.over}`
-  console.log(`    window ${m.label}  viewport ${m.height}px  converter ${m.bottom}px  ${verdict}`)
+  console.log(
+    `    window ${m.label}  viewport ${m.height}px  converter bottom ${m.bottom}px (height ${m.boxHeight}px)  ${verdict}`,
+  )
 }
 console.log('    (identical converter heights: .wrap caps content at 1120px, so all three')
 console.log('     candidates differ in available height only, not in wrapping)')
-console.log('    STANDARD NOT SET: "standard laptop display" is undefined in C1-NF-03')
-console.log('    and acceptance 20, so there is nothing to pass or fail against. Owner:')
-console.log('    A. Modi: smallest supported window and zoom level, then a register row.')
+console.log('    C1-NF-03 IS NOT MET, and is declared as an accepted deviation in')
+console.log('    the constants register on the page rather than left as an unwritten')
+console.log('    shortfall. The supported display is still undecided (open item 15),')
+console.log('    so there is no standard to fail against; what is reported is the')
+console.log('    measurement and the fact that the requirement is unmet.')
+console.log('    Not compacted: a layout that fits only because the type got smaller')
+console.log('    fails again on the next flag.')
 
 // C1-ST-02: nothing persists across a reload unless its persistence is visible.
 const stored = await page.evaluate(() => ({
