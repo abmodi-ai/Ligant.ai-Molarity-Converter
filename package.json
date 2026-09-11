@@ -20,7 +20,8 @@
     "export:reference": "vite-node scripts/export-reference-set.ts",
     "check:reimplementation": "npm run export:reference && python3 reference/compare.py && python3 reference/exact.py",
     "check:ui": "node scripts/check-ui.mjs",
-    "check:exact": "python3 reference/exact.py"
+    "check:exact": "python3 reference/exact.py",
+    "check:deployed": "node -e \"const s=require('fs').readFileSync('src/lib/site.ts','utf8');const u=s.match(/SITE_URL\\s*=\\s*.([^']+)./)[1]+s.match(/TOOL_PATH\\s*=\\s*.([^']+)./)[1];process.stdout.write(u)\" | xargs node scripts/check-network.mjs"
   },
   "devDependencies": {
     "@types/node": "^26.4.1",

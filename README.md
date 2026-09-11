@@ -65,11 +65,18 @@ failure mode the test exists to catch is a host or CDN injecting a request condi
 request characteristics, which is invisible anywhere but the deployed address; a previous
 tool in this set was caught by exactly that. The instrument being ready is the achievement.
 
-**This puts open item 5: the public URL slug, on the critical path.** It is no longer a
+**The slug is decided: `molarity-converter`.** The address is
+`https://benchtools.ligant.ai/molarity-converter/`, composed in `src/lib/site.ts`. It does not
+unblock acceptance 14 on its own: the host interposes a bot challenge, so an automated browser
+is served the challenge and never reaches the tool, and a challenged visitor contacts
+`challenges.cloudflare.com` before the tool loads. The instrument reports that as CANNOT RUN
+HERE, a third outcome distinct from a pass and from a failure of the claim. Open item 20.
+
+Previously: **this puts open item 5: the public URL slug, on the critical path.** It is no longer a
 before-ship item; it is blocking a built instrument. Once decided:
 
 ```
-node scripts/check-network.mjs https://<deployed-address>/
+npm run check:deployed
 ```
 
 **Built and passing:** the conversion engine, validation, flags, the fixture set, the
@@ -149,7 +156,7 @@ npm run check:ui             # the form's own requirements in a real browser:
 npm run study:precision      # regenerates the open item 7 measurements
 npm run record:invariance    # regenerates docs/invariance-confirmation.md from the code
 
-node scripts/check-network.mjs https://<deployed-address>/   # acceptance test 14
+npm run check:deployed       # acceptance test 14, against the address in site.ts
 ```
 
 ## Retention is not only a badge

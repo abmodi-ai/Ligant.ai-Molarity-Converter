@@ -38,6 +38,10 @@ const CHROME = process.env.CHROME_PATH || '/opt/pw-browsers/chromium'
 
 const SITE_TS = readFileSync('src/lib/site.ts', 'utf8')
 const SITE_URL = (SITE_TS.match(/SITE_URL\s*=\s*['"]([^'"]+)['"]/) ?? [])[1]
+const TOOL_PATH = (SITE_TS.match(/TOOL_PATH\s*=\s*['"]([^'"]+)['"]/) ?? [])[1]
+const TOOL_NAME = (SITE_TS.match(/TOOL_NAME\s*=\s*['"]([^'"]+)['"]/) ?? [])[1]
+/** The one address acceptance test 14 is about, composed rather than retyped. */
+const DEPLOYED_URL = SITE_URL && TOOL_PATH ? `${SITE_URL}${TOOL_PATH}` : null
 
 /*
  * The footer's network claim, and the gate on it.
@@ -140,8 +144,97 @@ const isOwn = (url) =>
   url.startsWith('blob:') ||
   url === 'about:blank'
 
-// Now navigate.
-await page.goto(origin, { waitUntil: 'networkidle' })
+/*
+ * Now navigate, and SURVIVE FAILING TO.
+ *
+ * This threw an unhandled TimeoutError the first time it was pointed at a
+ * deployed address, which is the one thing the instrument for acceptance test
+ * 14 must not do: a stack trace is not a result, and a reader cannot tell a
+ * crash from a failure from a pass. The test has three outcomes and they are
+ * different facts.
+ *
+ * `networkidle` is also the wrong wait for a real host. A page behind bot
+ * protection, or one holding a keepalive, may never reach it, and waiting for
+ * idle is not what the test needs: the listeners are already armed, so every
+ * request is recorded whether or not the page settles. Load, then observe for a
+ * fixed window.
+ */
+let navigationError = null
+try {
+  await page.goto(origin, { waitUntil: 'domcontentloaded', timeout: 45_000 })
+  await page.waitForTimeout(3_000) // observe late requests rather than wait for idle
+} catch (error) {
+  navigationError = error
+}
+
+if (navigationError) {
+  await browser.close()
+  if (server) server.close()
+  console.error(`\ncheck-network: the address did not load\n  ${origin}\n  ${navigationError.message.split('\n')[0]}`)
+  console.error('\n  ACCEPTANCE TEST 14: NOT RUN.')
+  console.error('  This is not a failure of the claim and not a pass. Nothing was')
+  console.error('  observed, because nothing was served to observe. Distinguish it from')
+  console.error('  a run that saw a third-party request: that would be a FAILURE.')
+  process.exit(2)
+}
+
+/*
+ * And confirm it is THIS tool. Pointing the instrument at a sibling in the
+ * suite would otherwise exercise nothing, mis-report, or pass on another tool's
+ * clean page, and the addresses differ by one path segment.
+ */
+const servedTitle = await page.title()
+if (target && !servedTitle.includes(TOOL_NAME)) {
+  const challenged =
+    /just a moment|checking your browser|attention required/i.test(servedTitle) ||
+    requests.some((r) => /challenges\.cloudflare\.com|\/cdn-cgi\/challenge-platform/.test(r.url))
+  await browser.close()
+  if (server) server.close()
+
+  if (challenged) {
+    /*
+     * A distinct outcome, and the most consequential one this instrument has
+     * reported. The host interposes a bot challenge before the tool is served,
+     * so an automated browser never reaches the page and acceptance test 14
+     * cannot be run from automation at this address at all.
+     *
+     * It is also a finding about the CLAIM and not only about the test. The
+     * challenge itself contacts a third party, so a visitor who is challenged
+     * has already made requests to it before any part of this tool exists. The
+     * tool still asks for nothing, which is what C1-NF-01 is about; "no data is
+     * transmitted", unqualified, is a broader statement than the tool can make
+     * about an address it does not control.
+     *
+     * This is the beacon of docs/correspondence.md §I.1 in its other form. That
+     * one was a host inserting a request into the response; this is a host
+     * inserting an entire page. Neither is visible in the build, which is why
+     * this script exists and why it must say so rather than fail obscurely.
+     */
+    console.error(`\ncheck-network: ${origin} is behind a bot challenge`)
+    console.error(`  served "${servedTitle}" instead of the tool`)
+    const challengeHosts = [...new Set(requests.filter((r) => !isOwn(r.url)).map((r) => new URL(r.url).host))]
+    console.error(`  the challenge contacted: ${challengeHosts.join(', ') || 'nothing recorded'}`)
+    console.error('\n  ACCEPTANCE TEST 14: CANNOT RUN HERE.')
+    console.error('  Not a pass and not a failure of the claim. An automated browser is')
+    console.error('  served the challenge, so the tool is never reached and nothing about')
+    console.error('  it is observed.')
+    console.error('\n  Two things follow, and the second is not about this script:')
+    console.error('    1. Test 14 needs the challenge lifted for this path, or a session')
+    console.error('       that satisfies it. Decide which before relying on the result.')
+    console.error('    2. A visitor who IS challenged contacts the challenge host before')
+    console.error('       the tool loads. The tool still asks for nothing. Whether the')
+    console.error('       footer may say "no data is transmitted" at an address that does')
+    console.error('       is a question about the claim, not about the code.')
+    process.exit(2)
+  }
+
+  console.error(`\ncheck-network: ${origin} is serving a different page`)
+  console.error(`  expected a title containing "${TOOL_NAME}", got "${servedTitle}"`)
+  console.error('\n  ACCEPTANCE TEST 14: NOT RUN.')
+  console.error('  The address is reachable and is not this tool, so the tool is not')
+  console.error('  deployed there yet.')
+  process.exit(2)
+}
 
 // Exercise the tool, because a request can be triggered by use rather than by
 // load: an autocomplete lookup, a telemetry ping on submit.
@@ -320,6 +413,9 @@ if (target) {
   console.log('  verification against the build artefact does not satisfy the test.')
   console.log('  A CDN can inject conditionally on request characteristics; that is')
   console.log('  invisible anywhere but the deployed address.')
-  console.log('\n      node scripts/check-network.mjs https://<deployed-address>/')
-  console.log('\n  Blocked on open item 5, the public URL slug.')
+  console.log(`\n      node scripts/check-network.mjs ${DEPLOYED_URL ?? 'https://<deployed-address>/'}`)
+  console.log('      (or: npm run check:deployed)')
+  console.log('\n  Open item 5 is CLOSED: the slug is decided and the address above is')
+  console.log('  composed from src/lib/site.ts rather than typed here. What remains is')
+  console.log('  the deploy, and then this command.')
 }
