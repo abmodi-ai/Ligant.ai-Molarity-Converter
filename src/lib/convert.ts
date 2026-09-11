@@ -19,8 +19,27 @@ import {
 /** C1-CV-02. Selected before data entry; not a mode. */
 export type Direction = 'mass-to-molar' | 'molar-to-mass'
 
-/** C1-NF-06. Changes whenever calculation behaviour changes. */
-export const ENGINE_VERSION = '0.1.0'
+/**
+ * C1-NF-06. Changes whenever calculation behaviour changes.
+ *
+ * 0.3.0 → 0.4.0 at v0.1.4: C1-FL-11 added, so the flag set changed again. This
+ * is the bump the previous one anticipated and did not get: underflow now
+ * reaches the surface the user reads rather than the record alone.
+ *
+ * 0.2.0 → 0.3.0 at v0.1.3: the result gained underflow state, which is
+ * computed output. NOTE that the flag set did NOT change this time, because
+ * the presentation of underflow is held pending NADIRA, so the bump rests on
+ * the computed result carrying something new, not on a new flag. Recorded
+ * because round 3 anticipated a flag-set change and there is not one yet.
+ *
+ * 0.1.0 → 0.2.0 at v0.1.2. The arithmetic is untouched, every pre-existing
+ * fixture returns the same doubles and the same rendering, but the FLAG SET
+ * changed, and flags are computed output rather than presentation: zero moved
+ * from C1-FL-03 to C1-FL-10, and C1-FL-09 was added. A consumer holding two
+ * records of the same input would otherwise see one engine version account for
+ * two different flag sets, which is the version failing to do its only job.
+ */
+export const ENGINE_VERSION = '0.4.0'
 
 export interface ConversionUnits {
   mass: MassUnit
@@ -75,7 +94,7 @@ export function molarToMass(molarValue: number, mwValue: number, units: Conversi
 /**
  * Both quantities of a conversion, whichever one was entered.
  *
- * Every conversion yields a mass concentration and a molar concentration — one
+ * Every conversion yields a mass concentration and a molar concentration, one
  * entered, one computed. §8 evaluates its conditions against the computed
  * system rather than against entry fields, so that the same physical
  * implausibility is caught in whichever role the quantity occupies. Returning
@@ -109,15 +128,49 @@ export function convert(
   }
 }
 
-/** C1-CV-03. The relation applied, displayed with the result. */
-export function relationApplied(direction: Direction, units: ConversionUnits): string {
+/**
+ * C1-CV-03. The relation applied, displayed with the result.
+ *
+ * The physical relation only, in named quantities. It carried its unit
+ * handling in the same string until v0.1.1: `(mg/mL ÷ effective kDa → µM)`,
+ * and "effective kDa" is not a unit. It was a name for the folded divisor, and
+ * a reader checking the arithmetic against the displayed relation could not
+ * evaluate it, which is the one thing C1-CV-03 exists to let them do. The unit
+ * handling is now stated separately, by `unitHandling` and `effectiveMwUnit`,
+ * so that every symbol here is either a named quantity or a standard unit.
+ */
+export function relationApplied(direction: Direction): string {
+  return direction === 'mass-to-molar'
+    ? 'molar concentration = mass concentration ÷ molecular weight'
+    : 'mass concentration = molar concentration × molecular weight'
+}
+
+/**
+ * How the units are handled, as its own statement.
+ *
+ * Says which unit each quantity is in and that the conversion between them is
+ * one operation rather than a chain, which is the property §11's 1 ULP
+ * tolerance is derived from, and is therefore worth stating rather than
+ * implying.
+ */
+export function unitHandling(direction: Direction, units: ConversionUnits): string {
   // UNIT_LABEL rather than the identifiers: the reader sees µM, not uM. The
   // identifiers are ASCII so they are safe to type and to match on; the labels
   // are what a person reads.
   const mass = UNIT_LABEL[units.mass]
   const molar = UNIT_LABEL[units.molar]
   const mw = UNIT_LABEL[units.mw]
-  return direction === 'mass-to-molar'
-    ? `molar concentration = mass concentration ÷ molecular weight  (${mass} ÷ effective ${mw} → ${molar})`
-    : `mass concentration = molar concentration × molecular weight  (${molar} × effective ${mw} → ${mass})`
+  const entered = direction === 'mass-to-molar' ? mass : molar
+  const reported = direction === 'mass-to-molar' ? molar : mass
+  return `Units: ${entered} entered, ${mw} declared, ${reported} reported; folded into one divisor, applied once.`
+}
+
+/**
+ * The unit of the folded divisor: mass concentration per molar concentration.
+ *
+ * A ratio of two standard units, so it can be printed beside the divisor's
+ * value and checked. This is what "effective kDa" was reaching for.
+ */
+export function effectiveMwUnit(units: ConversionUnits): string {
+  return `${UNIT_LABEL[units.mass]} per ${UNIT_LABEL[units.molar]}`
 }

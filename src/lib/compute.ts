@@ -9,13 +9,22 @@
  * NOTE ON C1-OUT-03/04. `ConversionResult` below is the tool's internal result,
  * not the machine-readable structured object those requirements call for. The
  * structured object is specified to use the shipped Antigen Density
- * Calculator's format, and that format does not exist — see
+ * Calculator's format, and that format does not exist; see
  * docs/open-item-01-adc-format-finding.md. No serialiser is written here, and
  * no local extension of the ADC's CSV has been invented to stand in for one.
  * C1-OUT-04 and acceptance test 4 are held pending that escalation.
  */
 
-import { ENGINE_VERSION, convert, effectiveMw, relationApplied, type ConversionUnits, type Direction } from './convert'
+import {
+  ENGINE_VERSION,
+  convert,
+  effectiveMw,
+  effectiveMwUnit,
+  relationApplied,
+  unitHandling,
+  type ConversionUnits,
+  type Direction,
+} from './convert'
 import { DISPLAY_SIG_FIGS, PRECISION_STATEMENT, formatSigFigs } from './format'
 import {
   MOLECULES_NOT_SITES_STATEMENT,
@@ -32,6 +41,8 @@ import {
   type MassBasis,
   type MwProvenance,
 } from './units'
+import { NOTHING_RETAINED, type RetainedFields } from './retention'
+import { detectUnderflow, type UnderflowState } from './underflow'
 
 /**
  * Everything the user declared. There are no optional fields and no defaults.
@@ -51,6 +62,17 @@ export interface ConversionRequest {
   provenance: MwProvenance
   massBasis: MassBasis
   units: ConversionUnits
+  /**
+   * C1-ST-03. Which declarations were carried across a change of conversion
+   * direction and not re-confirmed.
+   *
+   * Optional, and defaulted to nothing retained, because a conversion with no
+   * direction change behind it is the overwhelmingly common case and every
+   * §10 fixture is one. It is NOT optional in the structured object, see
+   * `serialise.ts`, where an absent key would be indistinguishable from a tool
+   * that never recorded this.
+   */
+  retained?: RetainedFields
 }
 
 export interface ConversionResult {
@@ -64,11 +86,30 @@ export interface ConversionResult {
   entered: 'mass' | 'molar'
   displayed: { mass: string; molar: string; sigFigs: number }
   flags: Flag[]
+  /**
+   * C1-UN-07. Which computed quantity, if any, is a zero that is not the value.
+   *
+   * Detection and the record proceed; the PRESENTATION is held pending NADIRA
+   *: whether this belongs in §8 as a flag beside the zero or in §7 as a
+   * refusal to display is her ruling, and nothing here decides it. This field
+   * is the single decision point: either outcome reads it.
+   */
+  underflow: UnderflowState
   units: ConversionUnits
-  declarations: { mwValue: number; provenance: MwProvenance; massBasis: MassBasis }
-  /** C1-CV-03, C1-OUT-01. */
+  declarations: {
+    mwValue: number
+    provenance: MwProvenance
+    massBasis: MassBasis
+    /** C1-ST-03. Always present, all three fields, whether or not anything was carried. */
+    retained: RetainedFields
+  }
+  /** C1-CV-03, C1-OUT-01. The physical relation, in named quantities only. */
   relation: string
+  /** The unit handling, stated separately from the relation. */
+  unitHandling: string
   effectiveMw: number
+  /** The divisor's unit, as a ratio of two standard units. */
+  effectiveMwUnit: string
   assumptions: readonly string[]
   statements: {
     precision: string
@@ -91,7 +132,7 @@ export type ConversionOutcome = ConversionResult | ConversionRejected
  *
  * Both concentration checks run against the entered value only, because the
  * computed one cannot be negative if the entered one is not and the molecular
- * weight is positive — both of which are established before the conversion
+ * weight is positive: both of which are established before the conversion
  * runs. Nothing here needs the computed value to decide a rejection.
  */
 export function computeConversion(request: ConversionRequest): ConversionOutcome {
@@ -112,6 +153,9 @@ export function computeConversion(request: ConversionRequest): ConversionOutcome
   if (rejections.length > 0) return { ok: false, rejections }
 
   const pair = convert(direction, enteredValue, mwValue, units)
+  const retained = request.retained ?? NOTHING_RETAINED
+  // Detected before the flag rules run, because C1-FL-11 reads it.
+  const underflow = detectUnderflow(pair)
 
   const flags = raiseFlags({
     mwValue,
@@ -122,6 +166,8 @@ export function computeConversion(request: ConversionRequest): ConversionOutcome
     massUnit: units.mass,
     molarValue: pair.molarValue,
     molarUnit: units.molar,
+    retained,
+    underflow,
   })
 
   return {
@@ -137,10 +183,13 @@ export function computeConversion(request: ConversionRequest): ConversionOutcome
       sigFigs: DISPLAY_SIG_FIGS,
     },
     flags,
+    underflow,
     units,
-    declarations: { mwValue, provenance: request.provenance, massBasis: request.massBasis },
-    relation: relationApplied(direction, units),
+    declarations: { mwValue, provenance: request.provenance, massBasis: request.massBasis, retained },
+    relation: relationApplied(direction),
+    unitHandling: unitHandling(direction, units),
     effectiveMw: effectiveMw(mwValue, units),
+    effectiveMwUnit: effectiveMwUnit(units),
     assumptions: assumptionsFor(request),
     statements: {
       precision: PRECISION_STATEMENT,
@@ -157,11 +206,24 @@ export function computeConversion(request: ConversionRequest): ConversionOutcome
  * input echo.
  */
 function assumptionsFor(request: ConversionRequest): readonly string[] {
-  const { units, declarations } = { units: request.units, declarations: request }
+  const { units } = request
+  const retained = request.retained ?? NOTHING_RETAINED
+
+  /*
+   * "as declared" is a claim about provenance, and it was false for any value
+   * carried across a direction change: the user declared it in the other
+   * direction and has not re-affirmed it in this one. Arithmetically the result
+   * was correct and its provenance was misrepresented, which is the paste
+   * defect wearing the tool's own wording.
+   */
+  const CARRIED = 'retained from the previous conversion direction, not re-confirmed'
+
   return [
-    `Molecular weight taken as ${declarations.mwValue} ${UNIT_LABEL[units.mw]}, as declared. The tool does not supply or check molecular weights.`,
-    `Source of that weight: ${MW_PROVENANCE_LABEL[declarations.provenance]}.`,
-    `The stated weight is the mass of: ${MASS_BASIS_LABEL[declarations.massBasis]}.`,
+    `Molecular weight taken as ${request.mwValue} ${UNIT_LABEL[units.mw]}, ${
+      retained.mw ? CARRIED : 'as declared'
+    }. The tool does not supply or check molecular weights.`,
+    `Source of that weight: ${MW_PROVENANCE_LABEL[request.provenance]}${retained.provenance ? `: ${CARRIED}` : ''}.`,
+    `The stated weight is the mass of: ${MASS_BASIS_LABEL[request.massBasis]}${retained.massBasis ? `: ${CARRIED}` : ''}.`,
     'The solution is dilute enough that solute volume is not accounted for separately.',
   ]
 }

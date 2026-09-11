@@ -10,7 +10,7 @@
     "test:watch": "vitest",
     "typecheck": "tsc -b",
     "study:precision": "vite-node scripts/precision-study.ts",
-    "verify": "npm run typecheck && npm test && npm run build && npm run check:privacy && npm run check:network && npm run check:reimplementation",
+    "verify": "npm run typecheck && npm test && npm run build && npm run check:privacy && npm run check:ui && npm run check:network && npm run check:reimplementation",
     "record:invariance": "vite-node scripts/record-invariance.ts",
     "dev": "vite",
     "build": "tsc -b && vite build",
@@ -18,7 +18,9 @@
     "check:privacy": "node scripts/check-privacy.mjs",
     "check:network": "node scripts/check-network.mjs",
     "export:reference": "vite-node scripts/export-reference-set.ts",
-    "check:reimplementation": "npm run export:reference && python3 reference/compare.py"
+    "check:reimplementation": "npm run export:reference && python3 reference/compare.py && python3 reference/exact.py",
+    "check:ui": "node scripts/check-ui.mjs",
+    "check:exact": "python3 reference/exact.py"
   },
   "devDependencies": {
     "@types/node": "^26.4.1",

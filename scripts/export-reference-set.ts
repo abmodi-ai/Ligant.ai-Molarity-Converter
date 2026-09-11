@@ -17,7 +17,7 @@ import { ENGINE_VERSION } from '../src/lib/convert'
 
 const requests: { source: string; request: ConversionRequest }[] = []
 
-// §10's fixtures — "the full reference set" acceptance test 3 names.
+// §10's fixtures: "the full reference set" acceptance test 3 names.
 for (const f of ALL_FIXTURES) requests.push({ source: f.id, request: f.request })
 
 /*
@@ -78,4 +78,4 @@ writeFileSync(
   new URL('../reference/reference-set.json', import.meta.url),
   JSON.stringify({ engineVersion: ENGINE_VERSION, generatedFrom: 'src/lib/compute.ts', cases }, null, 1),
 )
-console.log(`wrote reference/reference-set.json — ${cases.length} cases, engine ${ENGINE_VERSION}`)
+console.log(`wrote reference/reference-set.json: ${cases.length} cases, engine ${ENGINE_VERSION}`)

@@ -19,7 +19,7 @@ function ok(r: ConversionRequest) {
   return o
 }
 
-describe('Acceptance 1 — the reference case', () => {
+describe('Acceptance 1: the reference case', () => {
   it('IgG at 150 kDa, 1 mg/mL returns 6.66667 µM at six significant figures', () => {
     expect(ok(BASE).displayed.molar).toBe('6.66667')
   })
@@ -33,7 +33,7 @@ describe('Acceptance 1 — the reference case', () => {
   })
 })
 
-describe('Acceptance 6 / C1-IV-03 — g/mol and kDa agree to displayed precision', () => {
+describe('Acceptance 6 / C1-IV-03, g/mol and kDa agree to displayed precision', () => {
   it('over a sweep of realistic weights and concentrations', () => {
     let checked = 0
     for (let mw = 10_000; mw <= 500_000; mw += 617) {
@@ -49,7 +49,7 @@ describe('Acceptance 6 / C1-IV-03 — g/mol and kDa agree to displayed precision
   })
 })
 
-describe('Acceptance 8 / §7 — rejection names the quantity and the physical reason', () => {
+describe('Acceptance 8 / §7, rejection names the quantity and the physical reason', () => {
   const cases: { name: string; request: ConversionRequest; mustName: RegExp[] }[] = [
     {
       name: 'C1-HI-01, MW zero',
@@ -86,24 +86,69 @@ describe('Acceptance 8 / §7 — rejection names the quantity and the physical r
     })
   }
 
+  it('unparseable input is a different code from a physically impossible value', () => {
+    /*
+     * C1-OUT-03 makes the rejection code machine-readable, and a reader could
+     * not tell "the user entered a negative number" from "the user entered
+     * something that is not a number" while both reused a §7 code. Those call
+     * for different responses: one is a quantity the physics forbids, the other
+     * is not a quantity at all.
+     *
+     * Both are still refusals, and both still name the quantity and the reason.
+     */
+    const negativeMw = computeConversion({ ...BASE, mwValue: -150 })
+    const unreadableMw = computeConversion({ ...BASE, mwValue: Number('150 kDa') })
+    const negativeConc = computeConversion({ ...BASE, enteredValue: -1 })
+    const unreadableConc = computeConversion({ ...BASE, enteredValue: Number('1,5') })
+
+    for (const o of [negativeMw, unreadableMw, negativeConc, unreadableConc]) expect(o.ok).toBe(false)
+    if (negativeMw.ok || unreadableMw.ok || negativeConc.ok || unreadableConc.ok) return
+
+    expect(negativeMw.rejections.map((r) => r.code)).toEqual(['C1-HI-01'])
+    expect(unreadableMw.rejections.map((r) => r.code)).toEqual(['C1-AD-01'])
+    expect(negativeConc.rejections.map((r) => r.code)).toEqual(['C1-HI-02'])
+    expect(unreadableConc.rejections.map((r) => r.code)).toEqual(['C1-AD-02'])
+
+    // The four codes are distinct, which is the whole requirement.
+    const codes = [negativeMw, unreadableMw, negativeConc, unreadableConc].flatMap((o) =>
+      o.ok ? [] : o.rejections.map((r) => r.code),
+    )
+    expect(new Set(codes).size).toBe(4)
+
+    // And the unparseable messages tell the user what to do about it, rather
+    // than restating that the value is not a number.
+    for (const o of [unreadableMw, unreadableConc]) {
+      if (o.ok) continue
+      expect(o.rejections[0].message).toMatch(/choose the unit beside it/)
+    }
+  })
+
   it('zero concentration is legal and is not rejected defensively', () => {
     const outcome = computeConversion({ ...BASE, enteredValue: 0 })
     expect(outcome.ok).toBe(true)
     if (outcome.ok) {
       expect(outcome.molarValue).toBe(0)
-      // It converts to zero, creates no division, and flags as below the
-      // working range rather than being refused.
-      expect(outcome.flags.map((f) => f.code)).toContain('C1-FL-03')
+      // It converts to zero, creates no division, and is not refused.
+      //
+      // It also does NOT raise C1-FL-03. Zero is the absence of solute, not an
+      // implausibly low concentration, and "below the range typical of biologic
+      // working solutions" is true of zero while saying nothing about it. This
+      // test asserted the opposite until v0.2.0, which is how the interaction
+      // between two individually-correct requirements survived: §7 makes zero
+      // legal, §8 does not exclude it, and the suite recorded the result as
+      // intended behaviour.
+      expect(outcome.flags.map((f) => f.code)).toContain('C1-FL-10')
+      expect(outcome.flags.map((f) => f.code)).not.toContain('C1-FL-03')
     }
   })
 })
 
-describe('Acceptance 9 / §8 — flags compute a result and carry a reason code', () => {
+describe('Acceptance 9 / §8, flags compute a result and carry a reason code', () => {
   it('every flag raised has a machine-readable code and a message', () => {
     const flagged = ok({ ...BASE, provenance: 'not-recorded', massBasis: 'not-recorded', mwValue: 0.5 })
     expect(flagged.flags.length).toBeGreaterThan(0)
     for (const f of flagged.flags) {
-      expect(f.code).toMatch(/^C1-FL-0[1-8]$/)
+      expect(f.code).toMatch(/^C1-FL-(0[1-9]|1[01])$/)
       expect(f.message.length).toBeGreaterThan(20)
       expect(f.evaluatedOn).toBeTruthy()
     }
@@ -116,7 +161,7 @@ describe('Acceptance 9 / §8 — flags compute a result and carry a reason code'
   })
 })
 
-describe('Acceptance 13 — every mass-basis value behaves as specified', () => {
+describe('Acceptance 13: every mass-basis value behaves as specified', () => {
   const expected: Record<MassBasis, string[]> = {
     assembled: [],
     monomer: ['C1-FL-06'],
@@ -142,7 +187,7 @@ describe('Acceptance 13 — every mass-basis value behaves as specified', () => 
   })
 })
 
-describe('Acceptance 12 — "not recorded" provenance', () => {
+describe('Acceptance 12: "not recorded" provenance', () => {
   it('is accepted, appears on the output, and raises C1-FL-05', () => {
     const r = ok({ ...BASE, provenance: 'not-recorded' })
     expect(r.flags.map((f) => f.code)).toContain('C1-FL-05')
@@ -177,7 +222,7 @@ describe('Acceptance 12 — "not recorded" provenance', () => {
   })
 })
 
-describe('Acceptance 15 / C1-ST-04 — determinism', () => {
+describe('Acceptance 15 / C1-ST-04, determinism', () => {
   it('the same inputs always produce the same outputs', () => {
     const request: ConversionRequest = { ...BASE, enteredValue: 2.4, mwValue: 148327, units: { mass: 'mg/mL', molar: 'uM', mw: 'g/mol' } }
     const first = ok(request)
@@ -197,7 +242,7 @@ describe('Acceptance 15 / C1-ST-04 — determinism', () => {
   })
 })
 
-describe('Acceptance 17 and 18 — disclosure', () => {
+describe('Acceptance 17 and 18, disclosure', () => {
   it('every threshold is listed with its value and basis, and inspection-chosen ones say so', () => {
     // Named rather than only counted, so that adding a row is a deliberate act
     // and removing one is caught. §11 exists so that no behaviour-determining
@@ -207,8 +252,11 @@ describe('Acceptance 17 and 18 — disclosure', () => {
       'round-trip-tolerance',
       'mw-lower',
       'mw-upper',
+      'mw-upper-conjugate',
       'mass-upper',
       'molar-lower',
+      'viewport-supported',
+      'representability',
       'displayed-precision',
       'reimplementation-tolerance',
       'rounding-mode',
@@ -220,11 +268,11 @@ describe('Acceptance 17 and 18 — disclosure', () => {
     }
     // The distinction the register exists to draw: what was measured or follows
     // from a standard, against what was chosen by looking at it. Three rows are
-    // derived — the round-trip tolerance, the reimplementation tolerance, and
+    // derived: the round-trip tolerance, the reimplementation tolerance, and
     // the rounding mode. The last two are not thresholds at which the tool
     // changes behaviour, but they are behaviour-determining, and the register
     // exists so that no behaviour-determining choice is silent.
-    expect(CONSTANTS_REGISTER.filter((t) => t.basis === 'derived').length).toBe(3)
+    expect(CONSTANTS_REGISTER.filter((t) => t.basis === 'derived').length).toBe(4)
 
     // The two tolerances state a requirement and record what was observed
     // against it, so drift from the observed figure stays visible rather than
@@ -234,16 +282,24 @@ describe('Acceptance 17 and 18 — disclosure', () => {
       expect(row.value).toMatch(/ULP/)
       expect(row.status, `${id} records no observed figure`).toMatch(/observed|Observed/)
     }
-    expect(CONSTANTS_REGISTER.filter((t) => t.status.includes('Uncharacterised')).length).toBe(4)
+    expect(CONSTANTS_REGISTER.filter((t) => t.status.includes('Uncharacterised')).length).toBe(5)
+
+    // C1-NF-03 is not met and says so on the page. An unmet requirement that is
+    // written down everywhere except where a user would look is the one kind of
+    // omission the register cannot allow.
+    const deviation = CONSTANTS_REGISTER.find((t) => t.id === 'viewport-supported')!
+    expect(deviation.status).toMatch(/ACCEPTED DEVIATION/)
+    expect(deviation.status).toMatch(/1012px/)
+    expect(deviation.status).toMatch(/open item 15/)
   })
 
   it('the failure classes the tool cannot detect are enumerated', () => {
-    expect(UNDETECTABLE_FAILURES.length).toBe(6)
+    expect(UNDETECTABLE_FAILURES.length).toBe(7)
     for (const f of UNDETECTABLE_FAILURES) expect(f.length).toBeGreaterThan(30)
   })
 })
 
-describe('C1-OUT — the output carries what §13 requires', () => {
+describe('C1-OUT: the output carries what §13 requires', () => {
   it('the relation, the assumptions, the input echo, and the engine version', () => {
     const r = ok(BASE)
     expect(r.relation).toMatch(/molar concentration = mass concentration/)
@@ -254,7 +310,7 @@ describe('C1-OUT — the output carries what §13 requires', () => {
     expect(r.statements.moleculesNotSites).toMatch(/paratope/)
   })
 
-  it('C1-OUT-02 — the weight, its source and its mass basis are in the derivation', () => {
+  it('C1-OUT-02: the weight, its source and its mass basis are in the derivation', () => {
     const r = ok({ ...BASE, provenance: 'mass-spectrometry', massBasis: 'conjugate' })
     const derivation = r.assumptions.join(' ')
     expect(derivation).toMatch(/150 kDa/)
@@ -262,7 +318,7 @@ describe('C1-OUT — the output carries what §13 requires', () => {
     expect(derivation).toMatch(/conjugate/)
   })
 
-  it('C1-ST-01 — a notebook line cannot be produced stripped of its flags', () => {
+  it('C1-ST-01: a notebook line cannot be produced stripped of its flags', () => {
     const r = ok({ ...BASE, massBasis: 'conjugate', provenance: 'not-recorded' })
     const line = notebookLine(r)
     for (const f of r.flags) expect(line).toContain(f.code)

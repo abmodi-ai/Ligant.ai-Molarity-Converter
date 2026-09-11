@@ -12,7 +12,7 @@ import { generateCases } from './corpus'
  * entered field rather than the quantity would pass every single-direction
  * fixture and fail this.
  */
-describe('§8 — conditions are evaluated on the computed system, not on entry fields', () => {
+describe('§8: conditions are evaluated on the computed system, not on entry fields', () => {
   it('a system flags identically whichever direction it was entered from', () => {
     let compared = 0
     for (const c of generateCases(20000, 0x51de5)) {
@@ -39,7 +39,7 @@ describe('§8 — conditions are evaluated on the computed system, not on entry 
     expect(compared).toBeGreaterThan(19000)
   })
 
-  it('acceptance 10 — threshold behaviour is the same in both directions', () => {
+  it('acceptance 10: threshold behaviour is the same in both directions', () => {
     // Walked across each concentration bound rather than sampled, so the step
     // either side of the operator is exercised directly.
     const mw = 150000
@@ -73,7 +73,7 @@ describe('§8 — conditions are evaluated on the computed system, not on entry 
     }
   })
 
-  it('C1-CV-02 — direction does not change which inputs are required', () => {
+  it('C1-CV-02: direction does not change which inputs are required', () => {
     // "Direction is not a mode." Both directions reject an absent molecular
     // weight, and neither accepts an input the other refuses.
     for (const direction of ['mass-to-molar', 'molar-to-mass'] as const) {

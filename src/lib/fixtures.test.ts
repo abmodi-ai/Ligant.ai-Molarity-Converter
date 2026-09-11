@@ -1,6 +1,14 @@
 import { describe, expect, it } from 'vitest'
-import { ALL_FIXTURES, BOUNDARY_FIXTURES, CONCENTRATION_BOUNDARY_FIXTURES, FIXTURES } from './fixtures'
+import {
+  ALL_FIXTURES,
+  BOUNDARY_FIXTURES,
+  CONCENTRATION_BOUNDARY_FIXTURES,
+  FIXTURES,
+  type BoundarySide,
+  type ThresholdId,
+} from './fixtures'
 import { computeConversion } from './compute'
+import { BOUNDARY_THRESHOLDS, CONSTANTS_REGISTER } from './flags'
 import { roundTripUlps, withinTolerance } from './invariance'
 import { agreesToDisplayedPrecision, isExactTie } from './format'
 
@@ -10,9 +18,9 @@ function run(f: (typeof ALL_FIXTURES)[number]) {
   return outcome
 }
 
-describe('§10 — the fixture set', () => {
+describe('§10: the fixture set', () => {
   for (const f of ALL_FIXTURES) {
-    describe(`${f.id} — ${f.name}`, () => {
+    describe(`${f.id}: ${f.name}`, () => {
       it('raises exactly the specified flags and no others', () => {
         const r = run(f)
         expect(r.flags.map((x) => x.code).sort()).toEqual([...f.expect.flags].sort())
@@ -31,7 +39,7 @@ describe('§10 — the fixture set', () => {
     })
   }
 
-  it('C1-FX-08 — every fixture states its construction assumption', () => {
+  it('C1-FX-08: every fixture states its construction assumption', () => {
     for (const f of ALL_FIXTURES) {
       expect(f.assumption, `${f.id} has no assumption`).toBeTruthy()
       // A sentence, not a placeholder. An empty-ish assumption would satisfy a
@@ -48,8 +56,8 @@ describe('§10 — the fixture set', () => {
     // That is the fixture-distribution failure §10 is written against, in the
     // form it is hardest to see: the suite passes by excluding the input class
     // that exposes the ambiguity, and two implementations disagreeing on real
-    // user data leave it green. Ties are unit-dependent — 1 g/L at 51.2 kDa is a
-    // tie in µM and is not one in M — so they cannot be designed out of the
+    // user data leave it green. Ties are unit-dependent: 1 g/L at 51.2 kDa is a
+    // tie in µM and is not one in M, so they cannot be designed out of the
     // input space, only out of the fixtures, which is worse than useless.
     const ties = ALL_FIXTURES.filter((f) => {
       const r = run(f)
@@ -89,7 +97,7 @@ describe('§10 — the fixture set', () => {
   })
 })
 
-describe('C1-FX-09 — the negative control', () => {
+describe('C1-FX-09: the negative control', () => {
   const f = FIXTURES.find((x) => x.id === 'C1-FX-09')!
 
   it('raises no flags, in both conversion directions (acceptance 9a)', () => {
@@ -121,7 +129,7 @@ describe('C1-FX-09 — the negative control', () => {
   })
 })
 
-describe('C1-FX-02 / C1-IV-03 — g/mol and kDa agree to displayed precision', () => {
+describe('C1-FX-02 / C1-IV-03, g/mol and kDa agree to displayed precision', () => {
   it('the two arms of the pair display identically', () => {
     const gmol = run(FIXTURES.find((f) => f.id === 'C1-FX-01')!)
     const kda = run(FIXTURES.find((f) => f.id === 'C1-FX-02')!)
@@ -142,7 +150,7 @@ describe('C1-FX-02 / C1-IV-03 — g/mol and kDa agree to displayed precision', (
   })
 })
 
-describe('C1-FX-03 — round trip', () => {
+describe('C1-FX-03: round trip', () => {
   it('returns the input to within 1 ULP', () => {
     const f = FIXTURES.find((x) => x.id === 'C1-FX-03')!
     const u = roundTripUlps({
@@ -154,33 +162,197 @@ describe('C1-FX-03 — round trip', () => {
   })
 })
 
-describe('C1-FX-04 — boundaries in both conversion directions', () => {
-  it('covers every §8 threshold, either side and exactly on it', () => {
-    const covered = [...BOUNDARY_FIXTURES, ...CONCENTRATION_BOUNDARY_FIXTURES]
-    // Four thresholds; each needs an on-the-bound case and at least one case on
-    // each side of it.
-    expect(covered.length).toBeGreaterThanOrEqual(12)
-    expect(covered.some((f) => f.request.direction === 'mass-to-molar')).toBe(true)
-    expect(covered.some((f) => f.request.direction === 'molar-to-mass')).toBe(true)
+describe('C1-FX-03b / C1-FX-14, the subnormal regime', () => {
+  /*
+   * The bound cannot apply where the value is not representable, so these
+   * fixtures assert the DOCUMENTED BEHAVIOUR and say which. A test that quietly
+   * loosened the tolerance to accommodate this would be the second family in
+   * docs/correspondence.md, run backwards.
+   */
+  const rt = (id: string) => {
+    const f = FIXTURES.find((x) => x.id === id)!
+    return roundTripUlps({ massValue: f.request.enteredValue, mwValue: f.request.mwValue, units: f.request.units })
+  }
+
+  it('an output unit that cannot hold the value loses it entirely, not by 1 ULP', () => {
+    const ulps = rt('C1-FX-03b')
+    // Documented, not tolerated: this is total loss of the value, and calling
+    // it a rounding difference would be the more dangerous description.
+    expect(withinTolerance(ulps)).toBe(false)
+    expect(ulps).toBeGreaterThan(1000)
+    expect(run(FIXTURES.find((x) => x.id === 'C1-FX-03b')!).molarValue).toBe(0)
   })
 
-  it('a value exactly on a threshold never flags — the operators are strict', () => {
-    const onBound = ['C1-FX-04b', 'C1-FX-04e', 'C1-FX-04g', 'C1-FX-04i', 'C1-FX-04k', 'C1-FX-04m']
-    for (const id of onBound) {
-      const f = [...BOUNDARY_FIXTURES, ...CONCENTRATION_BOUNDARY_FIXTURES].find((x) => x.id === id)!
-      expect(run(f).flags, `${id} flagged while sitting exactly on its threshold`).toEqual([])
+  it('an output unit that holds the value round-trips exactly, so the regime is not the fault', () => {
+    expect(rt('C1-FX-14')).toBe(0)
+    expect(run(FIXTURES.find((x) => x.id === 'C1-FX-14')!).molarValue).toBeGreaterThan(0)
+  })
+
+  it('neither raises C1-FL-10: the entered quantity is not zero', () => {
+    for (const id of ['C1-FX-03b', 'C1-FX-14']) {
+      const codes = run(FIXTURES.find((x) => x.id === id)!).flags.map((f) => f.code)
+      expect(codes, id).toContain('C1-FL-03')
+      expect(codes, id).not.toContain('C1-FL-10')
+    }
+  })
+
+  it('the record marks the zero that is not the value', () => {
+    const lost = run(FIXTURES.find((x) => x.id === 'C1-FX-03b')!)
+    const held = run(FIXTURES.find((x) => x.id === 'C1-FX-14')!)
+    expect(lost.underflow.molarConcentration).toBe(true)
+    expect(held.underflow.molarConcentration).toBe(false)
+    expect(lost.underflow.massConcentration).toBe(false)
+  })
+})
+
+describe('C1-FX-04: boundaries in both conversion directions', () => {
+  /*
+   * Both lists are DERIVED, and that is the fix rather than a tidy-up.
+   *
+   * The fixtures are every fixture that declares a boundary, not three named
+   * arrays; the thresholds are every register row marked for boundary
+   * coverage, not four names retyped here. The previous version hardcoded the
+   * four, which is why representability could be added to the register, to the
+   * failure-class list and to the documentation while this guard went on
+   * reporting complete coverage. A guard cannot report a threshold it was
+   * never told exists, and the register solved that class already by
+   * rendering from the constants the flag rules read.
+   */
+  const covered = ALL_FIXTURES.filter((f) => f.boundary !== undefined)
+  const THRESHOLDS: readonly ThresholdId[] = BOUNDARY_THRESHOLDS
+  const SIDES: BoundarySide[] = ['below', 'on', 'above']
+  const DIRECTIONS = ['mass-to-molar', 'molar-to-mass'] as const
+
+  it('every boundary fixture declares which threshold it is about and where it sits', () => {
+    // Without this, the coverage assertion below could be satisfied by a
+    // fixture that forgot its metadata and was therefore counted nowhere.
+    for (const f of covered) {
+      expect(f.boundary, `${f.id} declares no threshold`).toBeDefined()
+    }
+  })
+
+  it('covers every §8 threshold, on every side, in BOTH conversion directions', () => {
+    // The guard this replaces asserted `covered.length >= 12`, plus "at least
+    // one fixture of each direction" across the whole set. Both are set-level
+    // properties standing in for a per-threshold one, and both passed while the
+    // two molecular-weight bounds were exercised in `mass-to-molar` only, the
+    // §I failure mode from docs/correspondence.md, occurring inside the guard
+    // written to prevent it.
+    //
+    // Every combination is required, and the failure message names the ones
+    // missing rather than reporting a count that is one too small.
+    const missing: string[] = []
+    for (const threshold of THRESHOLDS) {
+      for (const direction of DIRECTIONS) {
+        for (const side of SIDES) {
+          const hits = covered.filter(
+            (f) =>
+              f.boundary?.threshold === threshold &&
+              f.boundary.side === side &&
+              f.request.direction === direction,
+          )
+          if (hits.length === 0) missing.push(`${threshold} / ${side} / ${direction}`)
+        }
+      }
+    }
+    expect(missing, `C1-FX-04 does not cover: ${missing.join(', ')}`).toEqual([])
+  })
+
+  it("the derived threshold list is the register's, not a copy of it", () => {
+    // If this ever fails, a register row was added or removed without the
+    // fixture set following, which is the state the hardcoded list allowed.
+    expect([...THRESHOLDS].sort()).toEqual(
+      CONSTANTS_REGISTER.filter((t) => t.boundaryCoverage).map((t) => t.id).sort(),
+    )
+    expect(THRESHOLDS).toContain('representability')
+  })
+
+  it('representability is asserted on the marker, which says WHICH quantity', () => {
+    const rep = covered.filter((f) => f.boundary?.threshold === 'representability')
+    expect(rep.length).toBe(6)
+    /*
+     * The flag sets stopped being identical at engine 0.4.0, when C1-FL-11 took
+     * underflow to the surface the user reads. Until then all three sides raised
+     * the same two flags and the marker was the only thing that could tell them
+     * apart, which is why the expectation was written on the marker.
+     *
+     * It stays on the marker. The flag says a quantity underflowed; the marker
+     * says which one, and a fixture that checked only the flag would not
+     * distinguish the mass side from the molar side.
+     */
+    const flagSets = new Set(rep.map((f) => [...f.expect.flags].sort().join(',')))
+    expect(flagSets.size).toBe(2)
+    for (const f of rep) {
+      expect(f.expect.flags.includes('C1-FL-11'), `${f.id}`).toBe(f.expect.underflowed)
+    }
+    for (const f of rep) {
+      expect(f.expect.underflowed, `${f.id} declares no underflow expectation`).toBeTypeOf('boolean')
+      const r = run(f)
+      expect(r.underflow.molarConcentration || r.underflow.massConcentration, f.id).toBe(f.expect.underflowed)
+    }
+  })
+
+  it('a value exactly on a threshold never flags, the operators are strict', () => {
+    // Selected by metadata rather than by a hand-maintained list of ids: a list
+    // is a second place to forget a fixture, and forgetting one there makes the
+    // suite quieter rather than redder.
+    /*
+     * Asserted on the threshold's OWN flag, not on the flag set being empty.
+     *
+     * That distinction only became visible with the conditional bound. A
+     * conjugate sitting exactly on its 2000 kDa ceiling raises C1-FL-08,
+     * because the declaration that raises the ceiling is the declaration that
+     * raises the flag. "No flags at all" was never the property; it happened to
+     * hold while every boundary fixture was declared assembled, which is the
+     * fixture-distribution pattern reappearing in an assertion rather than in a
+     * set.
+     */
+    const OWN_FLAG: Partial<Record<ThresholdId, string>> = {
+      'mw-lower': 'C1-FL-01',
+      'mw-upper': 'C1-FL-01',
+      'mw-upper-conjugate': 'C1-FL-01',
+      'mass-upper': 'C1-FL-02',
+      'molar-lower': 'C1-FL-03',
+    }
+    // Representability is excluded: it is not a plausibility bound and has no
+    // flag of its own, so "on the bound does not flag" is not a claim about it.
+    const onBound = covered.filter(
+      (f) => f.boundary?.side === 'on' && f.boundary.threshold !== 'representability',
+    )
+    expect(onBound.length, 'five §8 bounds in two directions is ten on-the-bound cases').toBe(10)
+    for (const f of onBound) {
+      const own = OWN_FLAG[f.boundary!.threshold]!
+      expect(own, `${f.boundary!.threshold} has no flag mapped`).toBeTruthy()
+      expect(
+        run(f).flags.map((x) => x.code),
+        `${f.id} raised ${own} while sitting exactly on its threshold`,
+      ).not.toContain(own)
+    }
+  })
+
+  it('the molecular-weight bounds flag identically from either direction', () => {
+    // C1-FL-01 reads the declared weight and no direction enters the
+    // comparison, so this cannot fail without something quite serious having
+    // changed. That is exactly why it is asserted rather than assumed: it is
+    // the claim under which the single-direction fixtures were acceptable, and
+    // it was never written down.
+    for (const f of BOUNDARY_FIXTURES.filter((x) => x.request.direction === 'mass-to-molar')) {
+      const reverse = BOUNDARY_FIXTURES.find((x) => x.id === `${f.id}-rev`)!
+      expect(run(reverse).flags.map((x) => x.code), `${f.id} and its reverse disagree`).toEqual(
+        run(f).flags.map((x) => x.code),
+      )
     }
   })
 })
 
-describe('C1-FX-04m / C1-FX-04n — a flagged and an unflagged result that display identically', () => {
+describe('C1-FX-04m / C1-FX-04n, a flagged and an unflagged result that display identically', () => {
   // Recorded as correct, deliberately, because it reads as a bug.
   //
   // §8 evaluates its conditions on the computed system, which is the unrounded
   // value. C1-UN-06 renders six significant figures. A molar concentration one
   // ULP below 1 pM satisfies "< 1 pM" and rounds to 1.00000; one exactly at
   // 1 pM does not satisfy it and also rounds to 1.00000. Neither requirement is
-  // wrong and the pair is not a contradiction — but nothing in the suite said
+  // wrong and the pair is not a contradiction, but nothing in the suite said
   // so, and the next person to read it would reasonably file a defect.
   const on = CONCENTRATION_BOUNDARY_FIXTURES.find((f) => f.id === 'C1-FX-04m')!
   const below = CONCENTRATION_BOUNDARY_FIXTURES.find((f) => f.id === 'C1-FX-04n')!

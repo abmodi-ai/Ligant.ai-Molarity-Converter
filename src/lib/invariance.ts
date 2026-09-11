@@ -138,7 +138,7 @@ export function nudgedPath(factor: number = NUDGE_FACTOR): ConversionPath {
 }
 
 /**
- * The stepwise unit-normalisation path — a fourth defect, and the only one that
+ * The stepwise unit-normalisation path, a fourth defect, and the only one that
  * was not inserted deliberately.
  *
  * This is the obvious implementation of the correct formula: normalise the

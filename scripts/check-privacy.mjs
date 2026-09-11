@@ -8,7 +8,7 @@
  *      such as XML namespaces and our own origin.
  *
  * This is necessary and NOT sufficient. String scanning cannot establish what a
- * browser actually requests — the two previous failures of this claim were both
+ * browser actually requests, the two previous failures of this claim were both
  * CDN defaults invisible in the artefact. scripts/check-network.mjs is the
  * runtime half, and acceptance test 14 is that script run against the deployed
  * address.
@@ -80,7 +80,7 @@ const ALLOWED = [
 ].filter(Boolean)
 
 if (!existsSync('dist')) {
-  fail('rule 3', 'dist/ not found — run `npm run build` before this check')
+  fail('rule 3', 'dist/ not found; run `npm run build` before this check')
 } else {
   const bundles = []
   ;(function collect(dir) {
@@ -103,6 +103,6 @@ if (failures.length) {
   console.error('check-privacy FAILED\n' + failures.join('\n'))
   process.exit(1)
 }
-console.log('check-privacy passed — no external resource, no network primitive, no embedded third-party URL.')
+console.log('check-privacy passed: no external resource, no network primitive, no embedded third-party URL.')
 console.log('  STATIC half only. Acceptance test 14 requires scripts/check-network.mjs run against the')
 console.log('  DEPLOYED address; neither this check nor a local browser run satisfies it.')

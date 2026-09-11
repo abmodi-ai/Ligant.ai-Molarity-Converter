@@ -1,23 +1,57 @@
 /*
+ * C1's semantic layer, on top of the shared tokens in `tokens.css`.
+ *
  * No web fonts, no external stylesheet, no CDN. C1-NF-01: nothing the page
- * loads may come from another origin, and a font request is a request.
+ * loads may come from another origin, and a font request is a request. The
+ * shared `--font` and `--mono` declare Inter and IBM Plex Mono first and fall
+ * back to the system stack, which is what the reference tool does; the faces
+ * are named, not fetched.
+ *
+ * THE RULE FOR THIS BLOCK: every value below is `var(--brand-*)` or
+ * `var(--neutral-*)`. Not one hex literal. C1 had a complete second palette
+ * before 4 September 2026: cool blue-greys against the suite's warm ones, and
+ * navy where the accent should have been, and it got there one plausible hex
+ * value at a time. A name here may be C1's; a colour may not.
  */
 
 :root {
-  --ink: #16202a;
-  --ink-soft: #55636f;
-  --rule: #d9d4c9;
-  --surface: #ffffff;
-  --ground: #f7f5f0;
-  --accent: #12324a;
-  --flag: #8a5a00;
-  --flag-ground: #fdf6e6;
-  --reject: #8f2c1e;
-  --reject-ground: #fbeeec;
-  --retained: #3d5a2e;
-  --retained-ground: #eef4e9;
-  --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-  --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  /* Text and ground: straight aliases, kept so C1's rules read in its own terms. */
+  --ink: var(--text-primary);
+  --ink-soft: var(--text-muted);
+  --rule: var(--border);
+  --ground: var(--page);
+
+  /*
+   * The accent. Navy is the TEXT colour across the suite and teal is the action
+   * and evidence colour; C1 previously used navy for both, which is why it had
+   * no accent at all.
+   */
+  --accent: var(--brand-teal);
+
+  /* §8 flags: attention about the result, not an error. Amber. */
+  --flag: var(--brand-amber);
+  --flag-ground: var(--attention-wash);
+
+  /* §7 rejections: a refusal to compute. */
+  --reject: var(--brand-error);
+  --reject-ground: var(--error-wash);
+
+  /*
+   * C1-ST-03's retained marker. PROPOSED, and the one token with no counterpart
+   * in the reference: it was `#3d5a2e`, a green belonging to no scale.
+   *
+   * It is not a finding about the number, so amber and red are both wrong: it
+   * is a prompt to the user to confirm a value carried across a direction
+   * change. Teal is the suite's action colour, and "confirm this" is an action,
+   * so it is set on the teal pair. Distinct from amber flags and red
+   * rejections, and invents nothing. Flagged for a decision rather than settled
+   * here.
+   */
+  --retained: var(--brand-teal);
+  --retained-ground: var(--brand-teal-pale);
+
+  /* Chip radius, derived rather than invented: the suite has two radii only. */
+  --radius-chip: calc(var(--radius-sm) / 2);
 }
 
 * { box-sizing: border-box; }
@@ -26,7 +60,7 @@ body {
   margin: 0;
   background: var(--ground);
   color: var(--ink);
-  font: 15px/1.5 var(--font);
+  font: 14px/1.55 var(--font);
   -webkit-text-size-adjust: 100%;
 }
 
@@ -45,22 +79,39 @@ body {
 
 .wrap { max-width: 1120px; margin: 0 auto; padding: 20px 24px 64px; }
 
+/*
+ * The shared masthead. Treatment is the reference tool's, measured from the
+ * deployed page: lockup and tool name at left, suite label at right.
+ */
 header.masthead {
   display: flex;
-  align-items: baseline;
-  gap: 12px;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 32px;
   flex-wrap: wrap;
-  margin-bottom: 14px;
+  padding: 20px 0 18px;
+  border-bottom: 1px solid var(--rule);
+  margin-bottom: 18px;
 }
-header.masthead h1 { font-size: 20px; margin: 0; letter-spacing: -0.01em; }
-header.masthead .tag {
-  font: 11px/1 var(--mono);
-  color: var(--ink-soft);
-  border: 1px solid var(--rule);
-  border-radius: 3px;
-  padding: 4px 6px;
+/* The two children stay on one row; without this the left column takes its
+   max-content width, wraps the suite label onto a second row, and the masthead
+   costs 230px instead of 150. */
+header.masthead > div:first-child { flex: 1 1 auto; min-width: 0; }
+header.masthead > .suite { flex: 0 0 auto; }
+header.masthead .lockup { display: inline-flex; align-items: center; gap: 9px; }
+header.masthead .wordmark { font-size: 19px; font-weight: 700; letter-spacing: -0.285px; }
+header.masthead h1 { font-size: 25px; font-weight: 700; letter-spacing: -0.275px; margin: 6px 0 0; }
+header.masthead p { margin: 2px 0 0; color: var(--text-secondary); font-size: 14px; }
+header.masthead .suite { text-align: right; display: grid; gap: 3px; justify-items: end; }
+.eyebrow.suite-mark {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 1.54px;
+  text-transform: uppercase;
+  color: var(--text-secondary);
 }
-header.masthead p { margin: 0; color: var(--ink-soft); font-size: 13px; flex-basis: 100%; }
+/* C1's own addition; the reference has no equivalent, so it is caption text. */
+header.masthead .suite-meta { font: 11px/1.3 var(--mono); color: var(--text-caption); }
 
 /* The converter itself. C1-NF-03: this grid must fit one screen. */
 .converter {
@@ -74,7 +125,7 @@ header.masthead p { margin: 0; color: var(--ink-soft); font-size: 13px; flex-bas
 .panel {
   background: var(--surface);
   border: 1px solid var(--rule);
-  border-radius: 6px;
+  border-radius: var(--radius);
   padding: 14px 16px;
 }
 .panel > h2 {
@@ -108,9 +159,10 @@ fieldset.field { border: 0; margin: 0 0 11px; padding: 0; }
 
 input, select, button, textarea { font: inherit; color: inherit; }
 input[type='text'], select {
-  padding: 7px 8px;
-  border: 1px solid #b9b2a5;
-  border-radius: 4px;
+  font-size: 13px;
+  padding: 7px 9px;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
   background: var(--surface);
   width: 100%;
 }
@@ -121,7 +173,7 @@ input:focus-visible, select:focus-visible, button:focus-visible {
 }
 input.bad { border-color: var(--reject); background: var(--reject-ground); }
 
-.directions { display: flex; gap: 0; border: 1px solid #b9b2a5; border-radius: 4px; overflow: hidden; }
+.directions { display: flex; gap: 0; border: 1px solid var(--border-strong); border-radius: var(--radius-sm); overflow: hidden; }
 .directions button {
   flex: 1;
   padding: 8px 6px;
@@ -130,7 +182,7 @@ input.bad { border-color: var(--reject); background: var(--reject-ground); }
   cursor: pointer;
   font-size: 13px;
 }
-.directions button[aria-pressed='true'] { background: var(--accent); color: #fff; font-weight: 600; }
+.directions button[aria-pressed='true'] { background: var(--accent); color: var(--surface); font-weight: 600; }
 
 .basis-options { display: grid; gap: 5px; }
 .basis-options label {
@@ -143,13 +195,13 @@ input.bad { border-color: var(--reject); background: var(--reject-ground); }
   font-weight: 400;
   padding: 5px 7px;
   border: 1px solid var(--rule);
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   cursor: pointer;
   background: var(--surface);
 }
 .basis-options label:has(input:checked) {
   border-color: var(--accent);
-  background: #f2f6f9;
+  background: var(--band-fill);
   box-shadow: inset 0 0 0 1px var(--accent);
 }
 .basis-options input { margin: 2px 0 0; }
@@ -159,8 +211,8 @@ input.bad { border-color: var(--reject); background: var(--reject-ground); }
   font: 11px/1 var(--mono);
   color: var(--retained);
   background: var(--retained-ground);
-  border: 1px solid #c3d3b8;
-  border-radius: 3px;
+  border: 1px solid var(--brand-teal-pale);
+  border-radius: var(--radius-chip);
   padding: 3px 5px;
   margin-left: 6px;
   vertical-align: middle;
@@ -178,52 +230,77 @@ input.bad { border-color: var(--reject); background: var(--reject-ground); }
 .result-value .unit { font-size: 17px; color: var(--ink-soft); margin-left: 4px; }
 .result-from { font-size: 13px; color: var(--ink-soft); margin: 2px 0 8px; font-family: var(--mono); }
 
-dl.derivation { margin: 0; font-size: 13px; }
-dl.derivation div { display: grid; grid-template-columns: 108px 1fr; gap: 8px; padding: 1px 0; border-top: 1px solid #efece5; line-height: 1.38; }
+dl.derivation { margin: 0; font-size: 12.5px; }
+dl.derivation div { display: grid; grid-template-columns: 104px 1fr; gap: 8px; padding: 1px 0; border-top: 1px solid var(--grid); line-height: 1.3; }
 dl.derivation dt { color: var(--ink-soft); }
 dl.derivation dd { margin: 0; }
+/*
+ * The unit handling, under the relation it belongs to rather than inside it.
+ * C1-CV-03 wants the relation checkable, so the physical statement is the
+ * readable line and the units are the note beneath it.
+ */
+dl.derivation dd .sub { display: block; font-size: 11px; color: var(--ink-soft); line-height: 1.25; }
+ul.assumptions { margin: 0; padding-left: 14px; line-height: 1.28; }
 
 .flag, .rejection {
-  border-radius: 4px;
-  padding: 6px 9px;
-  margin-top: 5px;
+  border-radius: var(--radius-sm);
+  padding: 5px 9px;
+  margin-top: 4px;
   font-size: 12.5px;
-  line-height: 1.4;
+  line-height: 1.35;
 }
 .flag { background: var(--flag-ground); border-left: 3px solid var(--flag); }
 .rejection { background: var(--reject-ground); border-left: 3px solid var(--reject); }
 .flag code, .rejection code {
   font: 11px/1 var(--mono);
-  background: rgba(0, 0, 0, 0.06);
+  background: var(--surface-inset);
   padding: 2px 4px;
-  border-radius: 2px;
+  border-radius: var(--radius-chip);
   margin-right: 6px;
 }
 .no-flags {
   font-size: 13px;
   color: var(--ink-soft);
   margin-top: 8px;
-  border-left: 3px solid #cfd8cb;
+  border-left: 3px solid var(--brand-teal-pale);
   padding: 6px 10px;
-  background: #f5f8f3;
-  border-radius: 4px;
+  background: var(--surface-sunken);
+  border-radius: var(--radius-sm);
 }
 
-.statements { font-size: 11.5px; color: var(--ink-soft); margin-top: 8px; line-height: 1.35; }
+.statements { font-size: 11.5px; color: var(--ink-soft); margin-top: 7px; line-height: 1.3; }
 .statements p { margin: 3px 0; }
 
+/* Both copy buttons on one row, so the second costs no vertical space. C1-NF-03. */
+.actions { display: flex; flex-wrap: wrap; gap: 8px; }
+
 button.copy {
-  margin-top: 8px;
-  padding: 7px 12px;
-  border: 1px solid #b9b2a5;
-  border-radius: 4px;
-  background: var(--ground);
+  margin-top: 7px;
+  padding: 6px 11px;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
   cursor: pointer;
   font-size: 13px;
 }
-button.copy:hover { background: #efece5; }
+button.copy:hover { background: var(--surface-sunken); }
 
-.awaiting { color: var(--ink-soft); font-size: 14px; padding: 18px 0; }
+.awaiting { color: var(--ink-soft); font-size: 13px; padding: 18px 0; }
+
+/* C1-OUT-03 behind ?record. Outside the converter, so C1-NF-03 is untouched. */
+.panel.record { margin-top: 20px; }
+pre.record-json {
+  margin: 0;
+  padding: 10px 12px;
+  background: var(--surface-sunken);
+  border: 1px solid var(--rule);
+  border-radius: var(--radius-sm);
+  font: 11.5px/1.45 var(--mono);
+  color: var(--ink);
+  max-height: 420px;
+  overflow: auto;
+  white-space: pre;
+}
 
 /* Disclosure, below the converter. */
 .disclosure { margin-top: 28px; display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
@@ -234,11 +311,21 @@ button.copy:hover { background: #efece5; }
 .disclosure li { margin-bottom: 6px; }
 
 table.register { width: 100%; border-collapse: collapse; font-size: 12.5px; }
-table.register th, table.register td { text-align: left; padding: 5px 6px; border-bottom: 1px solid #efece5; vertical-align: top; }
+table.register th, table.register td { text-align: left; padding: 5px 6px; border-bottom: 1px solid var(--grid); vertical-align: top; }
 table.register th { color: var(--ink-soft); font-weight: 600; }
 table.register td.val { font-family: var(--mono); white-space: nowrap; }
-.basis-derived { color: var(--retained); font-weight: 600; }
+/* Derived is the evidence claim, so it takes the suite's evidence colour. */
+.basis-derived { color: var(--brand-teal); font-weight: 600; }
 .basis-inspection { color: var(--flag); }
 
-footer.site { margin-top: 28px; padding-top: 14px; border-top: 1px solid var(--rule); font-size: 12px; color: var(--ink-soft); }
+/* The shared footer. Structure and type are the reference tool's. */
+footer.site {
+  margin-top: 32px;
+  padding-top: 20px;
+  border-top: 1px solid var(--rule);
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+footer.site p { margin: 0 0 8px; max-width: 78ch; }
 footer.site a { color: var(--accent); }
+footer.site code { font: 12px var(--mono); background: var(--surface-inset); padding: 1px 4px; border-radius: var(--radius-chip); }
