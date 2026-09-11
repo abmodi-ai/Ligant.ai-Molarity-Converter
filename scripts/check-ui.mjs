@@ -279,6 +279,106 @@ if (obj) {
 }
 
 // ---------------------------------------------------------------------------
+// C1-OUT-03 rendered into the page, so the record can be verified without a
+// clipboard. Three review passes ratified it on rendered output alone.
+// ---------------------------------------------------------------------------
+
+// Default rendering is untouched.
+await page.goto(origin, { waitUntil: 'networkidle' })
+await fillEverything()
+check((await page.locator('pre.record-json').count()) === 0, 'the record panel renders without ?record')
+
+await page.goto(`${origin}?record`, { waitUntil: 'networkidle' })
+check(
+  (await page.locator('pre.record-json').count()) === 0,
+  'the record panel renders before there is a result to render',
+)
+await fillEverything()
+await page.waitForTimeout(200)
+check((await page.locator('pre.record-json').count()) === 1, '?record did not render the object')
+
+const rendered = (await page.textContent('pre.record-json')) ?? ''
+let renderedObj = null
+try {
+  renderedObj = JSON.parse(rendered)
+} catch {
+  check(false, 'the rendered record is not valid JSON')
+}
+if (renderedObj) {
+  check(renderedObj.schema?.name === 'ligant-benchtools-c1-conversion', 'the rendered record is not the C1 object')
+  check(typeof renderedObj.quantities?.molarConcentration?.underflowed === 'boolean', 'the rendered record is missing underflow state')
+}
+
+/*
+ * The same object, not a second serialisation path. A divergence between what
+ * is shown and what is copied would be invisible, and showing a different
+ * object to the person verifying the record is worse than showing none.
+ */
+const copied = await page.evaluate(async () => {
+  const btn = [...document.querySelectorAll('button.copy')].find((b) => b.textContent.includes('JSON'))
+  btn.click()
+  await new Promise((r) => setTimeout(r, 150))
+  return navigator.clipboard.readText()
+})
+check(rendered === copied, 'the rendered record and the copied record are not character-identical')
+
+// C1-ST-02. The parameter is read, not persisted, and populates no input.
+const afterReload = await page.evaluate(() => ({
+  entered: document.querySelector('#entered').value,
+  mw: document.querySelector('#mw').value,
+  prov: document.querySelector('#prov').value,
+  enteredUnit: document.querySelector('#enteredunit').value,
+}))
+check(
+  afterReload.entered !== '' && afterReload.mw !== '',
+  'sanity: the form should still hold what was typed in this session',
+)
+await page.goto(`${origin}?record`, { waitUntil: 'networkidle' })
+const fresh = await page.evaluate(() => ({
+  entered: document.querySelector('#entered').value,
+  mw: document.querySelector('#mw').value,
+  prov: document.querySelector('#prov').value,
+  enteredUnit: document.querySelector('#enteredunit').value,
+}))
+check(
+  Object.values(fresh).every((v) => v === ''),
+  `?record repopulated an input across a reload: ${JSON.stringify(fresh)}`,
+)
+
+// ---------------------------------------------------------------------------
+// C1-FL-01 conditioned on the mass basis. NADIRA's ruling, built at round 5.
+// ---------------------------------------------------------------------------
+
+await page.goto(origin, { waitUntil: 'networkidle' })
+await page.fill('#entered', '1')
+await page.selectOption('#enteredunit', 'mg/mL')
+await page.fill('#mw', '1210')
+await page.selectOption('#mwunit', 'kDa')
+await page.selectOption('#prov', 'certificate-of-analysis')
+await page.check('input[name="massBasis"][value="conjugate"]')
+await page.waitForTimeout(250)
+const conjugateFlags = await page.evaluate(() =>
+  [...document.querySelectorAll('.flag code')].map((c) => c.textContent.trim()),
+)
+check(
+  !conjugateFlags.includes('C1-FL-01'),
+  `IgM-PE at 1210 kDa declared as a conjugate still raises C1-FL-01: ${conjugateFlags.join(', ')}`,
+)
+check(conjugateFlags.includes('C1-FL-08'), 'the conjugate declaration raised no C1-FL-08')
+
+// The same weight declared assembled must still flag, or the bound was raised
+// rather than conditioned and it has lost its detection value.
+await page.check('input[name="massBasis"][value="assembled"]')
+await page.waitForTimeout(250)
+const assembledFlags = await page.evaluate(() =>
+  [...document.querySelectorAll('.flag code')].map((c) => c.textContent.trim()),
+)
+check(
+  assembledFlags.includes('C1-FL-01'),
+  'the same 1210 kDa weight declared as assembled does not flag, so the ceiling was raised for everything',
+)
+
+// ---------------------------------------------------------------------------
 // C1-FL-10: zero is the absence of solute, not a low concentration.
 // ---------------------------------------------------------------------------
 
@@ -471,5 +571,7 @@ console.log('  C1-NF-01: the footer claims only what has been established')
 console.log('  §0 ratified: half-to-even live, 9a visible, threshold caveat scoped')
 console.log('  C1-FL-09: retention reaches the result, the derivation and the record')
 console.log('  C1-FL-10: zero is flagged as empty, not as implausibly low')
+console.log('  C1-OUT-03: the record renders behind ?record, identical to the copy')
+console.log('  C1-FL-01: conditioned on the mass basis, and still fires when assembled')
 console.log('  Branding: suite tokens, masthead, suite label, mark, title tag')
 console.log('\ncheck-ui passed.')

@@ -96,6 +96,7 @@ export const THRESHOLD_EVALUATION_STATEMENT =
 export type ThresholdId =
   | 'mw-lower'
   | 'mw-upper'
+  | 'mw-upper-conjugate'
   | 'mass-upper'
   | 'molar-lower'
   | 'representability'
@@ -143,7 +144,16 @@ export const CONSTANTS_REGISTER: readonly Threshold[] = [
     // this bound ordinary, and the constant and the declaration were changed in
     // the same document without either being checked against the other.
     status:
-      'Uncharacterised: open item 2, and KNOWN TO MISFIRE. IgM–PE at 1210 kDa is an ordinary reagent and is flagged as outside the usual range. Adding the conjugate mass basis made masses above this bound ordinary; the bound was not revisited. Under review: the candidate resolutions are a higher figure or a bound conditioned on the mass-basis declaration.',
+      'Uncharacterised: open item 2. APPLIES WHEN THE MASS BASIS IS NOT A CONJUGATE; a conjugate is measured against its own row below. It misfired on IgM–PE at 1210 kDa until 10 September 2026, because adding the conjugate declaration at v0.4 made masses above this bound ordinary and the bound was not revisited. Resolved by conditioning it on the declaration rather than by raising it, so the coupling is in the code rather than in someone\'s memory.',
+  },
+  {
+    boundaryCoverage: true,
+    id: 'mw-upper-conjugate',
+    label: 'Upper MW plausibility bound, conjugate mass basis',
+    value: '2000 kDa',
+    basis: 'inspection',
+    status:
+      'Uncharacterised, and THE FIGURE IS THE DEVELOPER\'S PENDING NADIRA\'S. The conditional form is hers: a conjugate legitimately carries a higher ceiling than the protein inside it, so the bound is conditioned on the mass-basis declaration rather than raised for everything. She did not give a number, and this one is inspection-chosen on the reasoning that IgM is about 970 kDa and R-phycoerythrin about 240 kDa, so a conjugate can exceed 1200 kDa with one label and more with several, while a 1000-fold unit error on any plausible weight lands two orders above this. It exists so the ruling is implemented rather than waiting on a figure; replace it when she gives one.',
   },
   { boundaryCoverage: true, id: 'mass-upper', label: 'Upper mass concentration bound', value: '250 mg/mL', basis: 'inspection', status: 'Uncharacterised: open item 3' },
   { boundaryCoverage: true, id: 'molar-lower', label: 'Lower molar concentration bound', value: '1 pM', basis: 'inspection', status: 'Uncharacterised: open item 3' },
@@ -201,7 +211,8 @@ export const BOUNDARY_THRESHOLDS: readonly ThresholdId[] = CONSTANTS_REGISTER.fi
 
 /** The threshold values themselves, in base units, written once. */
 export const MW_LOWER_G_PER_MOL = 1_000        // 1 kDa
-export const MW_UPPER_G_PER_MOL = 1_000_000    // 1000 kDa
+export const MW_UPPER_G_PER_MOL = 1_000_000            // 1000 kDa
+export const MW_UPPER_CONJUGATE_G_PER_MOL = 2_000_000 // 2000 kDa, conjugate only
 export const MASS_UPPER_G_PER_L = 250          // 250 mg/mL
 export const MOLAR_LOWER_MOL_PER_L = 1e-12     // 1 pM
 
@@ -236,14 +247,34 @@ export function raiseFlags(input: FlagInput): Flag[] {
   const massGPerL = input.massValue * MASS_TO_G_PER_L[input.massUnit]
   const molarMolPerL = input.molarValue * MOLAR_TO_MOL_PER_L[input.molarUnit]
 
-  // C1-FL-01: MW < 1 kDa or MW > 1000 kDa.
-  if (mwGPerMol < MW_LOWER_G_PER_MOL || mwGPerMol > MW_UPPER_G_PER_MOL) {
+  /*
+   * C1-FL-01. The upper bound is CONDITIONED ON THE MASS BASIS, per NADIRA's
+   * ruling, rather than raised for everything.
+   *
+   * Adding the conjugate declaration at v0.4 made masses above 1000 kDa
+   * ordinary, and the bound was not revisited: IgM-PE at 1210 kDa is a routine
+   * flow reagent and was being told it is outside the usual range for a
+   * biologic. Raising the single figure would have replaced one
+   * inspection-chosen constant with another and cost most of the bound's
+   * detection value, since unconjugated IgM is already near 970 kDa. Making the
+   * declaration decide the ceiling puts the coupling in the code rather than in
+   * someone's memory, which is what the two were missing from each other.
+   *
+   * The lower bound is not conditioned. A conjugate cannot be lighter than the
+   * protein it is attached to, so nothing about the declaration makes a sub-kDa
+   * weight more plausible.
+   */
+  const isConjugate = input.massBasis === 'conjugate'
+  const mwUpper = isConjugate ? MW_UPPER_CONJUGATE_G_PER_MOL : MW_UPPER_G_PER_MOL
+
+  if (mwGPerMol < MW_LOWER_G_PER_MOL || mwGPerMol > mwUpper) {
     flags.push({
       code: 'C1-FL-01',
       kind: 'threshold',
       evaluatedOn: 'molecular weight',
-      message:
-        'Outside the usual range for a biologic; confirm the units and the value.',
+      message: isConjugate
+        ? 'Outside the usual range for a conjugate, even allowing for the label or payload; confirm the units and the value.'
+        : 'Outside the usual range for a biologic; confirm the units and the value. If the stated weight includes a label or payload, declare it as a conjugate.',
     })
   }
 
@@ -422,7 +453,7 @@ export const UNDETECTABLE_FAILURES: readonly string[] = [
   'A monomer mass quoted where the assembled mass was needed, or the reverse; C1-MW-07 compels the declaration but cannot verify it.',
   'A unit-magnitude transcription error where the entered weight still falls inside the plausible range. C1-FL-01 catches a 1000× error that lands outside 1–1000 kDa; it cannot catch one that lands inside, and it cannot distinguish a genuinely unusual protein from a typo.',
   'Any error in the input concentration itself.',
-  'A computed concentration too small to represent, which is reported as 0.00000 in the unit you chose. The tool marks it in the structured record, but a zero on screen for a non-zero solution is indistinguishable from an empty one by eye. Reporting the result in a smaller unit is usually enough: 1e-320 mg/mL of a 1000 kDa protein is zero in M and exact in pM.',
+  'That a result shown as 0.00000 is a real concentration too small to represent in the unit you chose, rather than an empty solution. The tool DOES detect this and records it, so what it cannot do is show you the value: the two cases are indistinguishable on screen by eye. Reporting the result in a smaller unit is usually enough. 1e-320 mg/mL of a 1000 kDa protein is zero in M and exact in pM.',
   'A conjugate mass declared as unconjugated, or the reverse; C1-MW-07 compels the declaration but cannot verify it, as above.',
 ] as const
 

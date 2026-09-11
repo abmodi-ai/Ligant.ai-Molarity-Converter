@@ -287,6 +287,21 @@ button.copy:hover { background: var(--surface-sunken); }
 
 .awaiting { color: var(--ink-soft); font-size: 13px; padding: 18px 0; }
 
+/* C1-OUT-03 behind ?record. Outside the converter, so C1-NF-03 is untouched. */
+.panel.record { margin-top: 20px; }
+pre.record-json {
+  margin: 0;
+  padding: 10px 12px;
+  background: var(--surface-sunken);
+  border: 1px solid var(--rule);
+  border-radius: var(--radius-sm);
+  font: 11.5px/1.45 var(--mono);
+  color: var(--ink);
+  max-height: 420px;
+  overflow: auto;
+  white-space: pre;
+}
+
 /* Disclosure, below the converter. */
 .disclosure { margin-top: 28px; display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
 @media (max-width: 900px) { .disclosure { grid-template-columns: 1fr; } }

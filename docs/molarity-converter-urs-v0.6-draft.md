@@ -52,6 +52,10 @@ already being acted on and were not written down.
 | 23 ✚ | **Acceptance 3** | **PROPOSED, NOT ADOPTED.** Narrowing what the reimplementation may vary moves coverage for structural error off acceptance 3, and acceptance 3 is what establishes gate item 2. That is a redistribution of what a gate proves, so it is open item 17 rather than a change made here |
 | 24 ✚ | **Verification** | A **third check** that is not an implementation: `reference/exact.py` derives every value in exact rationals and rounds once. `compare.py` establishes that two implementations agree; this is the only thing that establishes either is right |
 | 25 ✚ | **§4** | The C1-UN-06 promise of six significant figures is **not true in the subnormal range**, where most of the displayed digits are an artefact of the binary value. Disclosed, not corrected. C1-FX-16 |
+| 26 ✚ | **C1-FL-01** | **Conditioned on the mass-basis declaration**, per NADIRA's ruling: 1000 kDa for a protein, 2000 kDa for a conjugate. The figure for the conjugate ceiling is the developer's pending hers |
+| 27 ✚ | **§7** | Unparseable input gets its own codes, **C1-HI-03** and **C1-HI-04**. A machine reading C1-OUT-03 could not tell a negative quantity from a string that is not a quantity |
+| 28 ✚ | **§9 item 6** | Reworded. The tool **does** detect underflow; what it cannot do is show the value |
+| 29 ✚ | **C1-OUT-03** | The object renders into the page behind `?record`, from the same serialiser the copy button uses, so the record can be verified without clipboard access |
 | 22 ✚ | **§11** | **Representability** is a register row and a C1-FX-04 threshold. It changes the output, so C1-CN-01 covers it, even though it is not a §8 flag condition |
 
 **On the acceptance numbering.** Still not reflowed, and still offered. v0.5 raised this and it
@@ -328,6 +332,20 @@ physical impossibility is caught wherever it arises.
 |---|---|---|
 | C1-HI-01 | `MW ≤ 0` | The molecular weight, and that mass per mole cannot be zero or negative |
 | C1-HI-02 | `concentration < 0` | Which concentration, and that a concentration cannot be negative |
+| C1-HI-03 ✚ | The molecular weight does not parse | That the field did not read as a quantity, and how to enter it: the value alone, unit chosen beside it |
+| C1-HI-04 ✚ | The concentration does not parse | The same, naming which concentration |
+
+**✚ On C1-HI-03 and C1-HI-04, and why they may not belong in §7 at all.** `1,5` in a
+concentration field and `150 kDa` pasted into a weight field were rejected correctly and
+reused §7's codes, so a machine reading C1-OUT-03 could not tell *the user entered a negative
+number* from *the user entered something that is not a number*. Those call for different
+responses and now carry different codes.
+
+**The structural question is open item 19 and is not settled here.** §7's conditions are
+stated against the computed system, and an unparseable string never enters it: there is no
+quantity to test `< 0` against, because the parse failed before a quantity existed. So this
+may be a class sitting *before* validation rather than a pair of rows inside it. The codes are
+separated because that is needed either way.
 
 **Zero concentration is legal.** It converts to zero and creates no division. It shall not be
 rejected defensively.
@@ -349,7 +367,7 @@ output with a machine-readable reason code.
 
 | ID | Condition | Evaluated on | Flag states |
 |---|---|---|---|
-| C1-FL-01 | `MW < 1 kDa` or `MW > 1000 kDa` | The declared molecular weight | Outside the usual range for a biologic; confirm the units and the value |
+| C1-FL-01 ✎ | `MW < 1 kDa`, or `MW > 1000 kDa` where the mass basis is **not** a conjugate, or `MW > 2000 kDa` ↯ where it **is** | The declared molecular weight, **and the mass-basis declaration** | Outside the usual range, naming which range applied. The non-conjugate message points at the conjugate declaration as the likely fix |
 | C1-FL-02 | `mass concentration > 250 mg/mL` ↯ | The system's mass concentration, entered or computed | Above the range of typical high-concentration biologic formulations; confirm the units |
 | C1-FL-03 | `molar concentration < 1 pM` | The system's molar concentration, entered or computed | Below the range typical of biologic working solutions |
 | C1-FL-04 | MW source is "calculated from sequence" | The provenance declaration | Sequence-derived mass excludes glycosylation and other post-translational modification |
@@ -815,7 +833,7 @@ rather than an audit.
 | # | Item | Owner | Note |
 |---|---|---|---|
 | 1 | Confirm the ADC output format can express a single conversion with provenance and mass-basis fields. If not, escalate: do not extend locally | Developer + NADIRA | **Open.** Answered as *no format exists*; the escalation is unresolved. C1-OUT-04 and acceptance 4 held. C1-OUT-03 is no longer held with it |
-| 2 ✎ | Characterise or disclose the 1 kDa / 1000 kDa bounds | NADIRA | **Open, and escalated. The upper bound is WRONG, not merely uncharacterised.** IgM–PE at 1210 kDa is an ordinary flow reagent and is told it is outside the usual range for a biologic. Disclosure covers a threshold that is unmeasured; it does not cover one that misfires on a case the tool was extended to handle. **Moves before ship.** Two candidate resolutions in the note below |
+| 2 ✎ | Characterise or disclose the MW bounds, and **supply the conjugate ceiling** | NADIRA | **The conditional form is RULED AND BUILT** at round 5: 1000 kDa for a protein, 2000 kDa for a conjugate, so IgM-PE at 1210 kDa no longer misfires while the same weight declared assembled still flags. **The 2000 kDa figure is the developer's, not hers**, and is disclosed as such in the register. What remains open is that number and the 1 kDa lower bound. Previously: **the upper bound is WRONG, not merely uncharacterised.** IgM–PE at 1210 kDa is an ordinary flow reagent and is told it is outside the usual range for a biologic. Disclosure covers a threshold that is unmeasured; it does not cover one that misfires on a case the tool was extended to handle. **Moves before ship.** Two candidate resolutions in the note below |
 | 3 | Characterise or disclose the 250 mg/mL and 1 pM bounds, or remove | NADIRA | Open. Disclosed as uncharacterised |
 | 4 | Establish whether anyone weighs out protein before that scope is built anywhere | A. Modi | Open |
 | 5 | Decide C1's public URL slug | A. Modi | **Open, and the highest-leverage item.** It alone unblocks acceptance 14, C1-NF-01's verified claim, and C1-NF-05 |
@@ -830,6 +848,7 @@ rather than an audit.
 | 14 ✚ | Reflow the acceptance numbering into a clean sequence, or keep 9a | A. Modi | Raised at v0.5, unanswered. Cheaper now than later |
 | 15 ✚ | Define the supported display for C1-NF-03 and acceptance 20, smallest supported **window** and **zoom level** | A. Modi |
 | 17 ✚ | Rule on whether acceptance 3 may exclude conversion STRUCTURE from what the reimplementation varies. If it may, structural coverage rests on C1-FX-03b and C1-FX-14 rather than on the test, which changes what gate item 2 proves | NADIRA | Raised with the C1-FX-14 derivation attached, since whether the mitigation holds depends on it |
+| 19 ✚ | Rule whether unparseable input is a §7 condition at all, or a class before validation. §7 is written against the computed system and a string that does not parse never enters it | NADIRA | C1-HI-03 and C1-HI-04 exist either way |
 | 18 ✚ | Rule on the displayed precision of a subnormal result. C1-UN-06 promises six significant figures; at 1e-323 the double carries about one bit and five of the six displayed digits are representation. Disclosed by C1-FX-16, not corrected | NADIRA | Adjacent to open item 7 and probably the same ruling |
 | 16 ✚ | Rule on how an underflowed result is PRESENTED: a §8 flag beside the zero, or a §7 refusal to display. Detection and the record already exist either way | NADIRA || The requirement has governed a pass/fail test with no constant behind it since v0.1. Two figures have been used and both were viewport heights the verification invented. Nothing to build against until this is set |
 

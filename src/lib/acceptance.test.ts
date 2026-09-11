@@ -86,6 +86,43 @@ describe('Acceptance 8 / §7, rejection names the quantity and the physical reas
     })
   }
 
+  it('unparseable input is a different code from a physically impossible value', () => {
+    /*
+     * C1-OUT-03 makes the rejection code machine-readable, and a reader could
+     * not tell "the user entered a negative number" from "the user entered
+     * something that is not a number" while both reused a §7 code. Those call
+     * for different responses: one is a quantity the physics forbids, the other
+     * is not a quantity at all.
+     *
+     * Both are still refusals, and both still name the quantity and the reason.
+     */
+    const negativeMw = computeConversion({ ...BASE, mwValue: -150 })
+    const unreadableMw = computeConversion({ ...BASE, mwValue: Number('150 kDa') })
+    const negativeConc = computeConversion({ ...BASE, enteredValue: -1 })
+    const unreadableConc = computeConversion({ ...BASE, enteredValue: Number('1,5') })
+
+    for (const o of [negativeMw, unreadableMw, negativeConc, unreadableConc]) expect(o.ok).toBe(false)
+    if (negativeMw.ok || unreadableMw.ok || negativeConc.ok || unreadableConc.ok) return
+
+    expect(negativeMw.rejections.map((r) => r.code)).toEqual(['C1-HI-01'])
+    expect(unreadableMw.rejections.map((r) => r.code)).toEqual(['C1-HI-03'])
+    expect(negativeConc.rejections.map((r) => r.code)).toEqual(['C1-HI-02'])
+    expect(unreadableConc.rejections.map((r) => r.code)).toEqual(['C1-HI-04'])
+
+    // The four codes are distinct, which is the whole requirement.
+    const codes = [negativeMw, unreadableMw, negativeConc, unreadableConc].flatMap((o) =>
+      o.ok ? [] : o.rejections.map((r) => r.code),
+    )
+    expect(new Set(codes).size).toBe(4)
+
+    // And the unparseable messages tell the user what to do about it, rather
+    // than restating that the value is not a number.
+    for (const o of [unreadableMw, unreadableConc]) {
+      if (o.ok) continue
+      expect(o.rejections[0].message).toMatch(/choose the unit beside it/)
+    }
+  })
+
   it('zero concentration is legal and is not rejected defensively', () => {
     const outcome = computeConversion({ ...BASE, enteredValue: 0 })
     expect(outcome.ok).toBe(true)
@@ -215,6 +252,7 @@ describe('Acceptance 17 and 18, disclosure', () => {
       'round-trip-tolerance',
       'mw-lower',
       'mw-upper',
+      'mw-upper-conjugate',
       'mass-upper',
       'molar-lower',
       'representability',
@@ -243,7 +281,7 @@ describe('Acceptance 17 and 18, disclosure', () => {
       expect(row.value).toMatch(/ULP/)
       expect(row.status, `${id} records no observed figure`).toMatch(/observed|Observed/)
     }
-    expect(CONSTANTS_REGISTER.filter((t) => t.status.includes('Uncharacterised')).length).toBe(4)
+    expect(CONSTANTS_REGISTER.filter((t) => t.status.includes('Uncharacterised')).length).toBe(5)
   })
 
   it('the failure classes the tool cannot detect are enumerated', () => {

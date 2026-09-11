@@ -285,15 +285,37 @@ describe('C1-FX-04: boundaries in both conversion directions', () => {
     // Selected by metadata rather than by a hand-maintained list of ids: a list
     // is a second place to forget a fixture, and forgetting one there makes the
     // suite quieter rather than redder.
-    // Representability is excluded: it is not a plausibility bound, and all
-    // three of its sides raise the same two flags by construction, so "on the
-    // bound does not flag" is not a claim about it.
+    /*
+     * Asserted on the threshold's OWN flag, not on the flag set being empty.
+     *
+     * That distinction only became visible with the conditional bound. A
+     * conjugate sitting exactly on its 2000 kDa ceiling raises C1-FL-08,
+     * because the declaration that raises the ceiling is the declaration that
+     * raises the flag. "No flags at all" was never the property; it happened to
+     * hold while every boundary fixture was declared assembled, which is the
+     * fixture-distribution pattern reappearing in an assertion rather than in a
+     * set.
+     */
+    const OWN_FLAG: Partial<Record<ThresholdId, string>> = {
+      'mw-lower': 'C1-FL-01',
+      'mw-upper': 'C1-FL-01',
+      'mw-upper-conjugate': 'C1-FL-01',
+      'mass-upper': 'C1-FL-02',
+      'molar-lower': 'C1-FL-03',
+    }
+    // Representability is excluded: it is not a plausibility bound and has no
+    // flag of its own, so "on the bound does not flag" is not a claim about it.
     const onBound = covered.filter(
       (f) => f.boundary?.side === 'on' && f.boundary.threshold !== 'representability',
     )
-    expect(onBound.length, 'four §8 thresholds in two directions is eight on-the-bound cases').toBe(8)
+    expect(onBound.length, 'five §8 bounds in two directions is ten on-the-bound cases').toBe(10)
     for (const f of onBound) {
-      expect(run(f).flags, `${f.id} flagged while sitting exactly on its threshold`).toEqual([])
+      const own = OWN_FLAG[f.boundary!.threshold]!
+      expect(own, `${f.boundary!.threshold} has no flag mapped`).toBeTruthy()
+      expect(
+        run(f).flags.map((x) => x.code),
+        `${f.id} raised ${own} while sitting exactly on its threshold`,
+      ).not.toContain(own)
     }
   })
 

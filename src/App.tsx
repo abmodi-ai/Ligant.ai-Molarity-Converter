@@ -42,6 +42,26 @@ import { formatSigFigs } from './lib/format'
  * C1-UN-01 / C1-MW-03: the two INPUT units arrive unselected, on the same terms
  * as the provenance and mass-basis declarations. See `enteredUnit` below.
  */
+/**
+ * C1-OUT-03, made inspectable without a clipboard.
+ *
+ * The structured object has been ratified on rendered output alone for three
+ * review passes, because clipboard reads are blocked in the reviewer's
+ * environment. A record that can only be verified when one particular person is
+ * in the loop is not verified; it is vouched for. `?record` renders the same
+ * object into the page.
+ *
+ * READ, NOT PERSISTED, and the distinction matters for C1-ST-02. The parameter
+ * toggles a panel and touches no input: nothing is repopulated from the URL, so
+ * no value can arrive in a field without the user having typed it. The panel's
+ * own presence is the visible evidence of the only state the URL carries.
+ *
+ * Read once at module scope rather than per render, so it cannot become a
+ * reactive input to the computation.
+ */
+const SHOW_RECORD =
+  typeof window !== 'undefined' && new URLSearchParams(window.location.search).has('record')
+
 export function App() {
   const [direction, setDirection] = useState<Direction>('mass-to-molar')
   const [entered, setEntered] = useState('')
@@ -486,6 +506,28 @@ export function App() {
             )}
           </section>
         </main>
+
+        {/*
+          Below the converter, deliberately. C1-NF-03 and acceptance 20 measure
+          `main.converter`, so a panel outside it cannot move either, and the
+          default rendering with no parameter is byte-identical to before.
+
+          `toJson(result)` is THE SAME CALL the copy button makes. Not a second
+          serialisation path: a divergence between what is shown and what is
+          copied would be invisible and would defeat the point of showing it.
+          `check-ui.mjs` asserts the two are character-identical.
+        */}
+        {SHOW_RECORD && result && (
+          <section className="panel record" aria-labelledby="record-h">
+            <h2 id="record-h">Structured result</h2>
+            <p style={{ marginTop: 0 }}>
+              C1-OUT-03, rendered from the same computation and the same serialiser the copy
+              button uses. Shown because <code>?record</code> is in the address; nothing here is
+              stored, and no input is populated from the address.
+            </p>
+            <pre className="record-json">{toJson(result)}</pre>
+          </section>
+        )}
 
         <div className="disclosure">
           {/* §9 / C1-FC-01. Required on the tool's own page, visible to the user. */}

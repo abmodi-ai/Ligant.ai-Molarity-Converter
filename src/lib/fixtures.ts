@@ -378,10 +378,88 @@ const MW_BOUNDS: {
  * coverage, and the guard that was supposed to enforce it counted fixtures
  * instead of checking thresholds.
  */
-export const BOUNDARY_FIXTURES: readonly Fixture[] = MW_BOUNDS.flatMap((b) => [
-  boundary(`C1-FX-04${b.suffix}`, b, 'mass-to-molar'),
-  boundary(`C1-FX-04${b.suffix}-rev`, b, 'molar-to-mass'),
-])
+/**
+ * The conjugate branch of the upper bound, per NADIRA's conditional ruling.
+ *
+ * A conjugate is measured against 2000 kDa rather than 1000, so the same weight
+ * flags or does not depending on the declaration. C1-FL-08 fires throughout
+ * because the declaration that raises the ceiling is the one that raises the
+ * flag, which is why these cases cannot be folded into the group above.
+ */
+const MW_CONJUGATE_BOUNDS: typeof MW_BOUNDS = [
+  {
+    suffix: 'v', name: 'Conjugate MW just below 2000 kDa', mwValue: 1_999_999,
+    threshold: 'mw-upper-conjugate', side: 'below', flags: ['C1-FL-08'],
+    why: 'One g/mol inside the conjugate ceiling. Paired with 04x so a `>=` written for `>` is caught on this branch too.',
+  },
+  {
+    suffix: 'w', name: 'Conjugate MW exactly 2000 kDa', mwValue: 2_000_000,
+    threshold: 'mw-upper-conjugate', side: 'on', flags: ['C1-FL-08'],
+    why: 'The operator is `>`, so exactly on the conjugate ceiling does not flag.',
+  },
+  {
+    suffix: 'x', name: 'Conjugate MW just above 2000 kDa', mwValue: 2_000_001,
+    threshold: 'mw-upper-conjugate', side: 'above', flags: ['C1-FL-01', 'C1-FL-08'],
+    why: 'One g/mol outside. Both flags: the declaration that raises the ceiling is also the one that raises C1-FL-08.',
+  },
+]
+
+export const BOUNDARY_FIXTURES: readonly Fixture[] = [
+  ...MW_BOUNDS.flatMap((b) => [
+    boundary(`C1-FX-04${b.suffix}`, b, 'mass-to-molar'),
+    boundary(`C1-FX-04${b.suffix}-rev`, b, 'molar-to-mass'),
+  ]),
+  ...MW_CONJUGATE_BOUNDS.flatMap((b) => [
+    boundary(`C1-FX-04${b.suffix}`, b, 'mass-to-molar', 'conjugate'),
+    boundary(`C1-FX-04${b.suffix}-rev`, b, 'molar-to-mass', 'conjugate'),
+  ]),
+]
+
+/**
+ * The case the conditional bound exists for, kept as a named fixture rather
+ * than only as a boundary.
+ *
+ * IgM-PE: about 970 kDa of IgM and 240 kDa of R-phycoerythrin. It is a routine
+ * flow reagent and was told it is outside the usual range for a biologic, beside
+ * a correct conjugate flag, from v0.4 until 10 September 2026. Declared as
+ * assembled the same weight still flags, which is the point of conditioning the
+ * bound rather than raising it: the declaration is what makes 1210 kDa
+ * ordinary.
+ */
+export const CONDITIONAL_BOUND_FIXTURES: readonly Fixture[] = [
+  {
+    id: 'C1-FX-17',
+    name: 'IgM-PE at 1210 kDa, declared as a conjugate',
+    assumption:
+      'About 970 kDa of IgM and 240 kDa of R-phycoerythrin, which is the reagent the conditional bound was ruled for. Provenance is a certificate of analysis so C1-FL-08 is the only flag available, and the fixture fails if C1-FL-01 returns. Paired with C1-FX-18, which is the identical weight declared as assembled and must still flag: if both passed, the bound would have been raised rather than conditioned and the flag would have lost its detection value for every unconjugated protein.',
+    standard: 'C1-FL-08 raised, C1-FL-01 NOT raised',
+    request: {
+      direction: 'mass-to-molar',
+      enteredValue: 1,
+      mwValue: 1210,
+      provenance: 'certificate-of-analysis',
+      massBasis: 'conjugate',
+      units: { mass: 'mg/mL', molar: 'uM', mw: 'kDa' },
+    },
+    expect: { displayedMolar: '0.826446', flags: ['C1-FL-08'] },
+  },
+  {
+    id: 'C1-FX-18',
+    name: 'The same 1210 kDa weight declared as assembled',
+    assumption:
+      'The negative control for the conditional bound, and the reason the bound is conditioned rather than raised. The weight is identical to C1-FX-17; only the declaration differs, and an assembled protein at 1210 kDa is implausible and must still be flagged. This fixture is what fails if anyone resolves open item 2 by raising the single figure instead.',
+    standard: 'C1-FL-01 raised on the same weight C1-FX-17 does not flag',
+    request: {
+      direction: 'mass-to-molar',
+      enteredValue: 1,
+      mwValue: 1210,
+      provenance: 'certificate-of-analysis',
+      massBasis: 'assembled',
+      units: { mass: 'mg/mL', molar: 'uM', mw: 'kDa' },
+    },
+    expect: { displayedMolar: '0.826446', flags: ['C1-FL-01'] },
+  },
+]
 
 /**
  * A molecular-weight boundary case in one direction.
@@ -397,6 +475,7 @@ function boundary(
   id: string,
   b: (typeof MW_BOUNDS)[number],
   direction: 'mass-to-molar' | 'molar-to-mass',
+  massBasis: 'assembled' | 'conjugate' = 'assembled',
 ): Fixture {
   const entered = direction === 'mass-to-molar' ? '1 mg/mL' : '1 µM'
   return {
@@ -409,7 +488,8 @@ function boundary(
       direction,
       enteredValue: 1,
       mwValue: b.mwValue,
-      ...CLEAN,
+      provenance: 'certificate-of-analysis',
+      massBasis,
       units: { mass: 'mg/mL', molar: 'uM', mw: 'g/mol' },
     },
     expect: { flags: b.flags },
@@ -692,4 +772,5 @@ export const ALL_FIXTURES: readonly Fixture[] = [
   ...BOUNDARY_FIXTURES,
   ...CONCENTRATION_BOUNDARY_FIXTURES,
   ...REPRESENTABILITY_BOUNDARY_FIXTURES,
+  ...CONDITIONAL_BOUND_FIXTURES,
 ]

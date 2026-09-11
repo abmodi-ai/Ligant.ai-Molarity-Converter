@@ -54,7 +54,8 @@ MW_TO_G_PER_MOL = {"g/mol": 1.0, "kDa": 1000.0}
 
 # Section 11 constants register.
 MW_LOWER_G_PER_MOL = 1_000.0        # 1 kDa
-MW_UPPER_G_PER_MOL = 1_000_000.0    # 1000 kDa
+MW_UPPER_G_PER_MOL = 1_000_000.0    # 1000 kDa, non-conjugate
+MW_UPPER_CONJUGATE_G_PER_MOL = 2_000_000.0  # 2000 kDa, conjugate mass basis
 MASS_UPPER_G_PER_L = 250.0          # 250 mg/mL
 MOLAR_LOWER_MOL_PER_L = 1e-12       # 1 pM
 
@@ -130,9 +131,15 @@ def format_sig_figs(v, figs=DISPLAY_SIG_FIGS):
 def rejections(direction, entered_value, mw_value, units):
     """Section 7. Returns a list of rejection codes."""
     out = []
-    if not _finite(mw_value) or mw_value <= 0:
+    # Unparseable input is separated from the physical impossibility. A machine
+    # reading the codes must be able to tell "negative" from "not a quantity".
+    if not _finite(mw_value):
+        out.append("C1-HI-03")
+    elif mw_value <= 0:
         out.append("C1-HI-01")
-    if not _finite(entered_value) or entered_value < 0:
+    if not _finite(entered_value):
+        out.append("C1-HI-04")
+    elif entered_value < 0:
         out.append("C1-HI-02")
     return out
 
@@ -156,7 +163,12 @@ def flags(mw_value, units, provenance, mass_basis, mass_value, molar_value, reta
     mass_g_per_l = mass_value * MASS_TO_G_PER_L[units["mass"]]
     molar_mol_per_l = molar_value * MOLAR_TO_MOL_PER_L[units["molar"]]
 
-    if mw_g_per_mol < MW_LOWER_G_PER_MOL or mw_g_per_mol > MW_UPPER_G_PER_MOL:
+    # The upper bound is conditioned on the mass-basis declaration: a conjugate
+    # legitimately carries a higher ceiling than the protein inside it. The
+    # lower bound is not conditioned, since a conjugate cannot be lighter than
+    # what it is attached to.
+    mw_upper = MW_UPPER_CONJUGATE_G_PER_MOL if mass_basis == "conjugate" else MW_UPPER_G_PER_MOL
+    if mw_g_per_mol < MW_LOWER_G_PER_MOL or mw_g_per_mol > mw_upper:
         out.append("C1-FL-01")
     if mass_g_per_l > MASS_UPPER_G_PER_L:
         out.append("C1-FL-02")
