@@ -18,8 +18,9 @@
     "check:privacy": "node scripts/check-privacy.mjs",
     "check:network": "node scripts/check-network.mjs",
     "export:reference": "vite-node scripts/export-reference-set.ts",
-    "check:reimplementation": "npm run export:reference && python3 reference/compare.py",
-    "check:ui": "node scripts/check-ui.mjs"
+    "check:reimplementation": "npm run export:reference && python3 reference/compare.py && python3 reference/exact.py",
+    "check:ui": "node scripts/check-ui.mjs",
+    "check:exact": "python3 reference/exact.py"
   },
   "devDependencies": {
     "@types/node": "^26.4.1",

@@ -257,7 +257,7 @@ export const FIXTURES: readonly Fixture[] = [
     id: 'C1-FX-14',
     name: 'Subnormal input, output unit that holds the value',
     assumption:
-      'The same input as C1-FX-03b reported in pM rather than M. It returns 9.99988867e-315 and the round trip is exact, which is what establishes that the regime is not the problem. Round 3 reported that all five molar units underflow for this input; four of the five hold it, and this fixture is why that is now a measurement rather than a recollection.',
+      'The same input as C1-FX-03b reported in pM rather than M. The round trip is exact, which is what establishes that the regime is not the problem. Round 3 reported that all five molar units underflow for this input; four of the five hold it, and this fixture is why that is now a measurement rather than a recollection. EXPECTED VALUE DERIVED BY EXACT RATIONAL ARITHMETIC on the entered double and then rounded once to the nearest double, by reference/exact.py, and NOT by running either conversion path. The distinction is load-bearing precisely here: the folded and the stepwise paths disagree totally in this regime, so a value taken from either could not arbitrate between them and the fixture would record what was built rather than what is correct. It asserted only the flags until 10 September 2026, so the value it is named for was carried in prose and checked by nothing.',
     standard: 'C1-IV-01 holds here: the value is representable, so the bound applies',
     request: {
       direction: 'mass-to-molar',
@@ -266,7 +266,22 @@ export const FIXTURES: readonly Fixture[] = [
       ...CLEAN,
       units: { mass: 'mg/mL', molar: 'pM', mw: 'kDa' },
     },
-    expect: { flags: ['C1-FL-03'] },
+    expect: { displayedMolar: '9.99989e-315', flags: ['C1-FL-03'] },
+  },
+  {
+    id: 'C1-FX-16',
+    name: 'Subnormal where the displayed figures are representation, not measurement',
+    assumption:
+      'The same input as C1-FX-03b and C1-FX-14, reported in mM. The exact value is 9.99989e-324; the nearest double is 1e-323, two units of the smallest subnormal, carrying about one significant bit; six significant figures of that double read 9.88131e-324. Every step is correct and the displayed value is 1.2 per cent from the true quantity, which is enormous by this tool\'s standards and is representation rather than error. It is here because C1-UN-06 promises six significant figures and in this regime most of them are an artefact of the binary value. The exact value comes from reference/exact.py, which is also the only thing that could show the gap: neither conversion path can, because both hold the same double.',
+    standard: 'C1-UN-06 applied to the double. The gap to the exact value is disclosed, not corrected',
+    request: {
+      direction: 'mass-to-molar',
+      enteredValue: 1e-320,
+      mwValue: 1000,
+      ...CLEAN,
+      units: { mass: 'mg/mL', molar: 'mM', mw: 'kDa' },
+    },
+    expect: { displayedMolar: '9.88131e-324', flags: ['C1-FL-03'] },
   },
   {
     id: 'C1-FX-15',

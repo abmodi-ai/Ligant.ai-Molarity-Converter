@@ -49,7 +49,9 @@ already being acted on and were not written down.
 | 19 ✚ | **§10** | **C1-FX-03b and C1-FX-14** put both subnormal regimes in the fixture set and in the reference set |
 | 20 ✎ | **§6** | The 0.9% disagreement rate is stale and is corrected, **with its corpus named** |
 | 21 ✚ | **§9** | The failure-class list gains the underflowed-to-zero case. The register discloses it to a reviewer; **§9 is what a user reads**, and the two answer different questions |
-| 23 ✚ | **Acceptance 3** | Names what the reimplementation may and may not vary. Folding is specified, so both implementations folding is two authors reading one URS rather than contamination |
+| 23 ✚ | **Acceptance 3** | **PROPOSED, NOT ADOPTED.** Narrowing what the reimplementation may vary moves coverage for structural error off acceptance 3, and acceptance 3 is what establishes gate item 2. That is a redistribution of what a gate proves, so it is open item 17 rather than a change made here |
+| 24 ✚ | **Verification** | A **third check** that is not an implementation: `reference/exact.py` derives every value in exact rationals and rounds once. `compare.py` establishes that two implementations agree; this is the only thing that establishes either is right |
+| 25 ✚ | **§4** | The C1-UN-06 promise of six significant figures is **not true in the subnormal range**, where most of the displayed digits are an artefact of the binary value. Disclosed, not corrected. C1-FX-16 |
 | 22 ✚ | **§11** | **Representability** is a register row and a C1-FX-04 threshold. It changes the output, so C1-CN-01 covers it, even though it is not a §8 flag condition |
 
 **On the acceptance numbering.** Still not reflowed, and still offered. v0.5 raised this and it
@@ -258,6 +260,13 @@ cannot quietly stop being load-bearing.
 **On C1-IV-03's standard.** Entering the same weight as a kDa decimal and as a g/mol integer
 produces molarities differing by 1 ULP. Agreement is therefore specified to displayed
 precision, not bit-exactly. C1-FX-02 tests against this standard and no other.
+
+**✎ A second figure with the same defect, found by measuring it.** `docs/invariance-confirmation.md`
+and `convert.ts` both say the two strategies sit "within 2.9 ULP" of exact. Measured over the
+20,051-case reference set by `reference/exact.py`, the worst distance is **3.000 ULP**. The
+conclusion is unchanged and the number is not, and neither source recorded the corpus its
+figure came from. Corrected to the measured value with the corpus named, on the same terms as
+§6 below.
 
 **✎ The rate: replaced, not reconciled.** v0.5 said "roughly 0.9%" and **recorded no corpus
 for it**. An earlier draft of this revision attributed the gap to the stepwise prototype. That
@@ -749,7 +758,8 @@ rather than an audit.
 
 1. A reference case verifies: IgG at 150 kDa, 1 mg/mL, returns **6.66667 µM** at six significant figures.
 2. A non-round molecular weight case verifies against hand calculation to displayed precision.
-3. ✎ An independent reimplementation in a second language agrees with the shipped implementation on the full reference set. **The reimplementation is independent in its derivation, its language and its arithmetic ordering within the bound; it is NOT free to choose a conversion structure the specification fixes.** C1-FX-14 makes that load-bearing: a stepwise reimplementation returns 0 where the shipped tool returns 9.99989e-315, and before the subnormal fixtures existed the two would have agreed everywhere that mattered. **Two separate standards:** a **correctness gate** on the **unrounded** value at **≤ 1 ULP** (C1-UN-07), and a **display check** that every value renders identically at six significant figures (C1-UN-06). Code review does not satisfy this test.
+3. ✎ An independent reimplementation in a second language agrees with the shipped implementation on the full reference set. **PROPOSED, open item 17:** that the reimplementation be independent in its derivation, its language and its arithmetic ordering within the bound, but NOT free to choose a conversion structure the specification fixes. C1-FX-14 is what forces the question: a stepwise reimplementation returns 0 where the shipped tool returns 9.99989e-315, and before the subnormal fixtures existed the two would have agreed everywhere that mattered. **The consequence is larger than the wording.** If structure is excluded, structure becomes the one thing this test cannot catch, and coverage for structural error moves to C1-FX-14 and C1-FX-03b. Acceptance 3 establishes gate item 2, so that is a redistribution of what a gate proves and is NADIRA's to rule on.
+3a. ✚ Every value in the reference set agrees with exact rational arithmetic, rounded once to the nearest double, to within the distance two roundings explain. Measured, not targeted: worst 3.000 ULP over 20,051 cases. **This is the only check in the set that is not an implementation**, and it is what distinguishes "the two agree" from "either is right". **Two separate standards:** a **correctness gate** on the **unrounded** value at **≤ 1 ULP** (C1-UN-07), and a **display check** that every value renders identically at six significant figures (C1-UN-06). Code review does not satisfy this test.
 4. Every calculation produces a structured object validating against the Antigen Density Calculator's format. **HELD: open item 1.**
 
 **Invariance**
@@ -819,6 +829,8 @@ rather than an audit.
 | 13 ✚ | Run the acceptance 19 observed-user session against the form as revised by C1-UN-01 | A. Modi | Never measured. Two added selections change the first-time path |
 | 14 ✚ | Reflow the acceptance numbering into a clean sequence, or keep 9a | A. Modi | Raised at v0.5, unanswered. Cheaper now than later |
 | 15 ✚ | Define the supported display for C1-NF-03 and acceptance 20, smallest supported **window** and **zoom level** | A. Modi |
+| 17 ✚ | Rule on whether acceptance 3 may exclude conversion STRUCTURE from what the reimplementation varies. If it may, structural coverage rests on C1-FX-03b and C1-FX-14 rather than on the test, which changes what gate item 2 proves | NADIRA | Raised with the C1-FX-14 derivation attached, since whether the mitigation holds depends on it |
+| 18 ✚ | Rule on the displayed precision of a subnormal result. C1-UN-06 promises six significant figures; at 1e-323 the double carries about one bit and five of the six displayed digits are representation. Disclosed by C1-FX-16, not corrected | NADIRA | Adjacent to open item 7 and probably the same ruling |
 | 16 ✚ | Rule on how an underflowed result is PRESENTED: a §8 flag beside the zero, or a §7 refusal to display. Detection and the record already exist either way | NADIRA || The requirement has governed a pass/fail test with no constant behind it since v0.1. Two figures have been used and both were viewport heights the verification invented. Nothing to build against until this is set |
 
 No open item blocks the build. Items 5 and 7 block claims the tool would otherwise be entitled
