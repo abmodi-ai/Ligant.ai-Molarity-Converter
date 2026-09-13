@@ -113,14 +113,15 @@ header.masthead .suite { text-align: right; display: grid; gap: 3px; justify-ite
 /* C1's own addition; the reference has no equivalent, so it is caption text. */
 header.masthead .suite-meta { font: 11px/1.3 var(--mono); color: var(--text-caption); }
 
-/* The converter itself. C1-NF-03: this grid must fit one screen. */
+/* The converter itself, inputs above result. C1-NF-03 is measured on this
+   block in check-network.mjs; stacking trades its width for height, so the
+   one-screen fit is reported per viewport as before rather than assumed. */
 .converter {
   display: grid;
-  grid-template-columns: minmax(340px, 5fr) minmax(360px, 6fr);
+  grid-template-columns: 1fr;
   gap: 16px;
   align-items: start;
 }
-@media (max-width: 900px) { .converter { grid-template-columns: 1fr; } }
 
 .panel {
   background: var(--surface);
@@ -303,20 +304,203 @@ pre.record-json {
 }
 
 /* Disclosure, below the converter. */
-.disclosure { margin-top: 28px; display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
-@media (max-width: 900px) { .disclosure { grid-template-columns: 1fr; } }
-.disclosure h2 { font-size: 14px; margin: 0 0 8px; }
-.disclosure p, .disclosure li { font-size: 13px; }
-.disclosure ol, .disclosure ul { margin: 0; padding-left: 20px; }
-.disclosure li { margin-bottom: 6px; }
+.disclosure {
+  margin-top: 28px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+.disclosure h2 {
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--ink-soft);
+  margin: 0 0 8px;
+  font-weight: 600;
+}
+.disclosure p {
+  font-size: 13px;
+  color: var(--text-secondary);
+  line-height: 1.45;
+}
 
-table.register { width: 100%; border-collapse: collapse; font-size: 12.5px; }
-table.register th, table.register td { text-align: left; padding: 5px 6px; border-bottom: 1px solid var(--grid); vertical-align: top; }
-table.register th { color: var(--ink-soft); font-weight: 600; }
-table.register td.val { font-family: var(--mono); white-space: nowrap; }
-/* Derived is the evidence claim, so it takes the suite's evidence colour. */
-.basis-derived { color: var(--brand-teal); font-weight: 600; }
-.basis-inspection { color: var(--flag); }
+.failure-list {
+  margin: 10px 0 0;
+  padding: 0;
+  list-style: none;
+  counter-reset: failure-counter;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px 24px;
+}
+@media (max-width: 768px) {
+  .failure-list {
+    grid-template-columns: 1fr;
+  }
+}
+.failure-list li {
+  counter-increment: failure-counter;
+  position: relative;
+  padding-left: 24px;
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--ink);
+  margin-bottom: 0;
+}
+.failure-list li::before {
+  content: counter(failure-counter) ".";
+  position: absolute;
+  left: 0;
+  top: 0;
+  font-weight: 600;
+  font-family: var(--mono);
+  color: var(--ink-soft);
+  font-size: 12px;
+}
+
+.register-panel {
+  overflow: hidden;
+}
+.register-header {
+  margin-bottom: 12px;
+}
+
+.register-table-wrap {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+table.register {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12.5px;
+}
+
+table.register th,
+table.register td {
+  text-align: left;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--grid);
+  vertical-align: top;
+}
+
+table.register thead tr {
+  border-bottom: 2px solid var(--border);
+}
+
+table.register thead th {
+  color: var(--ink-soft);
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 8px 12px;
+}
+
+table.register tbody tr:hover {
+  background: var(--surface-sunken);
+}
+
+.col-threshold {
+  width: 22%;
+  min-width: 170px;
+}
+.threshold-title {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink);
+  line-height: 1.35;
+}
+
+.col-val {
+  width: 20%;
+  min-width: 150px;
+}
+.val-code {
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--ink);
+  background: var(--surface-inset);
+  padding: 2px 6px;
+  border-radius: var(--radius-chip);
+  display: inline-block;
+  word-break: break-word;
+  white-space: normal;
+  line-height: 1.35;
+}
+
+.col-basis {
+  width: 11%;
+  min-width: 95px;
+}
+.basis-badge {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 2px 7px;
+  border-radius: var(--radius-chip);
+  line-height: 1.3;
+}
+.basis-derived {
+  color: var(--brand-teal);
+  background: var(--band-fill);
+  border: 1px solid var(--brand-teal-pale);
+}
+.basis-inspection {
+  color: var(--brand-amber);
+  background: var(--attention-wash);
+  border: 1px solid var(--brand-amber);
+}
+
+.col-status {
+  width: 47%;
+  min-width: 280px;
+}
+.status-text {
+  display: block;
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--text-secondary);
+}
+
+@media (max-width: 768px) {
+  table.register thead {
+    display: none;
+  }
+  table.register,
+  table.register tbody,
+  table.register tr,
+  table.register th,
+  table.register td {
+    display: block;
+    width: 100%;
+    box-sizing: border-box;
+  }
+  table.register tbody tr {
+    padding: 12px 10px;
+    border-bottom: 1px solid var(--border);
+  }
+  table.register th.col-threshold {
+    padding: 0 0 6px 0;
+    border: none;
+  }
+  table.register td.col-val {
+    padding: 0 0 6px 0;
+    border: none;
+  }
+  table.register td.col-basis {
+    padding: 0 0 8px 0;
+    border: none;
+  }
+  table.register td.col-status {
+    padding: 0;
+    border: none;
+  }
+}
 
 /* The shared footer. Structure and type are the reference tool's. */
 footer.site {
