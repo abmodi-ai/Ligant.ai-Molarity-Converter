@@ -5,12 +5,21 @@
  * here textually, so that neither carries its own copy of what counts as this
  * tool's own origin. Our own origin is not a third party; every other one is.
  *
- * The slug is open item 5 and becomes citable at preprint submission, so it is
- * written once and referenced, not repeated across metadata, the footer and the
- * checks.
+ * The slug was open item 5 and is DECIDED: `molarity-converter`, 11 September
+ * 2026. It becomes citable at preprint submission, so it is written once and
+ * referenced, not repeated across metadata, the footer and the checks.
+ *
+ * `TOOL_PATH` had held the intended value all along and was referenced by
+ * nothing, which is how a placeholder and a decision come to look identical in
+ * a file. `DEPLOYED_URL` below is composed from it, and `check-network.mjs`
+ * reads it rather than being handed an address, so acceptance test 14 is aimed
+ * by this file.
  */
 export const SITE_URL = 'https://benchtools.ligant.ai'
 export const TOOL_PATH = '/molarity-converter/'
+
+/** The one address acceptance test 14 is about. */
+export const DEPLOYED_URL = `${SITE_URL}${TOOL_PATH}`
 export const TOOL_NAME = 'Molarity Converter for Biologics'
 export const TOOL_ID = 'C1'
 export const URS_VERSION = '0.5'

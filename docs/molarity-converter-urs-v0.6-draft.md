@@ -690,6 +690,25 @@ serialised object over the whole fixture set, and not by inspection.
 | C1-NF-05 | Reachable and usable at its own address, independently of any other tool. | M |
 | C1-NF-06 | Engine version stated on output, changing whenever calculation behaviour changes. | M |
 
+**✎ A qualification the address forces, found 11 September 2026.** The deployed host
+interposes a bot challenge. A visitor who is challenged contacts `challenges.cloudflare.com`
+before any part of this tool exists, so at that address the unqualified sentence *no data is
+transmitted* is broader than the tool is in a position to make.
+
+**The tool's own claim is untouched.** C1-NF-01 is that no USER-ENTERED data leaves the
+browser, and the challenge precedes the existence of any user-entered data. The tool asks for
+nothing, which the static check and the local browser check both establish. What cannot be
+established from here is a claim about the address, which is exactly why acceptance 14 is
+written about the address and not about the build.
+
+**This is the beacon of `docs/correspondence.md` §I.1 in its other form.** That was a host
+inserting a request into a response; this is a host inserting an entire page. Neither is
+visible in the artefact. The difference is that this one was found by the instrument built
+because of the first, before shipping rather than by a reviewer afterwards.
+
+Whether the verified footer wording needs a qualifier, and how test 14 is to be run at a
+challenged address, are open item 20.
+
 **✎ On C1-NF-01.** The tool asserted "no network request of any kind" while acceptance test 14
 was unrun. That is an environment claim about the **served** page, and the two previous failures
 of this claim across the tool set were both hosts inserting a request into a response that
@@ -866,7 +885,7 @@ rather than an audit.
 
 **Environment and determinism**
 
-14. C1-NF-01 is verified in a real browser against the deployed address, with network monitoring initialised before page load, and re-verified after any deployment or CDN configuration change. Verification against the build artefact does not satisfy this test. **UNRUN: open item 5.**
+14. ✎ C1-NF-01 is verified in a real browser against the deployed address, with network monitoring initialised before page load, and re-verified after any deployment or CDN configuration change. Verification against the build artefact does not satisfy this test. **UNRUN, and the obstacle has changed.** The slug is decided; the address is behind a bot challenge, so an automated browser is served the challenge and never reaches the tool. **Open item 20.** The instrument reports this as CANNOT RUN HERE, a third outcome distinct from a pass and from a failure of the claim.
 15. Reloading and re-entering the same inputs reproduces the result exactly.
 16. Nothing persists across reload except where persistence is visible on screen.
 
@@ -901,7 +920,8 @@ rather than an audit.
 | 2 ✎ | Characterise or disclose the MW bounds, and **supply the conjugate ceiling** | NADIRA | **The conditional form is RULED AND BUILT** at round 5: 1000 kDa for a protein, 2000 kDa for a conjugate, so IgM-PE at 1210 kDa no longer misfires while the same weight declared assembled still flags. **The 2000 kDa figure is the developer's, not hers**, and is disclosed as such in the register. What remains open is that number and the 1 kDa lower bound. Previously: **the upper bound is WRONG, not merely uncharacterised.** IgM–PE at 1210 kDa is an ordinary flow reagent and is told it is outside the usual range for a biologic. Disclosure covers a threshold that is unmeasured; it does not cover one that misfires on a case the tool was extended to handle. **Moves before ship.** Two candidate resolutions in the note below |
 | 3 | Characterise or disclose the 250 mg/mL and 1 pM bounds, or remove | NADIRA | Open. Disclosed as uncharacterised |
 | 4 | Establish whether anyone weighs out protein before that scope is built anywhere | A. Modi | Open |
-| 5 | Decide C1's public URL slug | A. Modi | **Open, and the highest-leverage item.** It alone unblocks acceptance 14, C1-NF-01's verified claim, and C1-NF-05 |
+| ~~5~~ | ~~Decide C1's public URL slug~~ | ~~A. Modi~~ | **CLOSED 11 September 2026: `molarity-converter`.** The address is `https://benchtools.ligant.ai/molarity-converter/`, composed in `src/lib/site.ts` and read by the verification rather than typed into it. It did **not** unblock acceptance 14 on its own: see open item 20 |
+| 20 ✚ | The deployed host interposes a **bot challenge**, so acceptance 14 cannot run from automation, and a challenged visitor contacts a third party before the tool loads | A. Modi + NADIRA | Site-wide, not specific to this tool: the ADC root challenges identically. Two separable questions: how test 14 is to be run at such an address, and what the footer may claim there |
 | 6 | Confirm the C3 boundary covers all dilution including single-step, and carries the items in §16 | A. Modi | Open |
 | 7 | Decide displayed precision. 6 significant figures proposed | A. Modi + NADIRA | **Open.** Measured with seven orders of headroom; `docs/open-item-07-displayed-precision.md` is owed to NADIRA and a register line is not a review |
 | 8 | ~~Round-trip tolerance~~ | ~~NADIRA~~ | **Closed** at v0.3 |

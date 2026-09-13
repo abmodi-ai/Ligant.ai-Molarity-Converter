@@ -537,42 +537,52 @@ export function App() {
               The tool guarantees that the arithmetic is correct and that the molecular weight, its
               source and its mass basis are recorded. It cannot detect:
             </p>
-            <ol>
+            <ol className="failure-list">
               {UNDETECTABLE_FAILURES.map((f) => <li key={f}>{f}</li>)}
             </ol>
           </section>
 
           {/* §11 / C1-CN-01. Every threshold, its value, and its basis. */}
-          <section className="panel" aria-labelledby="register-h">
-            <h2 id="register-h">Constants register</h2>
-            <p style={{ marginTop: 0 }}>
-              Every threshold at which the tool changes behaviour. Thresholds chosen by inspection
-              are stated as such.
-            </p>
-            <table className="register">
-              <thead>
-                <tr>
-                  <th scope="col">Threshold</th>
-                  <th scope="col">Value</th>
-                  <th scope="col">Basis</th>
-                </tr>
-              </thead>
-              <tbody>
-                {CONSTANTS_REGISTER.map((t) => (
-                  <tr key={t.id}>
-                    <th scope="row" style={{ fontWeight: 400 }}>
-                      {t.label}
-                      <br />
-                      <span style={{ fontSize: 11.5, color: 'var(--ink-soft)' }}>{t.status}</span>
-                    </th>
-                    <td className="val">{t.value}</td>
-                    <td className={t.basis === 'derived' ? 'basis-derived' : 'basis-inspection'}>
-                      {t.basis}
-                    </td>
+          <section className="panel register-panel" aria-labelledby="register-h">
+            <div className="register-header">
+              <h2 id="register-h">Constants register</h2>
+              <p style={{ marginTop: 0 }}>
+                Every threshold at which the tool changes behaviour. Thresholds chosen by inspection
+                are stated as such.
+              </p>
+            </div>
+            <div className="register-table-wrap">
+              <table className="register">
+                <thead>
+                  <tr>
+                    <th scope="col" className="col-threshold">Threshold</th>
+                    <th scope="col" className="col-val">Value</th>
+                    <th scope="col" className="col-basis">Basis</th>
+                    <th scope="col" className="col-status">Status &amp; Rationale</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {CONSTANTS_REGISTER.map((t) => (
+                    <tr key={t.id}>
+                      <th scope="row" className="col-threshold">
+                        <span className="threshold-title">{t.label}</span>
+                      </th>
+                      <td className="col-val val">
+                        <code className="val-code">{t.value}</code>
+                      </td>
+                      <td className="col-basis">
+                        <span className={`basis-badge ${t.basis === 'derived' ? 'basis-derived' : 'basis-inspection'}`}>
+                          {t.basis}
+                        </span>
+                      </td>
+                      <td className="col-status">
+                        <span className="status-text">{t.status}</span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </section>
         </div>
 
