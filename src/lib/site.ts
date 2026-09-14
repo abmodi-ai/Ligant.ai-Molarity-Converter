@@ -44,18 +44,17 @@ export const APP_VERSION = 'v0.1.0'
 export const RELEASE_YEAR = 2026
 
 /**
- * The Zenodo DOI for this software, once a release is archived there.
+ * The Zenodo concept DOI for this software: the one that always resolves to
+ * the newest archived version, and the one a software citation should carry.
  *
- * `null` until then, on the same reasoning as `REPO_URL` in the reference
- * tool: a citation a reader cannot resolve is worse than no citation, and
- * printing a placeholder that merely looks like a DOI is worse than either,
- * because it can be copied into a reference list before anyone checks it.
- * The footer's citation renders without a DOI clause while this is null, and
- * check-citation.mjs asserts CITATION.cff does not state one either, so the
- * two cannot drift apart in either direction. Set this once Zenodo mints one,
- * and CITATION.cff picks it up in the same change.
+ * Minted 14 September 2026, when the `v0.1.0` GitHub release was archived.
+ * `10.5281/zenodo.22750472` is the version DOI for that specific release,
+ * recorded in `CITATION.cff`'s `identifiers` block rather than here, on the
+ * same distinction the reference tool's `site.ts` draws for its own two
+ * DOIs: a reader of software wants whatever version is current, so this is
+ * the concept DOI, not the version DOI.
  */
-export const CITATION_DOI: string | null = null
+export const CITATION_DOI: string | null = '10.5281/zenodo.22750471'
 
 /**
  * Whether acceptance test 14 has been run against the DEPLOYED address.
