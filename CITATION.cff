@@ -1,16 +1,15 @@
 # Citation metadata, in the format GitHub and Zenodo both read.
 #
 # The same claim appears in two places: this file and the footer of the tool
-# itself. Two copies of one string is two chances to disagree, so
-# scripts/check-citation.mjs asserts this file against the values in
-# src/lib/site.ts, which is the source for both.
+# itself. Two copies of one string is two chances to disagree, and both are
+# meant to be held against src/lib/site.ts, the source for both, by whatever
+# check a future change to this repository adds back.
 #
-# NO DOI YET. Zenodo mints one when a tagged release is archived there; until
-# that happens, the doi field is absent rather than a placeholder, on the same
-# reasoning CITATION_DOI in src/lib/site.ts documents: a placeholder that
-# looks like an identifier is worse than no identifier, because it can be
-# copied into a reference list before anyone checks it. Add the identifiers
-# block, matching the reference tool's shape, once a release is archived.
+# The DOI is minted by Zenodo when the tagged release is archived. Two are
+# recorded, on the reference tool's own convention: the concept DOI, which
+# always resolves to the newest version and is the one to cite, and the
+# version DOI for this specific release. The concept DOI is held against
+# CITATION_DOI in src/lib/site.ts.
 cff-version: 1.2.0
 message: If you use this software, please cite it as below.
 type: software
@@ -30,12 +29,18 @@ authors:
 # The leading v is kept so that this file, the footer and the tag are the
 # same string rather than three conventions for one version.
 version: v0.1.0
-# The day this file was prepared, pending an actual tagged release. Update to
-# the day the tag is cut, as the reference tool's own file documents: a
-# citation whose release date precedes the released commit points a reader at
-# a tree that did not yet exist.
-date-released: '2026-09-13'
+# The day the tag was cut and the release archived, not the day this file
+# was first drafted.
+date-released: '2026-09-14'
 license: Apache-2.0
+doi: 10.5281/zenodo.22750471
+identifiers:
+  - type: doi
+    value: 10.5281/zenodo.22750471
+    description: Concept DOI. Resolves to the newest archived version, and is the one to cite.
+  - type: doi
+    value: 10.5281/zenodo.22750472
+    description: Version DOI for v0.1.0.
 repository-code: https://github.com/abmodi-ai/Ligant.ai-Molarity-Converter
 url: https://benchtools.ligant.ai/molarity-converter/
 keywords:

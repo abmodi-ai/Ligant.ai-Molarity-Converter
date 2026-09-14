@@ -212,15 +212,15 @@ does not, and cannot, cover.
 ## Citation
 
 > Modi, A.B. (2026). Molarity Converter for Biologics (`v0.1.0`) [Computer
-> software]. Ligant AI Incorporated.
-> <https://benchtools.ligant.ai/molarity-converter/>
+> software]. Ligant AI Incorporated. benchtools.ligant.ai/molarity-converter/.
+> doi:10.5281/zenodo.22750471
 
-No DOI yet. This repository is not archived on Zenodo at the time of
-writing; the citation above is complete and correct without one, and a DOI
-will be added to it, to [`CITATION.cff`](CITATION.cff), and to the footer's
-copy of the same string, once a tagged release is archived there. The
-footer of the running tool carries this citation with a control that copies
-it.
+That is the concept DOI, which resolves to the newest release. Cite the
+version DOI, [10.5281/zenodo.22750472](https://doi.org/10.5281/zenodo.22750472),
+instead where the claim being made is true of `v0.1.0` in particular; both
+are listed on the [Zenodo record](https://zenodo.org/records/22750472) and
+in [`CITATION.cff`](CITATION.cff). The footer of the running tool carries
+the citation above with a control that copies it.
 
 ## Licence
 
