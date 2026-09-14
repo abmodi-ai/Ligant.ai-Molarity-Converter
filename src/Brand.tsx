@@ -11,7 +11,8 @@
  * three paragraphs are the reference's, not reinvented here.
  */
 
-import type { ReactNode } from 'react'
+import { useState, type ReactNode } from 'react'
+import { APP_VERSION, CITATION_DOI, DEPLOYED_URL, RELEASE_YEAR, REPO_URL } from './lib/site'
 
 /**
  * The Ligant mark. A hexagonal node figure, six vertices and a centre.
@@ -116,43 +117,127 @@ export type TransmissionEvidence =
   /** Not verified at this address. `outstanding` says what is missing, on the page. */
   | { verifiedAtThisAddress: false; outstanding: string }
 
+/**
+ * The citation, in three pieces, so what is shown and what is copied cannot
+ * differ. Matches the reference tool's SOFTWARE citation exactly; there is no
+ * paper behind this tool, so there is no preferred-citation half to add.
+ */
+const SOFTWARE_TITLE = 'Molarity Converter for Biologics'
+const SOFTWARE_LEAD = `Modi, A.B. (${RELEASE_YEAR}). `
+const SOFTWARE_TAIL =
+  ` (${APP_VERSION}) [Computer software]. Ligant AI Incorporated. ` +
+  `${DEPLOYED_URL.replace('https://', '')}` +
+  (CITATION_DOI ? ` doi:${CITATION_DOI}` : '')
+
+/**
+ * One reference, with a control that takes it in a single action.
+ *
+ * `copied` is set only once the write resolves, not on click: a claim this
+ * page makes about itself should be as accurate as every other one on it.
+ */
+function CitationRow({ lead, title, tail }: { lead: string; title: string; tail: string }) {
+  const [copied, setCopied] = useState(false)
+
+  async function copy() {
+    try {
+      await navigator.clipboard.writeText(lead + title + tail)
+      setCopied(true)
+      window.setTimeout(() => setCopied(false), 2000)
+    } catch {
+      // A browser may refuse clipboard access. The reference is on the page
+      // and selectable regardless, so silence is better than an error the
+      // reader cannot act on.
+    }
+  }
+
+  return (
+    <div className="footer-citation-row">
+      <p>
+        {lead}
+        <cite>{title}</cite>
+        {tail}
+      </p>
+      <button type="button" onClick={copy} aria-label="Copy the software citation" aria-live="polite">
+        {copied ? 'Copied' : 'Copy'}
+      </button>
+    </div>
+  )
+}
+
 export function SiteFooter({
-  repoUrl,
   transmission,
   children,
 }: {
-  repoUrl: string
   /** Required. There is deliberately no default, see TransmissionEvidence. */
   transmission: TransmissionEvidence
-  /** Tool-specific lines, after the shared three. */
+  /** Tool-specific lines, after the shared prose. */
   children?: ReactNode
 }) {
-  const repoLabel = repoUrl.replace(/^https?:\/\//, '')
+  const repoLabel = REPO_URL.replace(/^https?:\/\//, '')
   return (
-    <footer className="site">
-      <p>
-        Ligant Bench Tools are free and open source under Apache 2.0, for research and educational
-        use. They run entirely in your browser.{' '}
-        {transmission.verifiedAtThisAddress ? (
-          <>No data is transmitted, verified in a real browser at this address.</>
-        ) : (
-          <>
-            This build contains no network primitive and issues no request, verified statically and
-            in a real browser against the build. <strong>Not yet verified at this address:</strong>{' '}
-            {transmission.outstanding}
-          </>
-        )}
+    <footer className="site-footer">
+      <div className="footer-grid">
+        <div className="footer-prose">
+          <p>
+            Ligant Bench Tools are free and open source under Apache 2.0, for research and
+            educational use. They run entirely in your browser.{' '}
+            {transmission.verifiedAtThisAddress ? (
+              <>No data is transmitted, verified in a real browser at this address.</>
+            ) : (
+              <>
+                This build contains no network primitive and issues no request, verified
+                statically and in a real browser against the build.{' '}
+                <strong>Not yet verified at this address:</strong> {transmission.outstanding}
+              </>
+            )}
+          </p>
+          <p>
+            Every figure on this page comes from code you can read, download or run yourself, at{' '}
+            <a href={REPO_URL} target="_blank" rel="noopener noreferrer">
+              {repoLabel}
+              <span className="visually-hidden"> (opens in a new tab)</span>
+            </a>
+            . Clone it and <code>npm run dev</code> for a local copy.
+          </p>
+          <p>
+            These tools are standalone calculators. Ligant's enterprise platform adds reference
+            databases, connected agentic workflows, on-premise language models, and full GxP
+            validation. If your lab needs that, please email us{' '}
+            <a href="mailto:hello@ligant.ai">hello@ligant.ai</a>.
+          </p>
+          {children}
+        </div>
+
+        <address className="footer-address">
+          <span className="eyebrow">Ligant AI Incorporated</span>
+          3675 Market Street
+          <br />
+          Suite 200
+          <br />
+          Philadelphia PA 19104
+          <br />
+          <a href="mailto:hello@ligant.ai">hello@ligant.ai</a>
+        </address>
+      </div>
+
+      <div className="footer-citation">
+        <span className="eyebrow">How to cite</span>
+        <p className="footer-citation-note">Cite the software as below.</p>
+        <CitationRow lead={SOFTWARE_LEAD} title={SOFTWARE_TITLE} tail={SOFTWARE_TAIL} />
+      </div>
+
+      <p className="footer-licence">
+        Licensed under the Apache License, Version 2.0. You may obtain a copy of the License in
+        the{' '}
+        <a href="./LICENSE" target="_blank" rel="noopener">
+          <code>LICENSE</code>
+          <span className="visually-hidden"> (opens in a new tab)</span>
+        </a>{' '}
+        file served with this page and distributed with the source. Unless required by applicable
+        law or agreed to in writing, software distributed under the License is distributed on an
+        "AS IS" basis, without warranties or conditions of any kind, either express or implied.{' '}
+        <strong>Research use only. Not qualified for GxP decision-making.</strong>
       </p>
-      <p>
-        Every number on this page comes from code you can read, download or run yourself, at{' '}
-        <a href={repoUrl}>{repoLabel}</a>. Clone it and <code>npm run dev</code> for a local copy.
-      </p>
-      <p>
-        These tools are standalone calculators. Ligant's enterprise platform adds reference
-        databases, connected agentic workflows, on-premise language models, and full GxP validation.
-        If your lab needs that, please email us <a href="mailto:hello@ligant.ai">hello@ligant.ai</a>.
-      </p>
-      {children}
     </footer>
   )
 }

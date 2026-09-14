@@ -19,8 +19,8 @@ import { computeConversion, notebookLine } from './lib/compute'
 import { toJson } from './lib/serialise'
 import { CONSTANTS_REGISTER, UNDETECTABLE_FAILURES } from './lib/flags'
 import { confirmField, retainedOnDirectionChange, toRetainedFields, type RetainableField } from './lib/retention'
-import { NETWORK_CLAIM_VERIFIED, REPO_URL, TOOL_ID, TOOL_NAME, URS_VERSION } from './lib/site'
-import { SiteFooter, SiteHeader } from './Brand'
+import { APP_VERSION, NETWORK_CLAIM_VERIFIED, TOOL_ID, TOOL_NAME, URS_VERSION } from './lib/site'
+import { LigantMark, SiteFooter, SiteHeader } from './Brand'
 import { formatSigFigs } from './lib/format'
 
 /**
@@ -623,7 +623,6 @@ export function App() {
           set on the strength of a local run.
         */}
         <SiteFooter
-          repoUrl={REPO_URL}
           transmission={
             NETWORK_CLAIM_VERIFIED
               ? { verifiedAtThisAddress: true }
@@ -634,11 +633,13 @@ export function App() {
                 }
           }
         >
-          <p>
-            No account, and nothing is stored between visits. Research use: not qualified for GxP
-            decision-making.
-          </p>
+          <p>No account, and nothing is stored between visits.</p>
         </SiteFooter>
+
+        <div className="colophon">
+          <LigantMark size={16} />
+          <span>Ligant · {TOOL_NAME} {APP_VERSION}</span>
+        </div>
       </div>
     </>
   )

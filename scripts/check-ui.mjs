@@ -542,7 +542,7 @@ check(
 // C1-NF-01: the footer claims only what has been established.
 // ---------------------------------------------------------------------------
 
-const footer = (await page.textContent('footer.site')) ?? ''
+const footer = (await page.textContent('footer.site-footer')) ?? ''
 /*
  * The claim now lives in the SHARED footer component, which will not render one
  * without being told the evidence state. Both branches are asserted, so the
