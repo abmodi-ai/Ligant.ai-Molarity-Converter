@@ -131,71 +131,64 @@ The computation is a small, pure core with no framework in it.
 
 ## Reproducibility and determinism
 
-1. **Every reported number comes from one computation.** The structured
-   object and the on-screen result are two views of the same call, never two
-   separate calculations, so they cannot disagree with each other.
-2. **Verified against an independent second implementation.** A Python
-   reimplementation, written from the specification rather than ported from
-   the TypeScript, agrees with the shipped engine on all 40,118 unrounded
-   values across 20,059 cases at 0 ULP, and renders identically at six
-   significant figures.
-3. **Verified against exact arithmetic, not just against another
-   implementation.** A third check compares every shipped value to the
-   exact rational result, rounded once: the only check here that is not
-   itself an implementation, and what distinguishes "the two agree" from
-   "either is right". Worst observed distance: 3.0 ULP, inside the bound two
-   roundings explain.
-4. **Rounding is half-to-even** (the IEEE 754 default, and the default in
-   Python, R and Julia), asserted in the shipped path itself, not only in
-   fixtures.
-5. **Round-trip is a structural requirement.** Converting a value and
-   converting the result back returns the original to within 1 ULP, because
-   the unit factors are folded into a single divisor rather than applied as
-   a chain of operations. That folding is required for two independent
-   reasons, not one: an unfolded chain both rounds worse and underflows
-   sooner.
-6. **No AI or model output reaches a computed value.** The conversion is a
-   handful of pure functions over the values you enter.
-7. **215 tests, and about 4,000 lines of application TypeScript**, with no
-   runtime dependency beyond React.
+**Every reported number comes from one computation**, `computeConversion` in
+`src/lib/compute.ts`. The structured object and the on-screen result are two
+views of the same call, never two separate calculations, so they cannot
+disagree with each other.
+
+Two properties of the arithmetic are readable directly in the source, not
+just asserted here:
+
+- **Rounding is half-to-even** (`src/lib/format.ts`), the IEEE 754 default
+  and the default in Python, R and Julia.
+- **Round-trip is a structural requirement, not an incidental property**
+  (`src/lib/convert.ts`). Converting a value and converting the result back
+  returns the original to within 1 ULP, because the unit factors are folded
+  into a single divisor rather than applied as a chain of operations. An
+  unfolded chain both rounds worse and underflows sooner.
+
+No AI or model output reaches a computed value. The conversion is a handful
+of pure functions over the values you enter, with no runtime dependency
+beyond React.
+
+During development, every value was additionally checked against an
+independent Python reimplementation written from the specification, and
+against exact rational arithmetic rather than against another
+implementation, which is what distinguished "the two agree" from "either is
+right". That verification tooling is not part of this repository: this
+paragraph describes how the tool was built, not something reproducible from
+what is here.
 
 ## Privacy
 
 Nothing you enter is transmitted, and the page contacts no third party.
+`src/` contains no `fetch`, no `XMLHttpRequest`, and no other network
+primitive: a property you can confirm yourself by reading the source,
+rather than just trusting this sentence.
 
 - No analytics script, no error reporting, no telemetry.
 - Nothing persists between visits. There is no localStorage, no
   sessionStorage and no URL state that repopulates an input.
-- `npm run check:privacy` fails the build on any external origin in the
-  entry document or the bundle, and on any network primitive in the source.
-- `npm run check:network` serves the production build, drives a full session
-  in a real browser, and fails if a single request leaves the origin.
 
-**This is enforced, not promised, with one honest exception.** The tool's
-footer states only what has actually been verified: whether the deployed
-address itself (not just the build) has been driven by a real browser with
-network monitoring armed before the page loads, is a separate, gated claim
-that flips only once that run has actually passed. As of this writing it has
-not: the deployed host interposes a bot challenge that blocks an automated
-browser from reaching the page at all, so that specific check is currently
-unrunnable rather than run and clean. The footer says exactly that, rather
-than the stronger claim it cannot yet back up.
+**The footer states only what has actually been verified**, with one
+deliberately conditional claim. Whether the deployed address itself (not
+just the build) has been driven by a real browser with network monitoring
+armed before the page loads is gated on `NETWORK_CLAIM_VERIFIED` in
+`src/lib/site.ts`, which flips only once that specific run has passed. As of
+this writing it has not: the deployed host interposes a bot challenge that
+blocks an automated browser from reaching the page at all, so that check is
+currently unrunnable rather than run and clean. The footer says exactly
+that, rather than the stronger claim it cannot yet back up.
 
 ## Running it
 
 ```sh
 npm install
-npm run dev       # development server
-npm run verify    # citation check, types, tests, build, privacy, UI and network checks, reimplementation check
-npm run build     # static site to dist/
-npm run preview   # serves the build at a local address
+npm run dev         # development server
+npm run typecheck   # type-check only
+npm run build       # static site to dist/
+npm run preview     # serves the build at a local address
 ```
-
-`npm run verify` is the gate: typecheck, the citation-consistency check,
-unit tests, the production build, the static and runtime privacy checks, a
-full session driven in a real browser, and the cross-language plus
-exact-arithmetic reimplementation checks. A change that breaks any of these
-fails the build rather than reaching review.
 
 ## Contributing
 
@@ -227,8 +220,7 @@ writing; the citation above is complete and correct without one, and a DOI
 will be added to it, to [`CITATION.cff`](CITATION.cff), and to the footer's
 copy of the same string, once a tagged release is archived there. The
 footer of the running tool carries this citation with a control that copies
-it, and `scripts/check-citation.mjs` keeps this file, `CITATION.cff` and
-`package.json` from disagreeing about the version.
+it.
 
 ## Licence
 
