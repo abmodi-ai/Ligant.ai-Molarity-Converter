@@ -322,6 +322,48 @@ const copied = await page.evaluate(async () => {
 })
 check(rendered === copied, 'the rendered record and the copied record are not character-identical')
 
+// ---------------------------------------------------------------------------
+// The copy buttons must not say "Copied" for a write that did not succeed.
+//
+// Both buttons used to set the label unconditionally, in the same statement
+// that fired `writeText`, so a rejected write or a browser with no Clipboard
+// API said the same thing a successful one did. Every check above reads the
+// clipboard back rather than trusting the label, which is exactly what let
+// this pass unnoticed: nothing exercised the label against a write that
+// failed.
+// ---------------------------------------------------------------------------
+
+// Located by POSITION, not by label text: the label is the very thing under
+// test, and a `hasText` locator stops matching its own element the moment the
+// text it was found by changes to "Copied".
+const notebookBtn = page.locator('button.copy').nth(0)
+const jsonBtn = page.locator('button.copy').nth(1)
+
+await page.evaluate(() => {
+  // Denied permission, or any other rejected write.
+  Object.defineProperty(navigator, 'clipboard', {
+    value: { writeText: () => Promise.reject(new Error('denied')) },
+    configurable: true,
+  })
+})
+await notebookBtn.click()
+await page.waitForTimeout(150)
+check(
+  (await notebookBtn.textContent()) !== 'Copied',
+  'the notebook copy button says "Copied" after a rejected clipboard write',
+)
+
+await page.evaluate(() => {
+  // No Clipboard API at all: `writeText` is never reached.
+  Object.defineProperty(navigator, 'clipboard', { value: undefined, configurable: true })
+})
+await jsonBtn.click()
+await page.waitForTimeout(150)
+check(
+  (await jsonBtn.textContent()) !== 'Copied',
+  'the JSON copy button says "Copied" with no Clipboard API present',
+)
+
 // C1-ST-02. The parameter is read, not persisted, and populates no input.
 const afterReload = await page.evaluate(() => ({
   entered: document.querySelector('#entered').value,
@@ -376,6 +418,29 @@ const assembledFlags = await page.evaluate(() =>
 check(
   assembledFlags.includes('C1-FL-01'),
   'the same 1210 kDa weight declared as assembled does not flag, so the ceiling was raised for everything',
+)
+
+// ---------------------------------------------------------------------------
+// The mass-basis label, round 7: describes a part, not a chain count.
+//
+// "A monomer or single chain" invited a natively single-chain construct (a
+// VHH, a monomeric scFv) to be declared here, where "assembled" was already
+// correct. Checked against the rendered label rather than only the source
+// string, on the same reasoning as the branding checks below: the source can
+// say the right thing and the page can still show the old one.
+// ---------------------------------------------------------------------------
+
+const monomerOptionLabel = await page.evaluate(() => {
+  const input = document.querySelector('input[name="massBasis"][value="monomer"]')
+  return input?.closest('label')?.textContent ?? ''
+})
+check(
+  !/\bmonomer\b/i.test(monomerOptionLabel),
+  `the mass-basis option still says "monomer": "${monomerOptionLabel}"`,
+)
+check(
+  /subunit/.test(monomerOptionLabel),
+  `the mass-basis option does not describe a subunit: "${monomerOptionLabel}"`,
 )
 
 // ---------------------------------------------------------------------------
@@ -435,6 +500,14 @@ check(
   'the negative control raised a flag',
 )
 
+// C1-OUT-08, round 7: the clean panel states its own scope once. One render
+// site, conditional on flags.length === 0, so it must disappear the instant a
+// flag appears rather than becoming a second, permanent caveat.
+check(
+  (await page.locator('.no-flags-scope').count()) === 1,
+  'the clean panel does not state its own scope',
+)
+
 // The flag-versus-display sentence appears only when a THRESHOLD flag fires.
 // A declaration flag has no rounding between the input and the condition, so
 // the sentence would be noise on it.
@@ -447,6 +520,10 @@ await page.selectOption('#prov', 'not-recorded')
 await page.waitForTimeout(200)
 check((await page.locator('.flag').count()) === 1, 'the declaration flag did not render')
 check(!(await thresholdSentence()), 'the threshold caveat appeared on a declaration-only flag')
+check(
+  (await page.locator('.no-flags-scope').count()) === 0,
+  'the clean-panel scope line survived a flag being raised',
+)
 
 await page.fill('#mw', '0.5')
 await page.waitForTimeout(200)

@@ -42,7 +42,7 @@ already being acted on and were not written down.
 | 12 ✚ | **C1-FL-09, C1-ST-05** | Retention becomes a **flag with a reason code** and a **recorded field in the structured object**. The derivation stops saying "as declared" of a carried value |
 | 13 ✚ | **C1-FL-10** | Zero raises its own flag. It is the absence of solute, not an implausibly low concentration |
 | 14 ✚ | **C1-NF-03** | The 1440 × 900 standard entered at round 1 is **withdrawn**. It was a viewport height, not a display, and no laptop of that size has it. The standard is UNSET and owed |
-| 15 | **C1-FL-01** | **Open, not resolved.** The 1000 kDa bound misfires on IgM–PE at 1210 kDa. Awaiting NADIRA's ruling: see §18 open item 2 |
+| 15 | **C1-FL-01** | **Superseded by #26.** The 1000 kDa bound misfired on IgM–PE at 1210 kDa; NADIRA's ruling landed at round 5, recorded there and in §18 open item 2 |
 | 16 ✚ | **C1-UN-07** | An underflowed quantity is **marked as underflowed** in the structured object. Detection and the record land; the **presentation is held** pending NADIRA (§18 open item 16) |
 | 17 ✚ | **§11, both tolerance rows** | Qualified to results the chosen units can **represent**. Once a result underflows, the ULP distance is unbounded and is not a rounding difference |
 | 18 ✚ | **§11, round-trip row** | Restated as a **requirement on how the conversion is structured**. Folding is required for two reasons, not one: rounding *and* range |
@@ -60,16 +60,25 @@ already being acted on and were not written down.
 | 32 ✚ | **C1-OUT-12** | The citability property, specified rather than emergent |
 | 29 ✚ | **C1-OUT-03** | The object renders into the page behind `?record`, from the same serialiser the copy button uses, so the record can be verified without clipboard access |
 | 22 ✚ | **§11** | **Representability** is a register row and a C1-FX-04 threshold. It changes the output, so C1-CN-01 covers it, even though it is not a §8 flag condition |
+| 33 ✎ | **C1-OUT-08** | **Round 7, NADIRA's own correction.** The bivalent-IgG worked example was wrong on every other construct: replaced with the principle alone, molecules not binding sites, multiply by valency for paratope concentration |
+| 34 ✎ | **C1-FL-04** | **Round 7.** Reworded, not extended with a fourth declaration: the flag names its own condition, glycosylation and PTM where present, and that an aglycosylated construct's sequence mass is its actual mass. No format-based example, expression system is not a safe proxy for format |
+| 35 ✎ | **§9, C1-FL-02** | **Round 7.** The dilute-solution assumption on every result is deleted outright, not conditioned; it was C1-M3-04's and stayed behind when M3 moved to C3. What it protected relocates to §9 (a new undetectable failure class) and to C1-FL-02's own text, where the ambiguity actually bites |
+| 36 ✎ | **C1-MW-07** | **Round 7, the actual defect behind the reported flag-volume finding.** "A monomer or single chain" conflated a subunit of a multi-chain assembly with a natively single-chain construct. Relabelled to describe a part; the declaration value is unchanged |
+| 37 ✎ | **§11, mw-lower row** | **Round 7, a correction to the reasoning, not the figure.** A conjugate's mass is always greater than the protein it carries, so the 1 kDa floor binds even less for a conjugate, not merely no more |
+| 38 ✎ | **C1-OUT-08** | **Round 7, conditional on shipping.** The clean panel states its scope once rather than adding a caveat to every result: no flags raised does not mean the molecular weight is right for the construct. A. Modi to report whether it reads as scope or as a disclaimer at the bench; removal is documented at `CLEAN_PANEL_SCOPE_STATEMENT` if it does |
+| 39 ✎ | **C1-NF-06, schema** | **Round 7.** Engine 0.4.0 → 0.5.0: no flag-set or arithmetic change, but flag and statement TEXT changed, which is computed output on the same terms the flag set is. Schema 1.3.0 → 1.4.0, separately: `statements` gained `cleanPanelScope`, a new required key |
 
 **On the acceptance numbering.** Still not reflowed, and still offered. v0.5 raised this and it
 was not answered; this revision adds tests 21–26 at the end rather than interleaving them, so
 the question is now cheaper to answer either way. **Open item 14.**
 
 **What did not change.** The conversion, the invariance tolerance and its operator, the flag
-set, the failure classes, the plausibility bounds, and every behaviour ratified against the
-running tool on 4 September 2026, the reference case, half-to-even in the shipped path, the
-visible no-flags state, the withholding of a result until every declaration is present, and
-the scoping of the flag-versus-display sentence to threshold flags.
+set, the plausibility bound VALUES, and every behaviour ratified against the running tool on 4
+September 2026, the reference case, half-to-even in the shipped path, the visible no-flags
+state, the withholding of a result until every declaration is present, and the scoping of the
+flag-versus-display sentence to threshold flags. **Round 7 (rows 33–39) changed flag and
+statement TEXT, and grew §9's failure-class list by one; it changed no flag's condition, no
+arithmetic, and no plausibility bound's value.**
 
 ---
 
@@ -136,9 +145,17 @@ consequence was severe.
 | C1-MW-07 | The user shall declare what the stated molecular weight is the mass of. The declaration shall appear on the output. The options shall be presented as: | M |
 
 > - **the assembled molecule** as it exists in solution
-> - **a monomer or single chain**
+> - **a subunit of the molecule as it exists in solution**, such as one chain of a multi-chain construct ↯ **round 7**
 > - **a conjugate, including its label or payload**; select this whenever a label or payload is included in the stated mass, whatever the format of the underlying protein
 > - **not recorded**
+>
+> **Round 7 reworded the second option.** "A monomer or single chain" conflated a subunit of a
+> multi-chain assembly, genuinely partial, with a natively single-chain construct, which is
+> complete: a VHH or a monomeric scFv has no larger assembly, so "assembled" was already the
+> correct answer for it and the old label invited the wrong one. The internal declaration value
+> is unchanged; only the label is. See §0 row 36. The bench-scientist session in round 7's own
+> instruction is the direct test: the risk is that a CoA quoting "monomer MW 75 kDa" no longer
+> has that word to scan for.
 
 | ID | Requirement | Pri |
 |---|---|---|
@@ -391,9 +408,9 @@ output with a machine-readable reason code.
 | ID | Condition | Evaluated on | Flag states |
 |---|---|---|---|
 | C1-FL-01 ✎ | `MW < 1 kDa`, or `MW > 1000 kDa` where the mass basis is **not** a conjugate, or `MW > 2000 kDa` ↯ where it **is** | The declared molecular weight, **and the mass-basis declaration** | Outside the usual range, naming which range applied. The non-conjugate message points at the conjugate declaration as the likely fix |
-| C1-FL-02 | `mass concentration > 250 mg/mL` ↯ | The system's mass concentration, entered or computed | Above the range of typical high-concentration biologic formulations; confirm the units |
+| C1-FL-02 ✎ | `mass concentration > 250 mg/mL` ↯ | The system's mass concentration, entered or computed | Above the range of typical high-concentration biologic formulations; confirm the units. **Round 7:** also names the solute-volume ambiguity: near this concentration the solute's own volume is no longer negligible, so a value per volume of solution and one per volume of solvent diverge |
 | C1-FL-03 | `molar concentration < 1 pM` | The system's molar concentration, entered or computed | Below the range typical of biologic working solutions |
-| C1-FL-04 | MW source is "calculated from sequence" | The provenance declaration | Sequence-derived mass excludes glycosylation and other post-translational modification |
+| C1-FL-04 ✎ | MW source is "calculated from sequence" | The provenance declaration | **Round 7, reworded:** sequence-derived mass excludes glycosylation and other post-translational modification where these are present; for an aglycosylated construct the sequence mass is the actual mass. No format-based example: expression system is not a safe proxy for whether the condition holds |
 | C1-FL-05 | MW source is "not recorded" | The provenance declaration | Molecular weight provenance not recorded; the result cannot be traced to a source and should not be carried into a method record without one |
 | C1-FL-06 | Mass basis is monomer or single chain | The mass-basis declaration | Molar concentration computed is of monomer, not of assembled molecule |
 | C1-FL-07 | Mass basis is "not recorded" | The mass-basis declaration | Mass basis not recorded; whether this concentration refers to the assembled molecule, a monomer, or a conjugate cannot be determined from the record |
@@ -626,7 +643,7 @@ tool cannot interpret. C1-ST-01 is what prevents that.
 | C1-OUT-05 | The structured and human-readable outputs shall be generated from one computation and cannot disagree. | M |
 | C1-OUT-06 | The scope statement: research use, not qualified for GxP decision-making; shall be displayed. | M |
 | C1-OUT-07 | Displayed precision shall be stated on the output. | M |
-| C1-OUT-08 | The output shall state that the molar concentration is of molecules, not of binding sites. A bivalent IgG at 1 µM presents 2 µM of paratope. | M |
+| C1-OUT-08 ✎ | The output shall state that the molar concentration is of molecules, not of binding sites, and that the construct's valency converts one to the other. **Round 7:** the bivalent-IgG worked example is removed; it renders verbatim on results declared monomer or conjugate, where it is not true. The clean panel additionally states its own scope once: no flags raised does not mean the declared molecular weight is right for the construct. Conditional on shipping, see §0 row 38. | M |
 | C1-OUT-09 | The result shall be copyable in a form suitable for pasting into a lab notebook. | D |
 | C1-OUT-10 ✚ | The structured object shall carry a **schema version distinct from the engine version**, and shall name its schema. | M |
 | C1-OUT-12 ✚ ✎ | The output shall carry everything needed to **reproduce the reported number without the page**: the rounding mode alongside the displayed precision, and the effective divisor with its unit alongside the relation. | M |
@@ -917,7 +934,7 @@ rather than an audit.
 | # | Item | Owner | Note |
 |---|---|---|---|
 | 1 | Confirm the ADC output format can express a single conversion with provenance and mass-basis fields. If not, escalate: do not extend locally | Developer + NADIRA | **Open.** Answered as *no format exists*; the escalation is unresolved. C1-OUT-04 and acceptance 4 held. C1-OUT-03 is no longer held with it |
-| 2 ✎ | Characterise or disclose the MW bounds, and **supply the conjugate ceiling** | NADIRA | **The conditional form is RULED AND BUILT** at round 5: 1000 kDa for a protein, 2000 kDa for a conjugate, so IgM-PE at 1210 kDa no longer misfires while the same weight declared assembled still flags. **The 2000 kDa figure is the developer's, not hers**, and is disclosed as such in the register. What remains open is that number and the 1 kDa lower bound. Previously: **the upper bound is WRONG, not merely uncharacterised.** IgM–PE at 1210 kDa is an ordinary flow reagent and is told it is outside the usual range for a biologic. Disclosure covers a threshold that is unmeasured; it does not cover one that misfires on a case the tool was extended to handle. **Moves before ship.** Two candidate resolutions in the note below |
+| 2 ✎ | Characterise or disclose the MW bounds, and **supply the conjugate ceiling** | NADIRA | **The conditional form is RULED AND BUILT** at round 5: 1000 kDa for a protein, 2000 kDa for a conjugate, so IgM-PE at 1210 kDa no longer misfires while the same weight declared assembled still flags. **The 2000 kDa figure is the developer's, not hers**, and is disclosed as such in the register. What remains open is that number and the 1 kDa lower bound, **on the same footing as item 3: disclosed as uncharacterised, and no longer a ship-blocker.** Previously: **the upper bound was WRONG, not merely uncharacterised.** IgM–PE at 1210 kDa is an ordinary flow reagent and was told it was outside the usual range for a biologic. Disclosure covers a threshold that is unmeasured; it does not cover one that misfires on a case the tool was extended to handle. **That defect moved before ship, at round 5**; the note below records the two resolutions weighed and which was chosen |
 | 3 | Characterise or disclose the 250 mg/mL and 1 pM bounds, or remove | NADIRA | Open. Disclosed as uncharacterised |
 | 4 | Establish whether anyone weighs out protein before that scope is built anywhere | A. Modi | Open |
 | ~~5~~ | ~~Decide C1's public URL slug~~ | ~~A. Modi~~ | **CLOSED 11 September 2026: `molarity-converter`.** The address is `https://benchtools.ligant.ai/molarity-converter/`, composed in `src/lib/site.ts` and read by the verification rather than typed into it. It did **not** unblock acceptance 14 on its own: see open item 20 |
@@ -937,8 +954,10 @@ rather than an audit.
 | 18 ✚ | Rule on the displayed precision of a subnormal result. C1-UN-06 promises six significant figures; at 1e-323 the double carries about one bit and five of the six displayed digits are representation. Disclosed by C1-FX-16, not corrected | NADIRA | Adjacent to open item 7 and probably the same ruling |
 | 16 ✚ | Rule on how an underflowed result is PRESENTED: a §8 flag beside the zero, or a §7 refusal to display. Detection and the record already exist either way | NADIRA || The requirement has governed a pass/fail test with no constant behind it since v0.1. Two figures have been used and both were viewport heights the verification invented. Nothing to build against until this is set |
 
-No open item blocks the build. Items 5 and 7 block claims the tool would otherwise be entitled
-to make. **Item 2 now blocks ship**, and item 15 blocks any further layout work.
+No open item blocks the build or ship. Items 2, 5 and 7 block claims the tool would otherwise be
+entitled to make: item 2's misfire is fixed and its mechanism is built and tested, and what is
+left of it, the exact figures, is a disclosed, uncharacterised value on the same footing as item
+3. Item 15 blocks any further layout work.
 
 **On item 2: the mechanism matters more than the number.** Adding the conjugate mass basis at
 v0.4 made masses above 1000 kDa ordinary. The constant and the declaration were changed *in
@@ -946,20 +965,25 @@ the same document* without either being checked against the other, and that is t
 transferable finding: the heterogeneity tool will add declarations to a tool that already has
 bounds.
 
-Two resolutions are on the table and the choice is NADIRA's.
+Two resolutions were on the table at round 5. NADIRA chose the second.
 
-*Raise the figure.* Replaces one inspection-chosen constant with another, and the headroom is
-thin whatever is picked: unconjugated IgM is already around 970 kDa, so a bound that clears
-IgM–PE sits close to useless for detecting a genuine unit error.
+*Raise the figure.* Would replace one inspection-chosen constant with another, and the headroom
+is thin whatever is picked: unconjugated IgM is already around 970 kDa, so a bound that clears
+IgM–PE sits close to useless for detecting a genuine unit error. Not chosen.
 
-*Condition the bound on the mass-basis declaration.* A conjugate legitimately carries a higher
-ceiling than an unconjugated protein. This makes the coupling explicit in the code rather than
-something to remember, and gives the register row a basis better than inspection. If it is
-chosen, **C1-FL-01 stops being a single constant**: the register row changes shape, and
-C1-FX-04 needs boundary fixtures per mass-basis branch.
+*Condition the bound on the mass-basis declaration.* **Chosen.** A conjugate legitimately
+carries a higher ceiling than an unconjugated protein. This makes the coupling explicit in the
+code rather than something to remember, and gives the register row a basis better than
+inspection. C1-FL-01 stopped being a single constant: the register row changed shape, and
+C1-FX-04 gained boundary fixtures per mass-basis branch, C1-FX-17 for the conjugate and C1-FX-18
+as its negative control, the identical weight declared assembled, which still flags.
 
-Nothing is implemented either way. The register row discloses the misfire in the meantime,
-which is strictly more than it said before and strictly less than a fix.
+Both branches are implemented and exercised live, not only in fixtures: `check-ui.mjs` drives
+IgM-PE at 1210 kDa through the form, asserts no C1-FL-01 declared as a conjugate, and asserts
+C1-FL-01 still fires on the same weight declared assembled, so the ceiling was conditioned
+rather than raised for everything. The register row discloses what is left, the conjugate figure
+is the developer's rather than NADIRA's, which is strictly more than it said before and strictly
+less than a characterised number.
 
 ---
 
@@ -990,5 +1014,7 @@ Prepared by Developer, 4 September 2026, against the tool as built on branch
 exists and is checked; none is aspirational.
 
 **Not approved.** v0.5 remains the authority. The changes needing a decision rather than a
-ratification are: C1-UN-06's figure (open item 7), C1-NF-03's raised standard, and whether
-C1-ID-01 to C1-ID-08 should be here at all or only in the platform URS.
+ratification are: C1-UN-06's figure (open item 7), C1-NF-03's raised standard, whether
+C1-ID-01 to C1-ID-08 should be here at all or only in the platform URS, and, added at round 7,
+whether the clean panel's scope statement (row 38) reads as scope or as a disclaimer at the
+bench, which A. Modi is to report, per the round-7 instruction's own condition.

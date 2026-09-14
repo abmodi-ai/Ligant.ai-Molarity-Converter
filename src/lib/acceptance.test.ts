@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { computeConversion, notebookLine, type ConversionRequest } from './compute'
 import { agreesToDisplayedPrecision } from './format'
-import { MASS_BASIS, MW_PROVENANCE, type MassBasis, type MwProvenance } from './units'
+import { MASS_BASIS, MASS_BASIS_LABEL, MW_PROVENANCE, type MassBasis, type MwProvenance } from './units'
 import { UNDETECTABLE_FAILURES, CONSTANTS_REGISTER } from './flags'
 
 const BASE: ConversionRequest = {
@@ -168,6 +168,16 @@ describe('Acceptance 13: every mass-basis value behaves as specified', () => {
     conjugate: ['C1-FL-08'],
     'not-recorded': ['C1-FL-07'],
   }
+  // What the output is checked to contain per basis. Not the enum value
+  // itself for `monomer`: round 7 reworded MASS_BASIS_LABEL.monomer to drop
+  // the word "monomer" entirely, which is the whole point of the ruling, so
+  // the check is against a substring of the new label instead.
+  const labelSubstring: Record<MassBasis, string> = {
+    assembled: 'assembled',
+    monomer: 'subunit',
+    conjugate: 'conjugate',
+    'not-recorded': 'not recorded',
+  }
 
   for (const basis of MASS_BASIS) {
     it(`${basis} raises ${expected[basis].join(', ') || 'no flag'}`, () => {
@@ -175,7 +185,7 @@ describe('Acceptance 13: every mass-basis value behaves as specified', () => {
       expect(r.flags.map((f) => f.code)).toEqual(expected[basis])
       // ...and appears on the output.
       expect(r.declarations.massBasis).toBe(basis)
-      expect(notebookLine(r)).toContain(basis === 'assembled' ? 'assembled' : basis.replace('-', ' '))
+      expect(notebookLine(r)).toContain(labelSubstring[basis])
     })
   }
 
@@ -294,7 +304,7 @@ describe('Acceptance 17 and 18, disclosure', () => {
   })
 
   it('the failure classes the tool cannot detect are enumerated', () => {
-    expect(UNDETECTABLE_FAILURES.length).toBe(7)
+    expect(UNDETECTABLE_FAILURES.length).toBe(8)
     for (const f of UNDETECTABLE_FAILURES) expect(f.length).toBeGreaterThan(30)
   })
 })
@@ -307,7 +317,10 @@ describe('C1-OUT: the output carries what §13 requires', () => {
     expect(r.engineVersion).toBeTruthy()
     expect(r.statements.precision).toMatch(/6 significant figures/)
     expect(r.statements.scope).toMatch(/not qualified for GxP/i)
-    expect(r.statements.moleculesNotSites).toMatch(/paratope/)
+    // Content is round 7's own test below; "paratope" alone would still match
+    // the pre-round-7 wording and stop discriminating anything.
+    expect(r.statements.moleculesNotSites).toBeTruthy()
+    expect(r.statements.cleanPanelScope).toBeTruthy()
   })
 
   it('C1-OUT-02: the weight, its source and its mass basis are in the derivation', () => {
@@ -322,5 +335,61 @@ describe('C1-OUT: the output carries what §13 requires', () => {
     const r = ok({ ...BASE, massBasis: 'conjugate', provenance: 'not-recorded' })
     const line = notebookLine(r)
     for (const f of r.flags) expect(line).toContain(f.code)
+  })
+})
+
+describe("Round 7: NADIRA's rulings, 11 September 2026", () => {
+  it('C1-OUT-08 states the principle rather than one construct\'s worked example', () => {
+    // True for every construct, false for none: the old wording named a
+    // bivalent IgG, which reads verbatim on a result declared monomer or
+    // conjugate, where it is not true.
+    const r = ok(BASE)
+    expect(r.statements.moleculesNotSites).toMatch(/valency/)
+    expect(r.statements.moleculesNotSites).not.toMatch(/IgG/)
+    expect(r.statements.moleculesNotSites).not.toMatch(/bivalent/i)
+  })
+
+  it('C1-FL-04 names its own condition instead of asserting the mass is wrong outright', () => {
+    const r = ok({ ...BASE, provenance: 'calculated-from-sequence' })
+    const flag = r.flags.find((f) => f.code === 'C1-FL-04')!
+    expect(flag.message).toMatch(/where these are present/)
+    expect(flag.message).toMatch(/aglycosylated construct the sequence mass is the actual mass/)
+    // Expression system is not a safe proxy for format: a Pichia-expressed VHH
+    // is glycosylated and a mammalian-expressed BiTE is not aglycosylated by
+    // construction, so the flag names neither.
+    expect(flag.message).not.toMatch(/E\. coli|Pichia|mammalian|BiTE|VHH/i)
+  })
+
+  it('the dilute-solution assumption is deleted outright, not conditioned', () => {
+    expect(ok(BASE).assumptions.join(' ')).not.toMatch(/dilute/i)
+  })
+
+  it('the solute-volume ambiguity moved to §9 and to C1-FL-02, not onto every result', () => {
+    expect(
+      UNDETECTABLE_FAILURES.some((f) => /per volume of solution or per volume of solvent/.test(f)),
+    ).toBe(true)
+    // 300 mg/mL exceeds the 250 mg/mL threshold, so C1-FL-02 fires.
+    const r = ok({ ...BASE, enteredValue: 300 })
+    const flag = r.flags.find((f) => f.code === 'C1-FL-02')!
+    expect(flag.message).toMatch(/solute's own volume/)
+    expect(flag.message).toMatch(/per volume of solution or per volume of solvent/)
+  })
+
+  it('the mass-basis label describes a part, not a chain count', () => {
+    // The old label conflated a subunit of a multi-chain assembly with a
+    // natively single-chain construct, for which "assembled" was already
+    // correct. The word "monomer" is gone from the label; the enum key is not.
+    expect(MASS_BASIS_LABEL.monomer).not.toMatch(/\bmonomer\b/i)
+    expect(MASS_BASIS_LABEL.monomer).toMatch(/subunit/)
+  })
+
+  it('the clean panel states its own scope once', () => {
+    const r = ok(BASE)
+    expect(r.flags.length).toBe(0)
+    expect(r.statements.cleanPanelScope).toMatch(/right one for this construct/)
+  })
+
+  it('C1-NF-06: the engine version moved for round 7\'s text-only changes', () => {
+    expect(ok(BASE).engineVersion).toBe('0.5.0')
   })
 })

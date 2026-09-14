@@ -27,6 +27,7 @@ import {
 } from './convert'
 import { DISPLAY_SIG_FIGS, PRECISION_STATEMENT, formatSigFigs } from './format'
 import {
+  CLEAN_PANEL_SCOPE_STATEMENT,
   MOLECULES_NOT_SITES_STATEMENT,
   SCOPE_STATEMENT,
   THRESHOLD_EVALUATION_STATEMENT,
@@ -117,6 +118,8 @@ export interface ConversionResult {
     moleculesNotSites: string
     /** Shown wherever a threshold flag is. See THRESHOLD_EVALUATION_STATEMENT. */
     thresholdEvaluation: string
+    /** Shown only where NO flag is raised. See CLEAN_PANEL_SCOPE_STATEMENT. */
+    cleanPanelScope: string
   }
 }
 
@@ -196,6 +199,7 @@ export function computeConversion(request: ConversionRequest): ConversionOutcome
       scope: SCOPE_STATEMENT,
       moleculesNotSites: MOLECULES_NOT_SITES_STATEMENT,
       thresholdEvaluation: THRESHOLD_EVALUATION_STATEMENT,
+      cleanPanelScope: CLEAN_PANEL_SCOPE_STATEMENT,
     },
   }
 }
@@ -224,7 +228,6 @@ function assumptionsFor(request: ConversionRequest): readonly string[] {
     }. The tool does not supply or check molecular weights.`,
     `Source of that weight: ${MW_PROVENANCE_LABEL[request.provenance]}${retained.provenance ? `: ${CARRIED}` : ''}.`,
     `The stated weight is the mass of: ${MASS_BASIS_LABEL[request.massBasis]}${retained.massBasis ? `: ${CARRIED}` : ''}.`,
-    'The solution is dilute enough that solute volume is not accounted for separately.',
   ]
 }
 

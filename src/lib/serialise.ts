@@ -56,6 +56,14 @@ import { NOTHING_RETAINED, type RetainedFields } from './retention'
  */
 export const SCHEMA_NAME = 'ligant-benchtools-c1-conversion'
 /**
+ * 1.3.0 → 1.4.0: `statements` gained `cleanPanelScope`, round 7. Additive for a
+ * consumer that ignores unknown keys; a new required field for one that
+ * validates, on the same terms as 1.1.0 → 1.2.0 below. The other round-7
+ * changes are message-text only: `C1-FL-02`, `C1-FL-04` and the
+ * `moleculesNotSites` statement read differently but occupy the same keys, so
+ * a consumer matching on flag codes or on key presence is undisturbed, and only
+ * one pinned to message text would need to know.
+ *
  * 1.2.0 → 1.3.0: BREAKING. Two rejection reason codes were RENAMED when
  * admissibility became its own section, so a consumer matching on them stops
  * matching rather than failing loudly:
@@ -73,7 +81,7 @@ export const SCHEMA_NAME = 'ligant-benchtools-c1-conversion'
  * also moved this release for an unrelated reason, which is the point of
  * having two.
  */
-export const SCHEMA_VERSION = '1.3.0'
+export const SCHEMA_VERSION = '1.4.0'
 
 /** A number that means nothing without its unit, carrying it. */
 export interface Quantity<U extends string = string> {
@@ -152,6 +160,7 @@ export interface StructuredResult {
     scope: string
     moleculesNotSites: string
     thresholdEvaluation: string
+    cleanPanelScope: string
   }
 }
 
@@ -325,7 +334,7 @@ export function validateStructuredResult(obj: unknown): ValidationProblem[] {
   if (!Array.isArray(o.derivation?.assumptions) || o.derivation.assumptions.length === 0) {
     fail('derivation.assumptions', 'missing: C1-OUT-01')
   }
-  for (const key of ['precision', 'scope', 'moleculesNotSites', 'thresholdEvaluation']) {
+  for (const key of ['precision', 'scope', 'moleculesNotSites', 'thresholdEvaluation', 'cleanPanelScope']) {
     if (typeof o.statements?.[key] !== 'string' || !o.statements[key]) fail(`statements.${key}`, 'missing')
   }
 
