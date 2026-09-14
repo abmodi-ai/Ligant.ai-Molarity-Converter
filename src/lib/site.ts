@@ -1,0 +1,103 @@
+/**
+ * The single place the tool's own identity is defined.
+ *
+ * `scripts/check-privacy.mjs` and `scripts/check-network.mjs` read SITE_URL from
+ * here textually, so that neither carries its own copy of what counts as this
+ * tool's own origin. Our own origin is not a third party; every other one is.
+ *
+ * The slug was open item 5 and is DECIDED: `molarity-converter`, 11 September
+ * 2026. It becomes citable at preprint submission, so it is written once and
+ * referenced, not repeated across metadata, the footer and the checks.
+ *
+ * `TOOL_PATH` had held the intended value all along and was referenced by
+ * nothing, which is how a placeholder and a decision come to look identical in
+ * a file. `DEPLOYED_URL` below is composed from it, and `check-network.mjs`
+ * reads it rather than being handed an address, so acceptance test 14 is aimed
+ * by this file.
+ */
+export const SITE_URL = 'https://benchtools.ligant.ai'
+export const TOOL_PATH = '/molarity-converter/'
+
+/** The one address acceptance test 14 is about. */
+export const DEPLOYED_URL = `${SITE_URL}${TOOL_PATH}`
+export const TOOL_NAME = 'Molarity Converter for Biologics'
+export const TOOL_ID = 'C1'
+export const URS_VERSION = '0.5'
+export const REPO_URL = 'https://github.com/abmodi-ai/Ligant.ai-Molarity-Converter'
+
+/**
+ * The released version, cited in the footer and in CITATION.cff.
+ *
+ * Matches `package.json`'s version with a leading `v`, the same convention
+ * the reference tool uses: the tag, the citation and the footer are one
+ * string rather than three conventions for one version. `scripts/check-
+ * citation.mjs` holds `package.json`, `CITATION.cff` and this file together
+ * so a release that bumps one and not the others fails the build instead of
+ * shipping a footer that disagrees with its own citation.
+ */
+export const APP_VERSION = 'v0.1.0'
+
+/**
+ * The year the citation carries. Fixed, not derived from the clock, so the
+ * page renders the same for every reader and for every build.
+ */
+export const RELEASE_YEAR = 2026
+
+/**
+ * The Zenodo DOI for this software, once a release is archived there.
+ *
+ * `null` until then, on the same reasoning as `REPO_URL` in the reference
+ * tool: a citation a reader cannot resolve is worse than no citation, and
+ * printing a placeholder that merely looks like a DOI is worse than either,
+ * because it can be copied into a reference list before anyone checks it.
+ * The footer's citation renders without a DOI clause while this is null, and
+ * check-citation.mjs asserts CITATION.cff does not state one either, so the
+ * two cannot drift apart in either direction. Set this once Zenodo mints one,
+ * and CITATION.cff picks it up in the same change.
+ */
+export const CITATION_DOI: string | null = null
+
+/**
+ * Whether acceptance test 14 has been run against the DEPLOYED address.
+ *
+ * The footer used to assert "no network request of any kind" unconditionally.
+ * That is an environment claim about the served page, and acceptance test 14;
+ * the only thing that can establish it, is unrun. A local server over `dist/`
+ * cannot exercise the CDN path, which is what produced both previous failures
+ * of this claim across the tool set.
+ *
+ * So the strong claim is gated on this flag, and the flag is a deployment step,
+ * not a build step:
+ *
+ *   1. Deploy.
+ *   2. `node scripts/check-network.mjs https://<deployed-address>/`: this must
+ *      print ACCEPTANCE TEST 14: PASSED.
+ *   3. Only then set this to `true`, and redeploy.
+ *
+ * `scripts/check-network.mjs` enforces the pairing in the other direction: if
+ * this is `true` and the run is local, the check FAILS, so the claim cannot go
+ * live on the strength of a local run.
+ *
+ * Until then the footer states what is actually established, a static check
+ * and a real browser against the build, and says the deployed address is
+ * unverified. An accurate weaker claim is worth more than an unverified
+ * stronger one; that is the whole finding of the beacon incident.
+ *
+ * DELIBERATELY NOT A CONSTANTS_REGISTER ROW, and the reasoning is recorded here
+ * because "nobody looked" is not an acceptable answer to it.
+ *
+ * The register exists so that no behaviour-determining choice is silent, and it
+ * already carries two rows that are not thresholds, the rounding mode and the
+ * reimplementation tolerance, so "it is a boolean, not a threshold" is not on
+ * its own a reason to leave it out. The reason is that this choice is not
+ * silent anywhere: it determines what the FOOTER says, and the footer says
+ * which of the two claims it is making and that acceptance test 14 is unrun.
+ * The disclosure and the behaviour are the same sentence. A register row would
+ * restate on one part of the page what another part of the page already says in
+ * full, and §11's rows are for choices whose effect is otherwise invisible.
+ *
+ * It is also not a property of the conversion. Every register row is something
+ * the engine applies to a number; this is a statement about the deployment.
+ * Revisit if the flag ever gates anything computed.
+ */
+export const NETWORK_CLAIM_VERIFIED = false
