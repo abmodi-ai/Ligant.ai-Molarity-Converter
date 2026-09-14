@@ -1,0 +1,8 @@
+# Response header rules, in the format Cloudflare Pages and other static
+# hosts read.
+#
+# Extensionless, so a static host would offer it as a download rather than
+# showing it. A licence is meant to be read in the tab the reader is already
+# in.
+/LICENSE
+  Content-Type: text/plain; charset=utf-8

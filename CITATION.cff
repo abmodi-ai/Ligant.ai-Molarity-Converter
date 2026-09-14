@@ -1,0 +1,48 @@
+# Citation metadata, in the format GitHub and Zenodo both read.
+#
+# The same claim appears in two places: this file and the footer of the tool
+# itself. Two copies of one string is two chances to disagree, so
+# scripts/check-citation.mjs asserts this file against the values in
+# src/lib/site.ts, which is the source for both.
+#
+# NO DOI YET. Zenodo mints one when a tagged release is archived there; until
+# that happens, the doi field is absent rather than a placeholder, on the same
+# reasoning CITATION_DOI in src/lib/site.ts documents: a placeholder that
+# looks like an identifier is worse than no identifier, because it can be
+# copied into a reference list before anyone checks it. Add the identifiers
+# block, matching the reference tool's shape, once a release is archived.
+cff-version: 1.2.0
+message: If you use this software, please cite it as below.
+type: software
+title: Molarity Converter for Biologics
+abstract: >-
+  A deterministic browser tool that converts between mass and molar
+  concentration for a protein whose molecular weight the user declares,
+  along with its source and what that weight is the mass of. No molecular
+  weight is supplied, inferred, defaulted or looked up, and no data entered
+  by a user leaves the browser.
+authors:
+  - family-names: Modi
+    given-names: A.B.
+    affiliation: Ligant AI Incorporated
+    orcid: https://orcid.org/0009-0009-3837-6605
+# Matches APP_VERSION in src/lib/site.ts and the tag on the archived release.
+# The leading v is kept so that this file, the footer and the tag are the
+# same string rather than three conventions for one version.
+version: v0.1.0
+# The day this file was prepared, pending an actual tagged release. Update to
+# the day the tag is cut, as the reference tool's own file documents: a
+# citation whose release date precedes the released commit points a reader at
+# a tree that did not yet exist.
+date-released: '2026-09-13'
+license: Apache-2.0
+repository-code: https://github.com/abmodi-ai/Ligant.ai-Molarity-Converter
+url: https://benchtools.ligant.ai/molarity-converter/
+keywords:
+  - molarity
+  - mass concentration
+  - molar concentration
+  - biologics
+  - protein
+  - antibody
+  - reproducible research

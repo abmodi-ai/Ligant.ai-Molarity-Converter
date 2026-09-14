@@ -26,6 +26,38 @@ export const URS_VERSION = '0.5'
 export const REPO_URL = 'https://github.com/abmodi-ai/Ligant.ai-Molarity-Converter'
 
 /**
+ * The released version, cited in the footer and in CITATION.cff.
+ *
+ * Matches `package.json`'s version with a leading `v`, the same convention
+ * the reference tool uses: the tag, the citation and the footer are one
+ * string rather than three conventions for one version. `scripts/check-
+ * citation.mjs` holds `package.json`, `CITATION.cff` and this file together
+ * so a release that bumps one and not the others fails the build instead of
+ * shipping a footer that disagrees with its own citation.
+ */
+export const APP_VERSION = 'v0.1.0'
+
+/**
+ * The year the citation carries. Fixed, not derived from the clock, so the
+ * page renders the same for every reader and for every build.
+ */
+export const RELEASE_YEAR = 2026
+
+/**
+ * The Zenodo DOI for this software, once a release is archived there.
+ *
+ * `null` until then, on the same reasoning as `REPO_URL` in the reference
+ * tool: a citation a reader cannot resolve is worse than no citation, and
+ * printing a placeholder that merely looks like a DOI is worse than either,
+ * because it can be copied into a reference list before anyone checks it.
+ * The footer's citation renders without a DOI clause while this is null, and
+ * check-citation.mjs asserts CITATION.cff does not state one either, so the
+ * two cannot drift apart in either direction. Set this once Zenodo mints one,
+ * and CITATION.cff picks it up in the same change.
+ */
+export const CITATION_DOI: string | null = null
+
+/**
  * Whether acceptance test 14 has been run against the DEPLOYED address.
  *
  * The footer used to assert "no network request of any kind" unconditionally.
