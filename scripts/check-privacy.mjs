@@ -21,9 +21,20 @@ const failures = []
 const fail = (rule, detail) => failures.push(`  [${rule}] ${detail}`)
 
 /** Our own origin is not a third party. Read from the one module that defines it. */
-const SITE_URL = (readFileSync('src/lib/site.ts', 'utf8').match(/SITE_URL\s*=\s*['"]([^'"]+)['"]/) ?? [])[1]
-const REPO_URL = (readFileSync('src/lib/site.ts', 'utf8').match(/REPO_URL\s*=\s*['"]([^'"]+)['"]/) ?? [])[1]
+const site = readFileSync('src/lib/site.ts', 'utf8')
+const SITE_URL = (site.match(/SITE_URL\s*=\s*['"]([^'"]+)['"]/) ?? [])[1]
+const REPO_URL = (site.match(/REPO_URL\s*=\s*['"]([^'"]+)['"]/) ?? [])[1]
 if (!SITE_URL) fail('config', 'could not read SITE_URL from src/lib/site.ts')
+
+/*
+ * The same pairing check-ui.mjs runs against the shared footer, applied to
+ * index.html's own <meta name="description">. C1-NF-01 is a claim about the
+ * DEPLOYED address, established only by acceptance test 14. index.html is
+ * static and ships before that test can run against it, so its description
+ * must not assert what only the footer is permitted to assert, and only once
+ * NETWORK_CLAIM_VERIFIED says so.
+ */
+const NETWORK_CLAIM_VERIFIED = /NETWORK_CLAIM_VERIFIED\s*=\s*true/.test(site)
 
 // --- Rule 1: index.html loads nothing external -----------------------------
 const html = readFileSync('index.html', 'utf8')
@@ -33,6 +44,16 @@ for (const [, attr, url] of html.matchAll(/\b(src|href)\s*=\s*["']([^"']+)["']/g
 // A preconnect or dns-prefetch is a network request even without a resource.
 for (const [, rel] of html.matchAll(/rel\s*=\s*["']([^"']+)["']/g)) {
   if (/preconnect|dns-prefetch|prefetch|preload/i.test(rel)) fail('rule 1', `index.html declares rel="${rel}"`)
+}
+
+// --- Rule 1b: the meta description claims no more than the footer would ----
+const description = (html.match(/<meta\s+name=["']description["']\s+content=["']([^"']*)["']/) ?? [])[1] ?? ''
+const DEPLOYED_ADDRESS_CLAIM = /leaves your browser|no data is transmitted/i
+if (!NETWORK_CLAIM_VERIFIED && DEPLOYED_ADDRESS_CLAIM.test(description)) {
+  fail(
+    'rule 1b',
+    `index.html's description asserts a transmission claim acceptance test 14 has not established: "${description}"`,
+  )
 }
 
 // --- Rule 2: no network primitive in application source --------------------
