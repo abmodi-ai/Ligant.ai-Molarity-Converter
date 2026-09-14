@@ -22,6 +22,16 @@ export type Direction = 'mass-to-molar' | 'molar-to-mass'
 /**
  * C1-NF-06. Changes whenever calculation behaviour changes.
  *
+ * 0.4.0 → 0.5.0, round 7: no flag SET change and no arithmetic change. What
+ * changed is flag and statement TEXT: C1-FL-02 and C1-FL-04 read differently,
+ * C1-OUT-08's statement replaces a single worked example with the general
+ * principle, and the clean panel gained its own statement. Per NADIRA's
+ * reading, text a flag or a statement carries is computed output in the same
+ * sense the flag set is: a consumer holding two records of the same input
+ * would otherwise see one engine version account for two different messages,
+ * which is the version failing to do its only job. The schema moved
+ * separately, to 1.4.0, because `statements` gained a key.
+ *
  * 0.3.0 → 0.4.0 at v0.1.4: C1-FL-11 added, so the flag set changed again. This
  * is the bump the previous one anticipated and did not get: underflow now
  * reaches the surface the user reads rather than the record alone.
@@ -39,7 +49,7 @@ export type Direction = 'mass-to-molar' | 'molar-to-mass'
  * records of the same input would otherwise see one engine version account for
  * two different flag sets, which is the version failing to do its only job.
  */
-export const ENGINE_VERSION = '0.4.0'
+export const ENGINE_VERSION = '0.5.0'
 
 export interface ConversionUnits {
   mass: MassUnit

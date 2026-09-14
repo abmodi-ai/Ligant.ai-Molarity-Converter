@@ -78,6 +78,30 @@ export const THRESHOLD_EVALUATION_STATEMENT =
   'Threshold flags are evaluated on the unrounded value, which may differ from the displayed value in its last significant figure. A flagged result and an unflagged one can therefore display identically.'
 
 /**
+ * C1-OUT-08, NADIRA's round-7 ruling. Said once, beside "No flags raised."
+ *
+ * The case that requires it: a certificate of analysis quoting 75 kDa for an
+ * IgG, entered as assembled, returns 13.3333 µM with every check passed and a
+ * clean panel: exactly 2x wrong, and §9 already names this as undetectable. A
+ * clean panel is where a reader is most likely to stop, so it states its own
+ * scope once rather than adding a caveat to every result, which would be the
+ * decoration this exists to prevent.
+ *
+ * CONDITIONAL ON SHIPPING. A. Modi is to report whether this reads as scope or
+ * as a disclaimer at the bench; if it reads as a disclaimer it is worse than
+ * nothing and comes out. Kept to one place a revision has to touch, but that
+ * place is now the schema: `statements.cleanPanelScope` is a new REQUIRED key
+ * on the structured object (SCHEMA_VERSION bumped to 1.4.0 for it), so
+ * removal is: this constant, its field on `ConversionResult['statements']`
+ * and `StructuredResult['statements']`, the assignment in `compute.ts`, the
+ * key in `validateStructuredResult`'s loop, the render site in `App.tsx`, and
+ * SCHEMA_VERSION back to 1.3.0. Six edits, not two, and the schema bump
+ * exists only because this ships; if it comes out, so does the bump.
+ */
+export const CLEAN_PANEL_SCOPE_STATEMENT =
+  'No flags raised means the values checked are consistent and within range; it does not mean this molecular weight is the right one for this construct.'
+
+/**
  * §11 constants register. Every threshold at which the tool changes behaviour,
  * with its value and its basis, and stated as inspection-chosen where it is.
  *
@@ -174,7 +198,15 @@ export const CONSTANTS_REGISTER: readonly Threshold[] = [
     status:
       'Uncharacterised: open item 2. The conditional form and this figure are both NADIRA\'s; what remains uncharacterised is the number itself. Basis: the largest routine label is not R-phycoerythrin at 240 kDa but the Brilliant Violet polymers. Streptavidin–BV421 averages 340 kDa against 52 kDa for streptavidin alone, so the polymer contributes about 290 kDa, and IgM with BV421 reaches roughly 1260 kDa. 2000 kDa clears that with room for about three labels, while a 1000-fold unit error on any plausible weight lands two orders above, so detection is preserved in both directions. NOT CHECKED: BUV polymers, and heavily labelled conjugates. That residual is stated because the mechanism which produced the original defect was assuming the top end, and the next person should read what was not verified rather than rediscover it the way IgM was rediscovered.',
   },
-  { boundaryCoverage: true, id: 'mass-upper', label: 'Upper mass concentration bound', value: '250 mg/mL', basis: 'inspection', status: 'Uncharacterised: open item 3' },
+  {
+    boundaryCoverage: true,
+    id: 'mass-upper',
+    label: 'Upper mass concentration bound',
+    value: '250 mg/mL',
+    basis: 'inspection',
+    status:
+      'Uncharacterised: open item 3. Round 7: near this figure the solute\'s own volume is no longer negligible, so a concentration per volume of solution and one per volume of solvent start to diverge; C1-FL-02 names the ambiguity where it fires.',
+  },
   { boundaryCoverage: true, id: 'molar-lower', label: 'Lower molar concentration bound', value: '1 pM', basis: 'inspection', status: 'Uncharacterised: open item 3' },
   {
     id: 'viewport-supported',
@@ -289,9 +321,11 @@ export function raiseFlags(input: FlagInput): Flag[] {
    * declaration decide the ceiling puts the coupling in the code rather than in
    * someone's memory, which is what the two were missing from each other.
    *
-   * The lower bound is not conditioned. A conjugate cannot be lighter than the
-   * protein it is attached to, so nothing about the declaration makes a sub-kDa
-   * weight more plausible.
+   * The lower bound is not conditioned. NADIRA's round-7 correction: a
+   * conjugate's mass is always GREATER than the protein it is attached to, not
+   * merely no lighter, so the 1 kDa floor binds even LESS for a conjugate than
+   * for a bare protein. Conditioning it could only ever raise it, and there is
+   * no direction in which conjugation makes a sub-kDa weight more plausible.
    */
   const isConjugate = input.massBasis === 'conjugate'
   const mwUpper = isConjugate ? MW_UPPER_CONJUGATE_G_PER_MOL : MW_UPPER_G_PER_MOL
@@ -308,13 +342,19 @@ export function raiseFlags(input: FlagInput): Flag[] {
   }
 
   // C1-FL-02: mass concentration > 250 mg/mL.
+  //
+  // Carries the solute-volume caveat per NADIRA's round-7 ruling: it only
+  // bites at this end of the range. C1's arithmetic (c/MW) never uses solute
+  // volume; the ambiguity is in what the ENTERED number itself means, per
+  // volume of solution or per volume of solvent, and only diverges by a
+  // margin worth naming once the solute is not dilute in it.
   if (massGPerL > MASS_UPPER_G_PER_L) {
     flags.push({
       code: 'C1-FL-02',
       kind: 'threshold',
       evaluatedOn: 'mass concentration',
       message:
-        'Above the range of typical high-concentration biologic formulations; confirm the units.',
+        'Above the range of typical high-concentration biologic formulations; confirm the units. At this concentration the solute\'s own volume is no longer negligible: with a partial specific volume near 0.73 mL/g, 250 mg weighed into a final volume of 1 mL of buffer is closer to 212 mg/mL than to 250. The tool cannot tell whether the stated concentration is per volume of solution or per volume of solvent.',
     })
   }
 
@@ -372,13 +412,19 @@ export function raiseFlags(input: FlagInput): Flag[] {
   }
 
   // C1-FL-04: provenance is "calculated from sequence". Also C1-MW-06.
+  //
+  // Reworded per NADIRA's round-7 ruling: the flag names its own condition
+  // rather than asserting the mass is wrong outright. Expression system is not
+  // a safe proxy for whether that condition holds; a Pichia-expressed VHH is
+  // glycosylated and a mammalian-expressed Fc-extended BiTE is not aglycosylated
+  // by construction, so the flag names neither.
   if (input.provenance === 'calculated-from-sequence') {
     flags.push({
       code: 'C1-FL-04',
       kind: 'declaration',
       evaluatedOn: 'provenance declaration',
       message:
-        'Sequence-derived mass excludes glycosylation and other post-translational modification.',
+        'Sequence-derived mass excludes glycosylation and other post-translational modification where these are present; for an aglycosylated construct the sequence mass is the actual mass.',
     })
   }
 
@@ -528,9 +574,10 @@ export const UNDETECTABLE_FAILURES: readonly string[] = [
   'Any error in the input concentration itself.',
   'That a result shown as 0.00000 is a real concentration too small to represent in the unit you chose, rather than an empty solution. The tool DOES detect this and records it, so what it cannot do is show you the value: the two cases are indistinguishable on screen by eye. Reporting the result in a smaller unit is usually enough. 1e-320 mg/mL of a 1000 kDa protein is zero in M and exact in pM.',
   'A conjugate mass declared as unconjugated, or the reverse; C1-MW-07 compels the declaration but cannot verify it, as above.',
+  'Whether a stated concentration is per volume of solution or per volume of solvent. The tool\'s arithmetic never uses solute volume, so the two are indistinguishable to it, but they are not the same number: near 250 mg/mL, a partial specific volume around 0.73 mL/g means the solute occupies roughly 18% of the volume, and C1-FL-02 names this where it fires.',
 ] as const
 
 /** C1-OUT-06 and C1-OUT-08. Displayed with every result. */
 export const SCOPE_STATEMENT = 'Research use. Not qualified for GxP decision-making.'
 export const MOLECULES_NOT_SITES_STATEMENT =
-  'The molar concentration is of molecules, not of binding sites. A bivalent IgG at 1 µM presents 2 µM of paratope.'
+  'The molar concentration is of molecules, not of binding sites; multiply by the construct\'s valency for paratope concentration.'

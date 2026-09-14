@@ -106,6 +106,27 @@ export function App() {
   const [copied, setCopied] = useState<'notebook' | 'json' | null>(null)
 
   /**
+   * The label read "Copied" the instant either button was clicked, whether or
+   * not `writeText` had resolved, so a rejected write or a browser with no
+   * Clipboard API said the same thing a successful one did. Waiting on the
+   * promise is what the record-panel check already assumes when it reads the
+   * clipboard back rather than trusting the label; the label itself had
+   * nothing behind it. `writeText` returns `undefined`, not a promise, when
+   * the API is absent, so that case is handled before `.then` is reached.
+   */
+  function copyToClipboard(text: string, which: 'notebook' | 'json') {
+    const write = navigator.clipboard?.writeText(text)
+    if (!write) {
+      setCopied(null)
+      return
+    }
+    write.then(
+      () => setCopied(which),
+      () => setCopied(null),
+    )
+  }
+
+  /**
    * C1-ST-03. Which declarations were carried across the last direction change
    * and have not been confirmed since.
    *
@@ -449,7 +470,16 @@ export function App() {
                 </dl>
 
                 {result.flags.length === 0 ? (
-                  <p className="no-flags">No flags raised.</p>
+                  <div className="no-flags">
+                    <p>No flags raised.</p>
+                    {/*
+                      C1-OUT-08, NADIRA's round-7 ruling, conditional on
+                      shipping: see CLEAN_PANEL_SCOPE_STATEMENT. One line, so
+                      removal is a one-line change if it reads as a disclaimer
+                      at the bench rather than as scope.
+                    */}
+                    <p className="no-flags-scope">{result.statements.cleanPanelScope}</p>
+                  </div>
                 ) : (
                   result.flags.map((f) => (
                     <p className="flag" key={f.code}>
@@ -481,8 +511,7 @@ export function App() {
                       // C1-OUT-09, and C1-ST-01: the line carries the
                       // declarations and every flag. A value cannot be taken
                       // from here stripped of them.
-                      void navigator.clipboard?.writeText(notebookLine(result))
-                      setCopied('notebook')
+                      copyToClipboard(notebookLine(result), 'notebook')
                     }}
                   >
                     {copied === 'notebook' ? 'Copied' : 'Copy for lab notebook'}
@@ -495,8 +524,7 @@ export function App() {
                       // quantity and the unrounded values per C1-UN-07. C1's
                       // own schema: open item 1 is still open and no ADC shape
                       // has been invented to stand in for one.
-                      void navigator.clipboard?.writeText(toJson(result))
-                      setCopied('json')
+                      copyToClipboard(toJson(result), 'json')
                     }}
                   >
                     {copied === 'json' ? 'Copied' : 'Copy structured result (JSON)'}

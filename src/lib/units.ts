@@ -113,10 +113,18 @@ export const MASS_BASIS: readonly MassBasis[] = ['assembled', 'monomer', 'conjug
  * The conjugate label carries its precedence rule inline. Without it two people
  * in the same lab answer differently for the same reagent, which is worse than
  * the ambiguity it resolves.
+ *
+ * `monomer`'s label was reworded per NADIRA's round-7 ruling. "A monomer or
+ * single chain" conflated a subunit of a multi-chain assembly, genuinely
+ * partial, with a natively single-chain construct, which is complete: a VHH
+ * or a monomeric scFv has no larger assembly, so for it "assembled" was
+ * already the correct answer and the old label invited the wrong one. A
+ * single string in one place, so a further revision after the bench-scientist
+ * session (round 7, item 8) is a one-line change.
  */
 export const MASS_BASIS_LABEL: Readonly<Record<MassBasis, string>> = {
   assembled: 'the assembled molecule as it exists in solution',
-  monomer: 'a monomer or single chain',
+  monomer: 'a subunit of the molecule as it exists in solution, such as one chain of a multi-chain construct',
   conjugate:
     'a conjugate, including its label or payload; select this whenever a label or payload is included in the stated mass, whatever the format of the underlying protein',
   'not-recorded': 'not recorded',
