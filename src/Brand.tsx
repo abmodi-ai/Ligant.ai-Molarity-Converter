@@ -7,12 +7,23 @@
  * masthead is how the suite ends up with two identities.
  *
  * Read from the Antigen Density Calculator as deployed on 4 September 2026:
- * the mark geometry, the lockup, the `Bench Tools` treatment and the footer's
- * three paragraphs are the reference's, not reinvented here.
+ * the mark geometry, the lockup and the footer's three paragraphs are the
+ * reference's, not reinvented here. The masthead has since been brought into
+ * line with the Antibody Titration Planner's; see `SiteHeader`.
  */
 
 import { useState, type ReactNode } from 'react'
-import { APP_VERSION, CITATION_DOI, DEPLOYED_URL, RELEASE_YEAR, REPO_URL } from './lib/site'
+import {
+  APP_VERSION,
+  CITATION_DOI,
+  DEPLOYED_URL,
+  LIGANT_URL,
+  RELEASE_YEAR,
+  REPO_URL,
+  TOOLS,
+  TOOL_PATH,
+  absoluteUrl,
+} from './lib/site'
 
 /**
  * The Ligant mark. A hexagonal node figure, six vertices and a centre.
@@ -61,28 +72,55 @@ export function LigantMark({ size = 28, strokeWidth = 1.7 }: { size?: number; st
 }
 
 /**
- * The masthead: lockup and tool name at left, suite label at right.
+ * The masthead: the page's identity, and the way out of it.
  *
- * `meta` is C1's addition: the tool id and the URS version it was built
- * against. The reference has no equivalent, so it is set as caption text under
- * the suite label rather than placed on the H1 line, which is the reference's
- * and is left alone.
+ * MATCHES THE ANTIBODY TITRATION PLANNER'S `Masthead` as deployed on 16
+ * September 2026, in structure, class names and styling, so the suite has one
+ * header rather than one per tool: the lockup links to ligant.ai, the tool
+ * navigation sits at right as pills, and "Bench Tools" under it links to the
+ * suite's root. One difference: the pills are in a `<nav>` landmark here and a
+ * `<div>` there, which changes nothing on screen.
+ *
+ * The current tool is a `span` with `aria-current`, not a link: there is no
+ * link to the page you are already on, and following one would clear every
+ * input, since C1-ST-02 persists nothing. Every other link is absolute; see
+ * `absoluteUrl`.
+ *
+ * These links are a convenience, not a dependency. Nothing on this page loads
+ * from them, and the tool works with every one of them broken.
+ *
+ * `description` is a node rather than a string so a tool can supply more than
+ * one paragraph; a string still renders as the single paragraph it always did.
  */
-export function SiteHeader({ tool, description, meta }: { tool: string; description: string; meta?: ReactNode }) {
+export function SiteHeader({ tool, description }: { tool: string; description: ReactNode }) {
   return (
     <header className="masthead">
       <div>
-        <span className="lockup">
-          <LigantMark />
-          <span className="wordmark">Ligant</span>
-        </span>
+        <a href={LIGANT_URL} className="lockup-link">
+          <span className="lockup">
+            <LigantMark />
+            <span className="wordmark">Ligant</span>
+          </span>
+        </a>
         <h1>{tool}</h1>
-        <p>{description}</p>
+        {typeof description === 'string' ? <p>{description}</p> : <div>{description}</div>}
       </div>
-      <div className="suite">
-        <span className="eyebrow suite-mark">Bench Tools</span>
-        {meta && <span className="suite-meta">{meta}</span>}
-      </div>
+      <nav className="tool-nav" aria-label="Bench Tools">
+        <ul>
+          {TOOLS.map((t) => (
+            <li key={t.id}>
+              {t.path === TOOL_PATH ? (
+                <span aria-current="page">{t.name}</span>
+              ) : (
+                <a href={absoluteUrl(t.path)}>{t.name}</a>
+              )}
+            </li>
+          ))}
+        </ul>
+        <a href={absoluteUrl('/')} className="eyebrow suite-mark">
+          Bench Tools
+        </a>
+      </nav>
     </header>
   )
 }
@@ -178,18 +216,38 @@ export function SiteFooter({
     <footer className="site-footer">
       <div className="footer-grid">
         <div className="footer-prose">
+          {/*
+            The privacy statement. "never sent anywhere" is the one clause here
+            that is an environment claim about THIS served page rather than
+            about Ligant's data handling, so it alone carries the
+            TransmissionEvidence gate; the sentences around it hold regardless
+            of where they're read from and are not conditional on anything.
+          */}
           <p>
-            Ligant Bench Tools are free and open source under Apache 2.0, for research and
-            educational use. They run entirely in your browser.{' '}
+            Your data stays in your browser. Everything you enter into this tool is calculated
+            on your own device and never sent anywhere
             {transmission.verifiedAtThisAddress ? (
-              <>No data is transmitted, verified in a real browser at this address.</>
+              <>, verified in a real browser at this address.</>
             ) : (
               <>
-                This build contains no network primitive and issues no request, verified
-                statically and in a real browser against the build.{' '}
+                {' '}in this build, verified statically and in a real browser against the
+                build.{' '}
                 <strong>Not yet verified at this address:</strong> {transmission.outstanding}
               </>
-            )}
+            )}{' '}
+            We do not see it, store it, or have any way to retrieve it. Closing the page ends
+            it.
+          </p>
+          <p>
+            There is no account and no tracking of you. No login, no sign up, no cookies for
+            advertising, no analytics scripts, and no third-party code of any kind runs on
+            this page.
+          </p>
+          <p>
+            We do count visits. Our hosting provider records basic traffic: which pages get
+            opened, how often, and roughly where in the world from. Because we collect
+            nothing about who you are, this is the only signal we have about whether these
+            tools are useful and which one to build next.
           </p>
           <p>
             Every figure on this page comes from code you can read, download or run yourself, at{' '}
@@ -205,6 +263,7 @@ export function SiteFooter({
             validation. If your lab needs that, please email us{' '}
             <a href="mailto:hello@ligant.ai">hello@ligant.ai</a>.
           </p>
+          <p>Ligant Bench Tools are free and open source, under the licence below.</p>
           {children}
         </div>
 

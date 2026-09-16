@@ -202,7 +202,7 @@ measurement that justifies it, not just a plausible-looking number.
 
 ## Status and limitations
 
-`v0.1.0`. **Research use only. Not qualified for GxP decision-making.**
+`v0.1.1`. **Research use only. Not qualified for GxP decision-making.**
 
 Inputs and result are not guaranteed to fit one screen without scrolling on
 every laptop display; this is a known, declared deviation rather than an
@@ -211,16 +211,17 @@ does not, and cannot, cover.
 
 ## Citation
 
-> Modi, A.B. (2026). Molarity Converter for Biologics (`v0.1.0`) [Computer
+> Modi, A.B. (2026). Molarity Converter for Biologics (`v0.1.1`) [Computer
 > software]. Ligant AI Incorporated. benchtools.ligant.ai/molarity-converter/.
 > doi:10.5281/zenodo.22750471
 
 That is the concept DOI, which resolves to the newest release. Cite the
 version DOI, [10.5281/zenodo.22750472](https://doi.org/10.5281/zenodo.22750472),
-instead where the claim being made is true of `v0.1.0` in particular; both
-are listed on the [Zenodo record](https://zenodo.org/records/22750472) and
-in [`CITATION.cff`](CITATION.cff). The footer of the running tool carries
-the citation above with a control that copies it.
+instead where the claim being made is true of `v0.1.0` in particular.
+`v0.1.1` has no version DOI until its release is archived. Both DOIs are
+listed on the [Zenodo record](https://zenodo.org/records/22750472) and in
+[`CITATION.cff`](CITATION.cff). The footer of the running tool carries the
+citation above with a control that copies it.
 
 ## Licence
 

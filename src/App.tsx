@@ -17,21 +17,43 @@ import {
 import type { Direction } from './lib/convert'
 import { computeConversion, notebookLine } from './lib/compute'
 import { toJson } from './lib/serialise'
-import { CONSTANTS_REGISTER, UNDETECTABLE_FAILURES } from './lib/flags'
+import { UNDETECTABLE_FAILURES } from './lib/flags'
+import {
+  CANNOT_DETECT_INTRO,
+  HOW_TO_USE,
+  STANDFIRST,
+  TOOLTIPS,
+  WHY_THIS_TOOL_EXISTS,
+  WORKED_EXAMPLES,
+  WORKED_EXAMPLES_INTRO,
+} from './lib/copy'
 import { confirmField, retainedOnDirectionChange, toRetainedFields, type RetainableField } from './lib/retention'
-import { APP_VERSION, NETWORK_CLAIM_VERIFIED, TOOL_ID, TOOL_NAME, URS_VERSION } from './lib/site'
+import { APP_VERSION, NETWORK_CLAIM_VERIFIED, TOOL_NAME } from './lib/site'
 import { LigantMark, SiteFooter, SiteHeader } from './Brand'
+import { InfoTip } from './InfoTip'
 import { formatSigFigs } from './lib/format'
+
+/** Renders the `**` emphasis used in `lib/copy.ts`. */
+function Emphasised({ text }: { text: string }) {
+  return <>{text.split('**').map((s, i) => (i % 2 ? <strong key={i}>{s}</strong> : s))}</>
+}
 
 /**
  * The whole tool.
  *
  * C1-NF-03 requires the inputs and the result to fit one screen without
- * scrolling, so the converter is a two-column grid and the disclosures §9 and
- * §11 require at the tool's own address sit below it. Those disclosures are on
- * the page rather than in documentation (C1-FC-01, C1-CN-01) and are rendered
- * from the same constants the flag rules read, so the page cannot describe a
- * threshold the tool does not apply.
+ * scrolling, so the converter holds the inputs and the result and nothing
+ * else. What teaches the tool sits below it, where there is room: how to use
+ * it, worked examples, why it exists, and the §9 list of what it cannot
+ * detect (C1-FC-01), which is rendered from `UNDETECTABLE_FAILURES` rather than
+ * edited as prose. Each control's explanation is a tooltip, not a hint line,
+ * so reading it does not make the converter taller.
+ *
+ * THE §11 CONSTANTS REGISTER IS NOT ON THE PAGE. Removed by the product
+ * owner's ruling of 11 September 2026, as a scope decision. The rows stay in
+ * `lib/flags.ts`, which the flag rules read. C1-CN-01 still requires them at
+ * the tool's own address and acceptance 17 still tests for them; both are to be
+ * amended or struck in the URS rather than satisfied here.
  *
  * C1-ST-02: nothing is persisted. There is no localStorage, no sessionStorage
  * and no URL state, so there is nothing that could survive a reload
@@ -207,8 +229,7 @@ export function App() {
       <div className="wrap">
         <SiteHeader
           tool={TOOL_NAME}
-          description="Converts mass and molar concentration for a protein whose molecular weight you declare, with its source and what it is the mass of."
-          meta={`${TOOL_ID} · URS v${URS_VERSION}`}
+          description={STANDFIRST.map((p) => <p key={p}>{p}</p>)}
         />
 
         <main className="converter">
@@ -217,7 +238,10 @@ export function App() {
 
             {/* C1-CV-02. Selected before data entry; not a mode. */}
             <fieldset className="field">
-              <legend>Convert</legend>
+              <legend>
+                Convert
+                <InfoTip topic="the conversion direction" paragraphs={TOOLTIPS.direction} />
+              </legend>
               <div className="directions" role="group" aria-label="Conversion direction">
                 <button
                   type="button"
@@ -238,9 +262,20 @@ export function App() {
 
             {/* C1-UN-01. The unit is chosen, not supplied. */}
             <div className="field">
-              <label htmlFor="entered">
-                {enteredIsMass ? 'Mass concentration' : 'Molar concentration'}
-              </label>
+              {/*
+                The tooltip sits beside the label, not inside it: a button
+                inside a <label> is interactive content inside another control's
+                label, and a click on it is not reliably the button's.
+              */}
+              <div className="label-row">
+                <label htmlFor="entered">
+                  {enteredIsMass ? 'Mass concentration' : 'Molar concentration'}
+                </label>
+                <InfoTip
+                  topic={enteredIsMass ? 'the mass concentration' : 'the molar concentration'}
+                  paragraphs={TOOLTIPS.concentration}
+                />
+              </div>
               <div className="row">
                 <input
                   id="entered"
@@ -268,15 +303,23 @@ export function App() {
                     <option key={u} value={u}>{UNIT_LABEL[u]}</option>
                   ))}
                 </select>
+                <InfoTip
+                  topic={enteredIsMass ? 'the mass concentration unit' : 'the molar concentration unit'}
+                  paragraphs={TOOLTIPS.concentrationUnit}
+                  align="end"
+                />
               </div>
             </div>
 
             {/* C1-MW-01/02/03. Required, never inferred, unit always explicit. */}
             <div className="field">
-              <label htmlFor="mw">
-                Molecular weight
-                {retained.has('mw') && <span className="retained">Retained, not re-confirmed</span>}
-              </label>
+              <div className="label-row">
+                <label htmlFor="mw">
+                  Molecular weight
+                  {retained.has('mw') && <span className="retained">Retained, not re-confirmed</span>}
+                </label>
+                <InfoTip topic="the molecular weight" paragraphs={TOOLTIPS.mw} />
+              </div>
               <div className="row">
                 <input
                   id="mw"
@@ -306,19 +349,19 @@ export function App() {
                     <option key={u} value={u}>{UNIT_LABEL[u]}</option>
                   ))}
                 </select>
+                <InfoTip topic="the molecular weight unit" paragraphs={TOOLTIPS.mwUnit} align="end" />
               </div>
-              <p className="hint">
-                Required, with its unit. The tool does not supply, look up, or suggest molecular
-                weights: not for common antibodies either.
-              </p>
             </div>
 
             {/* C1-MW-04/05. "Not recorded" is a value, not a blank. */}
             <div className="field">
-              <label htmlFor="prov">
-                Source of that weight
-                {retained.has('provenance') && <span className="retained">Retained, not re-confirmed</span>}
-              </label>
+              <div className="label-row">
+                <label htmlFor="prov">
+                  Source of that weight
+                  {retained.has('provenance') && <span className="retained">Retained, not re-confirmed</span>}
+                </label>
+                <InfoTip topic="the source of the weight" paragraphs={TOOLTIPS.provenance} />
+              </div>
               <select
                 id="prov"
                 value={provenance}
@@ -351,6 +394,7 @@ export function App() {
               <legend>
                 The stated weight is the mass of
                 {retained.has('massBasis') && <span className="retained">Retained, not re-confirmed</span>}
+                <InfoTip topic="what the weight is the mass of" paragraphs={TOOLTIPS.massBasis} />
               </legend>
               <div className="basis-options">
                 {MASS_BASIS.map((b) => (
@@ -373,7 +417,10 @@ export function App() {
             </fieldset>
 
             <div className="field">
-              <label htmlFor="outunit">Report the result in</label>
+              <div className="label-row">
+                <label htmlFor="outunit">Report the result in</label>
+                <InfoTip topic="the result unit" paragraphs={TOOLTIPS.resultUnit} />
+              </div>
               {enteredIsMass ? (
                 <select id="outunit" value={outMolarUnit} onChange={(e) => setOutMolarUnit(e.target.value as MolarUnit)}>
                   {MOLAR_UNITS.map((u) => (
@@ -387,10 +434,6 @@ export function App() {
                   ))}
                 </select>
               )}
-              <p className="hint">
-                Chosen independently of the input units. The only unit with a default: it is rendered
-                beside the number, so an unintended choice is visible.
-              </p>
             </div>
           </section>
 
@@ -558,59 +601,48 @@ export function App() {
         )}
 
         <div className="disclosure">
-          {/* §9 / C1-FC-01. Required on the tool's own page, visible to the user. */}
-          <section className="panel" aria-labelledby="cannot-h">
-            <h2 id="cannot-h">What this tool cannot detect</h2>
-            <p style={{ marginTop: 0 }}>
-              The tool guarantees that the arithmetic is correct and that the molecular weight, its
-              source and its mass basis are recorded. It cannot detect:
-            </p>
-            <ol className="failure-list">
-              {UNDETECTABLE_FAILURES.map((f) => <li key={f}>{f}</li>)}
+          <section className="panel prose" aria-labelledby="howto-h">
+            <h2 id="howto-h">How to use this tool</h2>
+            <ol className="steps">
+              {HOW_TO_USE.map((s) => (
+                <li key={s.title}>
+                  <strong>{s.title}</strong>
+                  <p>{s.body}</p>
+                </li>
+              ))}
             </ol>
           </section>
 
-          {/* §11 / C1-CN-01. Every threshold, its value, and its basis. */}
-          <section className="panel register-panel" aria-labelledby="register-h">
-            <div className="register-header">
-              <h2 id="register-h">Constants register</h2>
-              <p style={{ marginTop: 0 }}>
-                Every threshold at which the tool changes behaviour. Thresholds chosen by inspection
-                are stated as such.
-              </p>
-            </div>
-            <div className="register-table-wrap">
-              <table className="register">
-                <thead>
-                  <tr>
-                    <th scope="col" className="col-threshold">Threshold</th>
-                    <th scope="col" className="col-val">Value</th>
-                    <th scope="col" className="col-basis">Basis</th>
-                    <th scope="col" className="col-status">Status &amp; Rationale</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {CONSTANTS_REGISTER.map((t) => (
-                    <tr key={t.id}>
-                      <th scope="row" className="col-threshold">
-                        <span className="threshold-title">{t.label}</span>
-                      </th>
-                      <td className="col-val val">
-                        <code className="val-code">{t.value}</code>
-                      </td>
-                      <td className="col-basis">
-                        <span className={`basis-badge ${t.basis === 'derived' ? 'basis-derived' : 'basis-inspection'}`}>
-                          {t.basis}
-                        </span>
-                      </td>
-                      <td className="col-status">
-                        <span className="status-text">{t.status}</span>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+          {/*
+            Closed by default: a returning user does not need it open, and the
+            page is already longer than a laptop screen on a flagged result.
+          */}
+          <details className="panel prose examples">
+            <summary>
+              <h2>Worked examples</h2>
+            </summary>
+            <p>{WORKED_EXAMPLES_INTRO}</p>
+            <ul className="example-list">
+              {WORKED_EXAMPLES.map((x) => (
+                <li key={x.title}>
+                  <strong>{x.title}</strong> <Emphasised text={x.body} />
+                </li>
+              ))}
+            </ul>
+          </details>
+
+          <section className="panel prose" aria-labelledby="why-h">
+            <h2 id="why-h">Why this tool exists</h2>
+            {WHY_THIS_TOOL_EXISTS.map((p) => <p key={p}>{p}</p>)}
+          </section>
+
+          {/* §9 / C1-FC-01. Required on the tool's own page, visible to the user. */}
+          <section className="panel prose" aria-labelledby="cannot-h">
+            <h2 id="cannot-h">What this tool cannot detect</h2>
+            <p>{CANNOT_DETECT_INTRO}</p>
+            <ol className="failure-list">
+              {UNDETECTABLE_FAILURES.map((f) => <li key={f}>{f}</li>)}
+            </ol>
           </section>
         </div>
 
@@ -622,6 +654,12 @@ export function App() {
           NETWORK_CLAIM_VERIFIED, which check-network.mjs refuses to let anyone
           set on the strength of a local run.
         */}
+        {/*
+          No children here: the privacy statement in SiteFooter's own prose
+          now covers "no account" and "nothing persists" directly, so a
+          tool-specific line repeating it would just be the same sentence
+          twice in the same footer.
+        */}
         <SiteFooter
           transmission={
             NETWORK_CLAIM_VERIFIED
@@ -632,9 +670,7 @@ export function App() {
                     'acceptance test 14 is unrun, and only it can rule out a request inserted after the build.',
                 }
           }
-        >
-          <p>No account, and nothing is stored between visits.</p>
-        </SiteFooter>
+        />
 
         <div className="colophon">
           <LigantMark size={16} />

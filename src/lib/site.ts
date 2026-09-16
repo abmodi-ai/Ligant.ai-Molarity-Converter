@@ -25,6 +25,48 @@ export const TOOL_ID = 'C1'
 export const URS_VERSION = '0.5'
 export const REPO_URL = 'https://github.com/abmodi-ai/Ligant.ai-Molarity-Converter'
 
+/** The parent site, one level up from the suite. Not `SITE_URL`: that is the
+ *  Bench Tools suite's own address, this is Ligant's. */
+export const LIGANT_URL = 'https://ligant.ai/'
+
+export interface Tool {
+  id: string
+  /** Label in the masthead's tool navigation. */
+  name: string
+  /** Path from the site root, always with a trailing slash. */
+  path: string
+}
+
+/**
+ * The suite, as the masthead's tool navigation presents it.
+ *
+ * The same three entries, in the same order and with the same labels, as the
+ * Antibody Titration Planner's `TOOLS` as deployed on 16 September 2026, so
+ * the navigation reads identically whichever tool the reader is on. A change
+ * here belongs in that list too. Add a tool only once it is live at `path`:
+ * a pill that 404s is worse than a tool the navigation does not mention yet.
+ *
+ * The entry whose `path` is this tool's `TOOL_PATH` renders as the current
+ * page rather than as a link.
+ */
+export const TOOLS: readonly Tool[] = [
+  { id: 'antibody-titration', name: 'Antibody titration', path: '/antibody-titration-planner/' },
+  { id: 'molarity', name: 'Molarity', path: '/molarity-converter/' },
+  { id: 'antigen-density', name: 'Antigen density', path: '/antigen-density-calculator/' },
+]
+
+/**
+ * Absolute URL for a path within the suite.
+ *
+ * ABSOLUTE, NOT ROOT-RELATIVE. This page is reachable at the suite's address
+ * and at its own `*.pages.dev` origin, and on the latter `/antibody-titration-
+ * planner/` does not exist: it is another project. Pinning every suite link to
+ * `SITE_URL` makes them work from either.
+ */
+export function absoluteUrl(path: string): string {
+  return `${SITE_URL}${path.startsWith('/') ? path : `/${path}`}`
+}
+
 /**
  * The released version, cited in the footer and in CITATION.cff.
  *
@@ -35,7 +77,7 @@ export const REPO_URL = 'https://github.com/abmodi-ai/Ligant.ai-Molarity-Convert
  * so a release that bumps one and not the others fails the build instead of
  * shipping a footer that disagrees with its own citation.
  */
-export const APP_VERSION = 'v0.1.0'
+export const APP_VERSION = 'v0.1.1'
 
 /**
  * The year the citation carries. Fixed, not derived from the clock, so the
@@ -98,5 +140,10 @@ export const CITATION_DOI: string | null = '10.5281/zenodo.22750471'
  * It is also not a property of the conversion. Every register row is something
  * the engine applies to a number; this is a statement about the deployment.
  * Revisit if the flag ever gates anything computed.
+ *
+ * Since 11 September 2026 the register is no longer on the page at all (see
+ * `CONSTANTS_REGISTER`), so "restate on one part of the page" no longer
+ * applies. The conclusion stands on the rest: the footer states the claim and
+ * its evidence in full, and this is not a property of the conversion.
  */
 export const NETWORK_CLAIM_VERIFIED = false

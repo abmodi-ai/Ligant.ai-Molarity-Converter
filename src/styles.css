@@ -77,41 +77,8 @@ body {
   border: 2px solid var(--accent);
 }
 
-.wrap { max-width: 1120px; margin: 0 auto; padding: 20px 24px 64px; }
-
-/*
- * The shared masthead. Treatment is the reference tool's, measured from the
- * deployed page: lockup and tool name at left, suite label at right.
- */
-header.masthead {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 32px;
-  flex-wrap: wrap;
-  padding: 20px 0 18px;
-  border-bottom: 1px solid var(--rule);
-  margin-bottom: 18px;
-}
-/* The two children stay on one row; without this the left column takes its
-   max-content width, wraps the suite label onto a second row, and the masthead
-   costs 230px instead of 150. */
-header.masthead > div:first-child { flex: 1 1 auto; min-width: 0; }
-header.masthead > .suite { flex: 0 0 auto; }
-header.masthead .lockup { display: inline-flex; align-items: center; gap: 9px; }
-header.masthead .wordmark { font-size: 19px; font-weight: 700; letter-spacing: -0.285px; }
-header.masthead h1 { font-size: 25px; font-weight: 700; letter-spacing: -0.275px; margin: 6px 0 0; }
-header.masthead p { margin: 2px 0 0; color: var(--text-secondary); font-size: 14px; }
-header.masthead .suite { text-align: right; display: grid; gap: 3px; justify-items: end; }
-.eyebrow.suite-mark {
-  font-size: 11px;
-  font-weight: 600;
-  letter-spacing: 1.54px;
-  text-transform: uppercase;
-  color: var(--text-secondary);
-}
-/* C1's own addition; the reference has no equivalent, so it is caption text. */
-header.masthead .suite-meta { font: 11px/1.3 var(--mono); color: var(--text-caption); }
+/* No top padding: the masthead's own 26px is the whole gap, as in the other tools. */
+.wrap { max-width: 1120px; margin: 0 auto; padding: 0 24px 64px; }
 
 .eyebrow {
   font-size: 11px;
@@ -119,6 +86,70 @@ header.masthead .suite-meta { font: 11px/1.3 var(--mono); color: var(--text-capt
   letter-spacing: 0.14em;
   text-transform: uppercase;
   color: var(--ink-soft);
+}
+/* "Bench Tools" is a link to the suite's root: it loses only the link
+   default. These rules sit before the masthead block so `.suite-mark` there
+   sets its colour, as it does in the other tools. */
+a.eyebrow { text-decoration: none; }
+a.eyebrow:hover { color: var(--text-primary); }
+
+/*
+ * The shared masthead. Rules, values and class names are the Antibody Titration
+ * Planner's as deployed on 16 September 2026, so the suite has one header:
+ * lockup and tool name at left, tool navigation and the suite label at right.
+ * The `margin` on h1 and p is spelled out because C1 has no global reset of
+ * either, where that tool does.
+ */
+.masthead {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 32px;
+  padding: 26px 0 22px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 24px;
+}
+.masthead p { color: var(--text-secondary); max-width: 62ch; margin: 8px 0 0; }
+.masthead h1 { font-size: 25px; font-weight: 700; letter-spacing: -0.011em; margin: 14px 0 0; }
+
+.lockup { display: inline-flex; align-items: center; gap: 9px; }
+.wordmark {
+  font-size: 19px;
+  font-weight: 700;
+  letter-spacing: -0.015em;
+  color: var(--text-primary);
+}
+/* The lockup is a link to ligant.ai. Its own colours already carry the
+   brand, so a link only has to give up the browser's default. */
+.lockup-link { color: inherit; text-decoration: none; }
+.lockup-link:hover .wordmark { color: var(--brand-teal); }
+
+.tool-nav { display: flex; flex-direction: column; align-items: flex-end; gap: 7px; flex-shrink: 0; }
+.tool-nav ul { list-style: none; margin: 0; padding: 0; display: flex; gap: 4px; }
+.tool-nav li { display: flex; }
+.tool-nav a, .tool-nav [aria-current] {
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 5px 11px;
+  border-radius: 999px;
+  border: 1px solid transparent;
+  text-decoration: none;
+  white-space: nowrap;
+}
+.tool-nav a { color: var(--text-muted); }
+.tool-nav a:hover { color: var(--text-primary); background: var(--surface-inset); }
+.tool-nav [aria-current] {
+  color: var(--brand-teal);
+  background: var(--surface);
+  border-color: var(--border);
+}
+/* The suite's name, under the navigation, linking to the suite's root. */
+.suite-mark { white-space: nowrap; color: var(--text-secondary); }
+
+@media (max-width: 760px) {
+  .masthead { flex-direction: column; gap: 16px; }
+  .tool-nav { align-items: flex-start; }
 }
 
 .visually-hidden {
@@ -154,6 +185,7 @@ header.masthead .suite-meta { font: 11px/1.3 var(--mono); color: var(--text-capt
 
 .field { margin-bottom: 10px; }
 .field > label,
+.label-row > label,
 fieldset.field > legend {
   display: block;
   font-size: 13px;
@@ -161,7 +193,55 @@ fieldset.field > legend {
   margin-bottom: 4px;
   padding: 0;
 }
-.field .hint { font-size: 12px; color: var(--ink-soft); margin: 3px 0 0; }
+.label-row { display: flex; align-items: center; gap: 6px; margin-bottom: 4px; }
+.label-row > label { margin-bottom: 0; }
+
+/*
+ * Tooltips on the form controls. Out of flow, so reading one does not make
+ * the converter taller: see InfoTip.tsx.
+ */
+.tip { position: relative; display: inline-flex; vertical-align: middle; }
+legend .tip { margin-left: 5px; }
+.row > .tip { align-self: center; }
+.tip-trigger {
+  display: inline-flex;
+  padding: 2px;
+  margin: 0;
+  border: 0;
+  border-radius: 50%;
+  background: none;
+  color: var(--ink-soft);
+  cursor: pointer;
+}
+.tip-trigger:hover,
+.tip-trigger[aria-expanded="true"] { color: var(--accent); }
+.tip-panel {
+  position: absolute;
+  top: calc(100% + 6px);
+  z-index: 20;
+  width: 300px;
+  max-width: calc(100vw - 16px);
+  display: grid;
+  gap: 6px;
+  padding: 9px 11px;
+  background: var(--surface);
+  border: 1px solid var(--rule);
+  border-radius: var(--radius-sm);
+  box-shadow: 0 8px 24px rgba(27, 42, 74, .12);
+  font-size: 12.5px;
+  font-weight: 400;
+  line-height: 1.45;
+  color: var(--ink);
+  text-align: left;
+}
+.tip-panel[hidden] { display: none; }
+/* Covers the gap above the panel, so the pointer can cross onto it. */
+.tip-panel::before { content: ''; position: absolute; left: 0; right: 0; top: -8px; height: 8px; }
+.tip-panel[data-flip="up"] { top: auto; bottom: calc(100% + 6px); }
+.tip-panel[data-flip="up"]::before { top: auto; bottom: -8px; }
+.tip-start { left: -4px; }
+.tip-end { right: -4px; }
+.tip-p { display: block; }
 
 fieldset.field { border: 0; margin: 0 0 11px; padding: 0; }
 
@@ -342,6 +422,72 @@ pre.record-json {
   color: var(--text-secondary);
   line-height: 1.45;
 }
+.prose p { margin: 0 0 8px; max-width: 78ch; }
+.prose > p:last-child { margin-bottom: 0; }
+
+.steps {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  counter-reset: step-counter;
+  display: grid;
+  gap: 10px;
+}
+.steps li {
+  counter-increment: step-counter;
+  position: relative;
+  padding-left: 24px;
+  font-size: 13px;
+  line-height: 1.45;
+}
+.steps li::before {
+  content: counter(step-counter) ".";
+  position: absolute;
+  left: 0;
+  top: 0;
+  font-weight: 600;
+  font-family: var(--mono);
+  color: var(--ink-soft);
+  font-size: 12px;
+}
+.steps li p { margin: 1px 0 0; }
+
+/* Worked examples: collapsible, closed until asked for. */
+details.examples > summary {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  cursor: pointer;
+  list-style: none;
+}
+details.examples > summary::-webkit-details-marker { display: none; }
+details.examples > summary::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  border-right: 1.5px solid var(--ink-soft);
+  border-bottom: 1.5px solid var(--ink-soft);
+  transform: rotate(-45deg);
+  transition: transform 0.15s ease;
+}
+details.examples[open] > summary::before { transform: rotate(45deg); }
+details.examples > summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+details.examples > summary h2 { margin: 0; }
+details.examples[open] > summary { margin-bottom: 10px; }
+
+.example-list {
+  margin: 10px 0 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px 24px;
+}
+@media (max-width: 768px) {
+  .example-list { grid-template-columns: 1fr; }
+}
+.example-list li { font-size: 13px; line-height: 1.45; color: var(--text-secondary); }
+.example-list li > strong:first-child { color: var(--ink); }
 
 .failure-list {
   margin: 10px 0 0;
@@ -375,150 +521,6 @@ pre.record-json {
   font-family: var(--mono);
   color: var(--ink-soft);
   font-size: 12px;
-}
-
-.register-panel {
-  overflow: hidden;
-}
-.register-header {
-  margin-bottom: 12px;
-}
-
-.register-table-wrap {
-  width: 100%;
-  overflow-x: auto;
-  -webkit-overflow-scrolling: touch;
-}
-
-table.register {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 12.5px;
-}
-
-table.register th,
-table.register td {
-  text-align: left;
-  padding: 10px 12px;
-  border-bottom: 1px solid var(--grid);
-  vertical-align: top;
-}
-
-table.register thead tr {
-  border-bottom: 2px solid var(--border);
-}
-
-table.register thead th {
-  color: var(--ink-soft);
-  font-size: 11px;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  padding: 8px 12px;
-}
-
-table.register tbody tr:hover {
-  background: var(--surface-sunken);
-}
-
-.col-threshold {
-  width: 22%;
-  min-width: 170px;
-}
-.threshold-title {
-  display: block;
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--ink);
-  line-height: 1.35;
-}
-
-.col-val {
-  width: 20%;
-  min-width: 150px;
-}
-.val-code {
-  font-family: var(--mono);
-  font-size: 12px;
-  color: var(--ink);
-  background: var(--surface-inset);
-  padding: 2px 6px;
-  border-radius: var(--radius-chip);
-  display: inline-block;
-  word-break: break-word;
-  white-space: normal;
-  line-height: 1.35;
-}
-
-.col-basis {
-  width: 11%;
-  min-width: 95px;
-}
-.basis-badge {
-  display: inline-block;
-  font-size: 11px;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  padding: 2px 7px;
-  border-radius: var(--radius-chip);
-  line-height: 1.3;
-}
-.basis-derived {
-  color: var(--brand-teal);
-  background: var(--band-fill);
-  border: 1px solid var(--brand-teal-pale);
-}
-.basis-inspection {
-  color: var(--brand-amber);
-  background: var(--attention-wash);
-  border: 1px solid var(--brand-amber);
-}
-
-.col-status {
-  width: 47%;
-  min-width: 280px;
-}
-.status-text {
-  display: block;
-  font-size: 12.5px;
-  line-height: 1.5;
-  color: var(--text-secondary);
-}
-
-@media (max-width: 768px) {
-  table.register thead {
-    display: none;
-  }
-  table.register,
-  table.register tbody,
-  table.register tr,
-  table.register th,
-  table.register td {
-    display: block;
-    width: 100%;
-    box-sizing: border-box;
-  }
-  table.register tbody tr {
-    padding: 12px 10px;
-    border-bottom: 1px solid var(--border);
-  }
-  table.register th.col-threshold {
-    padding: 0 0 6px 0;
-    border: none;
-  }
-  table.register td.col-val {
-    padding: 0 0 6px 0;
-    border: none;
-  }
-  table.register td.col-basis {
-    padding: 0 0 8px 0;
-    border: none;
-  }
-  table.register td.col-status {
-    padding: 0;
-    border: none;
-  }
 }
 
 /* The shared footer. Structure and type are the reference tool's. */
