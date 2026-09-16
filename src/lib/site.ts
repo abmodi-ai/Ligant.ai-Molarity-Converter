@@ -25,6 +25,26 @@ export const TOOL_ID = 'C1'
 export const URS_VERSION = '0.5'
 export const REPO_URL = 'https://github.com/abmodi-ai/Ligant.ai-Molarity-Converter'
 
+/** The catalog page listing every tool below. */
+export const CATALOG_URL = `${SITE_URL}/`
+
+/**
+ * Every OTHER Bench Tool the masthead's tool switcher can link to, read from
+ * the catalog page (`Benchtools_Catalog/public/index.html`) as deployed:
+ * that page, not this file, is the record of what is actually live.
+ *
+ * `name` matches the sibling tool's own `TOOL_NAME` exactly: `Brand.tsx`
+ * marks the entry equal to the current page's `tool` prop as "current"
+ * rather than a link, so the menu never offers a click back to the page
+ * you're already on. Add a tool here only once it is deployed at `path`;
+ * an entry that 404s is worse than a tool the switcher doesn't mention yet.
+ */
+export type BenchTool = { name: string; path: string }
+export const BENCH_TOOLS: BenchTool[] = [
+  { name: 'Molarity Converter for Biologics', path: '/molarity-converter/' },
+  { name: 'Antigen Density Calculator', path: '/antigen-density-calculator/' },
+]
+
 /**
  * The released version, cited in the footer and in CITATION.cff.
  *
@@ -35,7 +55,7 @@ export const REPO_URL = 'https://github.com/abmodi-ai/Ligant.ai-Molarity-Convert
  * so a release that bumps one and not the others fails the build instead of
  * shipping a footer that disagrees with its own citation.
  */
-export const APP_VERSION = 'v0.1.0'
+export const APP_VERSION = 'v0.1.1'
 
 /**
  * The year the citation carries. Fixed, not derived from the clock, so the
@@ -98,5 +118,10 @@ export const CITATION_DOI: string | null = '10.5281/zenodo.22750471'
  * It is also not a property of the conversion. Every register row is something
  * the engine applies to a number; this is a statement about the deployment.
  * Revisit if the flag ever gates anything computed.
+ *
+ * Since 11 September 2026 the register is no longer on the page at all (see
+ * `CONSTANTS_REGISTER`), so "restate on one part of the page" no longer
+ * applies. The conclusion stands on the rest: the footer states the claim and
+ * its evidence in full, and this is not a property of the conversion.
  */
 export const NETWORK_CLAIM_VERIFIED = false

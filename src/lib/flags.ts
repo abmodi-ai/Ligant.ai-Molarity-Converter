@@ -108,6 +108,14 @@ export const CLEAN_PANEL_SCOPE_STATEMENT =
  * Four of these five are open items 2 and 3, owned by NADIRA and not blocking
  * the build. Built against the values as written; the wording of the disclosure
  * may change and the numbers are not expected to.
+ *
+ * NOT RENDERED ON THE PAGE. The product owner removed the register from the
+ * page on 11 September 2026, as a scope decision. The rows stay here because
+ * the flag rules and `BOUNDARY_THRESHOLDS` read them, and because each
+ * `status` is the only record of why its value is what it is. C1-CN-01 still
+ * requires the register at the tool's own address and acceptance 17 still
+ * tests for it; both are to be amended or struck in the URS. Until they are,
+ * this tool knowingly fails both.
  */
 /**
  * The four §8 thresholds plus representability, named once.
@@ -116,9 +124,10 @@ export const CLEAN_PANEL_SCOPE_STATEMENT =
  * guard enumerates from. It used to keep its own hardcoded list of four names,
  * which is why representability could be added to the register and to the
  * documentation while the guard reported full coverage: a guard cannot report a
- * threshold it was never told exists. The register has rendered from the same
- * constants the flag rules read since v0.1, precisely so the page cannot
- * describe a threshold the tool does not apply; the guard now does the same.
+ * threshold it was never told exists. From v0.1 until it came off the page, the
+ * register rendered from the same constants the flag rules read, precisely so
+ * the page could not describe a threshold the tool does not apply; the guard
+ * does the same.
  */
 export type ThresholdId =
   | 'mw-lower'
@@ -135,14 +144,19 @@ export type ThresholdId =
  * rounding mode and the two tolerances were added because they determine
  * behaviour without being thresholds, on the principle that no
  * behaviour-determining choice should be silent. `viewport-supported` is a
- * third kind: a requirement the tool DOES NOT MEET, declared here because this
- * is the page's disclosure surface and an undeclared shortfall is exactly the
- * thing the register exists to prevent. Everything else unmet on this tool is
- * written down; that one was not.
+ * third kind: a requirement the tool DOES NOT MEET, declared here because the
+ * register was the page's disclosure surface when the row was added, and an
+ * undeclared shortfall is exactly the thing the register exists to prevent.
+ * Everything else unmet on this tool is written down; that one was not.
  *
  * Flagged rather than assumed: if the register should not carry deviations,
  * they need their own surface, and the answer should not be that they go
  * unwritten.
+ *
+ * SINCE 11 SEPTEMBER 2026 THAT SURFACE IS GONE. With the register off the
+ * page, this deviation is written down here and in the README's "Status and
+ * limitations", and nowhere a user of the page will see it. That follows from
+ * the ruling and is recorded here, not resolved.
  */
 export interface Threshold {
   readonly id: string
