@@ -7,20 +7,22 @@
  * masthead is how the suite ends up with two identities.
  *
  * Read from the Antigen Density Calculator as deployed on 4 September 2026:
- * the mark geometry, the lockup, the `Bench Tools` treatment and the footer's
- * three paragraphs are the reference's, not reinvented here.
+ * the mark geometry, the lockup and the footer's three paragraphs are the
+ * reference's, not reinvented here. The masthead has since been brought into
+ * line with the Antibody Titration Planner's; see `SiteHeader`.
  */
 
-import { useEffect, useRef, useState, type ReactNode } from 'react'
+import { useState, type ReactNode } from 'react'
 import {
   APP_VERSION,
-  BENCH_TOOLS,
-  CATALOG_URL,
   CITATION_DOI,
   DEPLOYED_URL,
+  LIGANT_URL,
   RELEASE_YEAR,
   REPO_URL,
-  SITE_URL,
+  TOOLS,
+  TOOL_PATH,
+  absoluteUrl,
 } from './lib/site'
 
 /**
@@ -70,109 +72,55 @@ export function LigantMark({ size = 28, strokeWidth = 1.7 }: { size?: number; st
 }
 
 /**
- * The suite label, made into navigation: which other Bench Tools exist, and
- * a way to reach them without going back to the catalog to search.
+ * The masthead: the page's identity, and the way out of it.
  *
- * NEW, C1's addition; the reference masthead's "Bench Tools" label is
- * currently inert text. This turns the label itself into the trigger rather
- * than adding a second control beside it, so the masthead's footprint does
- * not grow.
+ * MATCHES THE ANTIBODY TITRATION PLANNER'S `Masthead` as deployed on 16
+ * September 2026, in structure, class names and styling, so the suite has one
+ * header rather than one per tool: the lockup links to ligant.ai, the tool
+ * navigation sits at right as pills, and "Bench Tools" under it links to the
+ * suite's root. One difference: the pills are in a `<nav>` landmark here and a
+ * `<div>` there, which changes nothing on screen.
  *
- * `current` is matched against `BENCH_TOOLS[].name` (see lib/site.ts) and
- * rendered as plain text, not a link: the one thing worse than no link to a
- * tool is a link back to the page already open, which reloads state the
- * §C1-ST-02 "nothing persisted" design cannot restore.
- */
-function ToolSwitcher({ current }: { current: string }) {
-  const [open, setOpen] = useState(false)
-  const ref = useRef<HTMLDivElement>(null)
-
-  useEffect(() => {
-    if (!open) return
-    function onPointerDown(e: PointerEvent) {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false)
-    }
-    function onKeyDown(e: KeyboardEvent) {
-      if (e.key === 'Escape') setOpen(false)
-    }
-    document.addEventListener('pointerdown', onPointerDown)
-    document.addEventListener('keydown', onKeyDown)
-    return () => {
-      document.removeEventListener('pointerdown', onPointerDown)
-      document.removeEventListener('keydown', onKeyDown)
-    }
-  }, [open])
-
-  return (
-    <div className="tool-switcher" ref={ref}>
-      <button
-        type="button"
-        className="eyebrow suite-mark tool-switcher-trigger"
-        aria-haspopup="menu"
-        aria-expanded={open}
-        onClick={() => setOpen((o) => !o)}
-      >
-        Bench Tools
-        <svg className="tool-switcher-caret" width="8" height="8" viewBox="0 0 8 8" aria-hidden="true">
-          <path
-            d="M1 2.5 L4 5.5 L7 2.5"
-            stroke="currentColor"
-            strokeWidth="1.3"
-            fill="none"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-        </svg>
-      </button>
-      {open && (
-        <div className="tool-switcher-menu" role="menu">
-          {BENCH_TOOLS.map((t) =>
-            t.name === current ? (
-              <span key={t.name} className="tool-switcher-current" role="menuitem" aria-current="page">
-                {t.name}
-              </span>
-            ) : (
-              <a key={t.name} className="tool-switcher-item" role="menuitem" href={`${SITE_URL}${t.path}`}>
-                {t.name}
-              </a>
-            ),
-          )}
-          <a className="tool-switcher-all" role="menuitem" href={CATALOG_URL}>
-            All Bench Tools
-          </a>
-        </div>
-      )}
-    </div>
-  )
-}
-
-/**
- * The masthead: lockup and tool name at left, suite label at right.
+ * The current tool is a `span` with `aria-current`, not a link: there is no
+ * link to the page you are already on, and following one would clear every
+ * input, since C1-ST-02 persists nothing. Every other link is absolute; see
+ * `absoluteUrl`.
  *
- * `meta` is C1's addition: the tool id and the URS version it was built
- * against. The reference has no equivalent, so it is set as caption text under
- * the suite label rather than placed on the H1 line, which is the reference's
- * and is left alone.
+ * These links are a convenience, not a dependency. Nothing on this page loads
+ * from them, and the tool works with every one of them broken.
  *
  * `description` is a node rather than a string so a tool can supply more than
  * one paragraph; a string still renders as the single paragraph it always did.
  */
-export function SiteHeader({ tool, description, meta }: { tool: string; description: ReactNode; meta?: ReactNode }) {
+export function SiteHeader({ tool, description }: { tool: string; description: ReactNode }) {
   return (
     <header className="masthead">
       <div>
-        {/* Matches the catalog page's own lockup: `<a class="lockup" href="https://ligant.ai">`. */}
-        <a className="lockup" href="https://ligant.ai">
-          <LigantMark />
-          <span className="wordmark">Ligant</span>
+        <a href={LIGANT_URL} className="lockup-link">
+          <span className="lockup">
+            <LigantMark />
+            <span className="wordmark">Ligant</span>
+          </span>
         </a>
         <h1>{tool}</h1>
-        {typeof description === 'string' ? <p>{description}</p> : <div className="standfirst">{description}</div>}
+        {typeof description === 'string' ? <p>{description}</p> : <div>{description}</div>}
       </div>
-      <div className="suite">
-        <ToolSwitcher current={tool} />
-        {meta && <span className="suite-meta">{meta}</span>}
-      </div>
+      <nav className="tool-nav" aria-label="Bench Tools">
+        <ul>
+          {TOOLS.map((t) => (
+            <li key={t.id}>
+              {t.path === TOOL_PATH ? (
+                <span aria-current="page">{t.name}</span>
+              ) : (
+                <a href={absoluteUrl(t.path)}>{t.name}</a>
+              )}
+            </li>
+          ))}
+        </ul>
+        <a href={absoluteUrl('/')} className="eyebrow suite-mark">
+          Bench Tools
+        </a>
+      </nav>
     </header>
   )
 }

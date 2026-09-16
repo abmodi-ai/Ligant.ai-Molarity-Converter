@@ -77,107 +77,8 @@ body {
   border: 2px solid var(--accent);
 }
 
-.wrap { max-width: 1120px; margin: 0 auto; padding: 20px 24px 64px; }
-
-/*
- * The shared masthead. Treatment is the reference tool's, measured from the
- * deployed page: lockup and tool name at left, suite label at right.
- */
-header.masthead {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 32px;
-  flex-wrap: wrap;
-  padding: 20px 0 18px;
-  border-bottom: 1px solid var(--rule);
-  margin-bottom: 18px;
-}
-/* The two children stay on one row; without this the left column takes its
-   max-content width, wraps the suite label onto a second row, and the masthead
-   costs 230px instead of 150. */
-header.masthead > div:first-child { flex: 1 1 auto; min-width: 0; }
-header.masthead > .suite { flex: 0 0 auto; }
-header.masthead .lockup { display: inline-flex; align-items: center; gap: 9px; color: inherit; text-decoration: none; }
-header.masthead .wordmark { font-size: 19px; font-weight: 700; letter-spacing: -0.285px; }
-header.masthead h1 { font-size: 25px; font-weight: 700; letter-spacing: -0.275px; margin: 6px 0 0; }
-header.masthead p { margin: 2px 0 0; color: var(--text-secondary); font-size: 14px; }
-header.masthead .standfirst { max-width: 78ch; }
-header.masthead .standfirst p + p { margin-top: 6px; }
-header.masthead .suite { text-align: right; display: grid; gap: 3px; justify-items: end; }
-.eyebrow.suite-mark {
-  font-size: 11px;
-  font-weight: 600;
-  letter-spacing: 1.54px;
-  text-transform: uppercase;
-  color: var(--text-secondary);
-}
-/* C1's own addition; the reference has no equivalent, so it is caption text. */
-header.masthead .suite-meta { font: 11px/1.3 var(--mono); color: var(--text-caption); }
-
-/* The suite label as a dropdown trigger. Kept at the eyebrow's own size, so
-   turning it into a control does not change the masthead's footprint. */
-.tool-switcher { position: relative; }
-.tool-switcher-trigger {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  background: none;
-  border: none;
-  padding: 0;
-  margin: 0;
-  cursor: pointer;
-  font: inherit;
-}
-.tool-switcher-trigger:hover,
-.tool-switcher-trigger:focus-visible { color: var(--accent); }
-.tool-switcher-caret { flex-shrink: 0; transition: transform 0.15s ease; }
-.tool-switcher-trigger[aria-expanded="true"] .tool-switcher-caret { transform: rotate(180deg); }
-
-.tool-switcher-menu {
-  position: absolute;
-  top: calc(100% + 8px);
-  right: 0;
-  z-index: 20;
-  min-width: 232px;
-  background: var(--surface);
-  border: 1px solid var(--rule);
-  border-radius: var(--radius-sm);
-  box-shadow: 0 8px 24px rgba(27, 42, 74, .12);
-  padding: 6px;
-  display: grid;
-  gap: 2px;
-  text-align: left;
-}
-.tool-switcher-item,
-.tool-switcher-current {
-  display: block;
-  padding: 8px 10px;
-  border-radius: var(--radius-chip);
-  font-size: 13px;
-  font-weight: 500;
-  line-height: 1.3;
-  text-decoration: none;
-  color: var(--ink);
-}
-.tool-switcher-item:hover,
-.tool-switcher-item:focus-visible { background: var(--brand-teal-pale); color: var(--accent); }
-.tool-switcher-current { color: var(--text-caption); cursor: default; }
-.tool-switcher-all {
-  display: block;
-  margin-top: 4px;
-  padding: 8px 10px 6px;
-  border-top: 1px solid var(--rule);
-  border-radius: var(--radius-chip);
-  font-size: 11px;
-  font-weight: 600;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--text-secondary);
-  text-decoration: none;
-}
-.tool-switcher-all:hover,
-.tool-switcher-all:focus-visible { color: var(--accent); }
+/* No top padding: the masthead's own 26px is the whole gap, as in the other tools. */
+.wrap { max-width: 1120px; margin: 0 auto; padding: 0 24px 64px; }
 
 .eyebrow {
   font-size: 11px;
@@ -185,6 +86,70 @@ header.masthead .suite-meta { font: 11px/1.3 var(--mono); color: var(--text-capt
   letter-spacing: 0.14em;
   text-transform: uppercase;
   color: var(--ink-soft);
+}
+/* "Bench Tools" is a link to the suite's root: it loses only the link
+   default. These rules sit before the masthead block so `.suite-mark` there
+   sets its colour, as it does in the other tools. */
+a.eyebrow { text-decoration: none; }
+a.eyebrow:hover { color: var(--text-primary); }
+
+/*
+ * The shared masthead. Rules, values and class names are the Antibody Titration
+ * Planner's as deployed on 16 September 2026, so the suite has one header:
+ * lockup and tool name at left, tool navigation and the suite label at right.
+ * The `margin` on h1 and p is spelled out because C1 has no global reset of
+ * either, where that tool does.
+ */
+.masthead {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 32px;
+  padding: 26px 0 22px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 24px;
+}
+.masthead p { color: var(--text-secondary); max-width: 62ch; margin: 8px 0 0; }
+.masthead h1 { font-size: 25px; font-weight: 700; letter-spacing: -0.011em; margin: 14px 0 0; }
+
+.lockup { display: inline-flex; align-items: center; gap: 9px; }
+.wordmark {
+  font-size: 19px;
+  font-weight: 700;
+  letter-spacing: -0.015em;
+  color: var(--text-primary);
+}
+/* The lockup is a link to ligant.ai. Its own colours already carry the
+   brand, so a link only has to give up the browser's default. */
+.lockup-link { color: inherit; text-decoration: none; }
+.lockup-link:hover .wordmark { color: var(--brand-teal); }
+
+.tool-nav { display: flex; flex-direction: column; align-items: flex-end; gap: 7px; flex-shrink: 0; }
+.tool-nav ul { list-style: none; margin: 0; padding: 0; display: flex; gap: 4px; }
+.tool-nav li { display: flex; }
+.tool-nav a, .tool-nav [aria-current] {
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 5px 11px;
+  border-radius: 999px;
+  border: 1px solid transparent;
+  text-decoration: none;
+  white-space: nowrap;
+}
+.tool-nav a { color: var(--text-muted); }
+.tool-nav a:hover { color: var(--text-primary); background: var(--surface-inset); }
+.tool-nav [aria-current] {
+  color: var(--brand-teal);
+  background: var(--surface);
+  border-color: var(--border);
+}
+/* The suite's name, under the navigation, linking to the suite's root. */
+.suite-mark { white-space: nowrap; color: var(--text-secondary); }
+
+@media (max-width: 760px) {
+  .masthead { flex-direction: column; gap: 16px; }
+  .tool-nav { align-items: flex-start; }
 }
 
 .visually-hidden {

@@ -25,25 +25,47 @@ export const TOOL_ID = 'C1'
 export const URS_VERSION = '0.5'
 export const REPO_URL = 'https://github.com/abmodi-ai/Ligant.ai-Molarity-Converter'
 
-/** The catalog page listing every tool below. */
-export const CATALOG_URL = `${SITE_URL}/`
+/** The parent site, one level up from the suite. Not `SITE_URL`: that is the
+ *  Bench Tools suite's own address, this is Ligant's. */
+export const LIGANT_URL = 'https://ligant.ai/'
+
+export interface Tool {
+  id: string
+  /** Label in the masthead's tool navigation. */
+  name: string
+  /** Path from the site root, always with a trailing slash. */
+  path: string
+}
 
 /**
- * Every OTHER Bench Tool the masthead's tool switcher can link to, read from
- * the catalog page (`Benchtools_Catalog/public/index.html`) as deployed:
- * that page, not this file, is the record of what is actually live.
+ * The suite, as the masthead's tool navigation presents it.
  *
- * `name` matches the sibling tool's own `TOOL_NAME` exactly: `Brand.tsx`
- * marks the entry equal to the current page's `tool` prop as "current"
- * rather than a link, so the menu never offers a click back to the page
- * you're already on. Add a tool here only once it is deployed at `path`;
- * an entry that 404s is worse than a tool the switcher doesn't mention yet.
+ * The same three entries, in the same order and with the same labels, as the
+ * Antibody Titration Planner's `TOOLS` as deployed on 16 September 2026, so
+ * the navigation reads identically whichever tool the reader is on. A change
+ * here belongs in that list too. Add a tool only once it is live at `path`:
+ * a pill that 404s is worse than a tool the navigation does not mention yet.
+ *
+ * The entry whose `path` is this tool's `TOOL_PATH` renders as the current
+ * page rather than as a link.
  */
-export type BenchTool = { name: string; path: string }
-export const BENCH_TOOLS: BenchTool[] = [
-  { name: 'Molarity Converter for Biologics', path: '/molarity-converter/' },
-  { name: 'Antigen Density Calculator', path: '/antigen-density-calculator/' },
+export const TOOLS: readonly Tool[] = [
+  { id: 'antibody-titration', name: 'Antibody titration', path: '/antibody-titration-planner/' },
+  { id: 'molarity', name: 'Molarity', path: '/molarity-converter/' },
+  { id: 'antigen-density', name: 'Antigen density', path: '/antigen-density-calculator/' },
 ]
+
+/**
+ * Absolute URL for a path within the suite.
+ *
+ * ABSOLUTE, NOT ROOT-RELATIVE. This page is reachable at the suite's address
+ * and at its own `*.pages.dev` origin, and on the latter `/antibody-titration-
+ * planner/` does not exist: it is another project. Pinning every suite link to
+ * `SITE_URL` makes them work from either.
+ */
+export function absoluteUrl(path: string): string {
+  return `${SITE_URL}${path.startsWith('/') ? path : `/${path}`}`
+}
 
 /**
  * The released version, cited in the footer and in CITATION.cff.

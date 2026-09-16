@@ -28,7 +28,7 @@ import {
   WORKED_EXAMPLES_INTRO,
 } from './lib/copy'
 import { confirmField, retainedOnDirectionChange, toRetainedFields, type RetainableField } from './lib/retention'
-import { APP_VERSION, NETWORK_CLAIM_VERIFIED, TOOL_ID, TOOL_NAME, URS_VERSION } from './lib/site'
+import { APP_VERSION, NETWORK_CLAIM_VERIFIED, TOOL_NAME } from './lib/site'
 import { LigantMark, SiteFooter, SiteHeader } from './Brand'
 import { InfoTip } from './InfoTip'
 import { formatSigFigs } from './lib/format'
@@ -230,7 +230,6 @@ export function App() {
         <SiteHeader
           tool={TOOL_NAME}
           description={STANDFIRST.map((p) => <p key={p}>{p}</p>)}
-          meta={`${TOOL_ID} · URS v${URS_VERSION}`}
         />
 
         <main className="converter">
